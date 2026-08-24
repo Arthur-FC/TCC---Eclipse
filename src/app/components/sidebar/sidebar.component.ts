@@ -14,5 +14,8 @@ export class SidebarComponent {
 
     @Output() filterChange = new EventEmitter<string>();
     @Output() newChat = new EventEmitter<void>();
+    @Output() homeRequested = new EventEmitter<void>();
     @Output() chatSelected = new EventEmitter<Chat>();
+    @Output() chatDeleted = new EventEmitter<number>();
+    @Output() chatRenamed = new EventEmitter<{ chatId: number; title: string }>();
 }

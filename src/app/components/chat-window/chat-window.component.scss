@@ -58,12 +58,42 @@
     box-shadow: 0 8px 30px #0005;
 }
 
+.conversation header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
 .conversation h1 {
+    flex: 1;
+    min-width: 0;
     margin: 0;
     overflow: hidden;
     font: 28px 'Varela Round';
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.close-button {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #383838;
+    color: #c466ff;
+    font: 24px/34px Inter;
+    cursor: pointer;
+}
+
+.close-button:hover {
+    background: #4a3a52;
+}
+
+.close-button:focus-visible {
+    outline: 2px solid #c466ff;
+    outline-offset: 3px;
 }
 
 .messages {
@@ -72,6 +102,27 @@
     gap: 12px;
     overflow-y: auto;
     padding: 4px;
+    scrollbar-color: #c466ff #383838;
+    scrollbar-width: thin;
+}
+
+.messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages::-webkit-scrollbar-track {
+    border-radius: 8px;
+    background: #383838;
+}
+
+.messages::-webkit-scrollbar-thumb {
+    border: 2px solid #383838;
+    border-radius: 8px;
+    background: linear-gradient(#c466ff, #7b76ff);
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(#d58cff, #8e89ff);
 }
 
 .empty-state {

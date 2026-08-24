@@ -5,11 +5,15 @@
             [selectedChatId]="selectedChat?.id ?? null"
             [(filter)]="filter"
             (newChat)="startNewChat()"
+            (homeRequested)="goHome()"
             (chatSelected)="selectChat($event)"
+            (chatDeleted)="deleteChat($event)"
+            (chatRenamed)="renameChat($event)"
         ></app-sidebar>
 
         <app-chat-window
             [chat]="selectedChat"
+            (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
         ></app-chat-window>
     </main>

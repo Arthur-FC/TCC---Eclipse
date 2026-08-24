@@ -1,4 +1,12 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+    AfterViewChecked,
+    Component,
+    ElementRef,
+    EventEmitter,
+    Input,
+    Output,
+    ViewChild
+} from '@angular/core';
 import { Chat } from '../../models/chat.model';
 
 @Component({
@@ -7,7 +15,39 @@ import { Chat } from '../../models/chat.model';
     templateUrl: './chat-window.component.html',
     styleUrls: ['./chat-window.component.scss']
 })
-export class ChatWindowComponent {
+export class ChatWindowComponent implements AfterViewChecked {
     @Input() chat: Chat | null = null;
+    @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
+
+    @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
+
+    private lastChatId: number | null = null;
+    private lastMessageCount = 0;
+
+    ngAfterViewChecked(): void {
+        const chatId = this.chat?.id ?? null;
+        const messageCount = this.chat?.messages.length ?? 0;
+        const chatChanged = chatId !== this.lastChatId;
+        const messagesChanged = messageCount !== this.lastMessageCount;
+
+        if (!chatChanged && !messagesChanged) {
+            return;
+        }
+
+        this.lastChatId = chatId;
+        this.lastMessageCount = messageCount;
+
+        const container = this.messagesContainer?.nativeElement;
+        if (!container) {
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: chatChanged ? 'auto' : 'smooth'
+            });
+        });
+    }
 }

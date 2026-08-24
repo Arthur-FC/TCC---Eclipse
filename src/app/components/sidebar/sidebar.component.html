@@ -1,8 +1,13 @@
 <aside>
-    <div class="small-logo">
+    <button
+        type="button"
+        class="small-logo"
+        aria-label="Voltar para a página inicial"
+        (click)="homeRequested.emit()"
+    >
         <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         Eclipse
-    </div>
+    </button>
 
     <div class="actions">
         <ion-button (click)="newChat.emit()" fill="clear">
@@ -26,5 +31,7 @@
         [filter]="filter"
         [selectedChatId]="selectedChatId"
         (chatSelected)="chatSelected.emit($event)"
+        (chatDeleted)="chatDeleted.emit($event)"
+        (chatRenamed)="chatRenamed.emit($event)"
     ></app-chat-list>
 </aside>

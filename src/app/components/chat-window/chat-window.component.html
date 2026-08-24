@@ -4,9 +4,18 @@
 <section *ngIf="chat; else welcome" class="conversation" aria-live="polite">
     <header>
         <h1>{{ chat.title }}</h1>
+        <button
+            type="button"
+            class="close-button"
+            aria-label="Fechar conversa"
+            title="Fechar conversa"
+            (click)="closeRequested.emit()"
+        >
+            &times;
+        </button>
     </header>
 
-    <div class="messages">
+    <div #messages class="messages">
         <app-message
             *ngFor="let message of chat.messages"
             [message]="message"

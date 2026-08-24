@@ -17,6 +17,12 @@ export class ChatListComponent {
     @Input() filter = '';
     @Input() selectedChatId: number | null = null;
     @Output() chatSelected = new EventEmitter<Chat>();
+    @Output() chatDeleted = new EventEmitter<number>();
+    @Output() chatRenamed = new EventEmitter<{ chatId: number; title: string }>();
+
+    editingChatId: number | null = null;
+    editedTitle = '';
+    private originalTitle = '';
 
     get groups(): ChatGroup[] {
         const filteredChats = this.chats.filter(chat =>
@@ -34,6 +40,31 @@ export class ChatListComponent {
 
     trackByChatId(_: number, chat: Chat): number {
         return chat.id;
+    }
+
+    startRename(chat: Chat): void {
+        this.editingChatId = chat.id;
+        this.editedTitle = chat.title;
+        this.originalTitle = chat.title;
+    }
+
+    saveRename(): void {
+        if (this.editingChatId === null) {
+            return;
+        }
+
+        const title = this.editedTitle.trim();
+        if (title && title !== this.originalTitle) {
+            this.chatRenamed.emit({ chatId: this.editingChatId, title });
+        }
+
+        this.cancelRename();
+    }
+
+    cancelRename(): void {
+        this.editingChatId = null;
+        this.editedTitle = '';
+        this.originalTitle = '';
     }
 
     private daysAgo(date: string): number {

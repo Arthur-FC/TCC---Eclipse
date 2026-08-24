@@ -19,9 +19,22 @@ aside {
     width: 168px;
     height: 50px;
     padding: 5px 20px;
+    border: 0;
     border-radius: 52px;
+    background: #2b2b2b;
     box-shadow: 0 0 7px #d569ff40;
+    color: #fff;
     font: 22px 'Varela Round';
+    cursor: pointer;
+}
+
+.small-logo:hover {
+    background: #383838;
+}
+
+.small-logo:focus-visible {
+    outline: 2px solid #c466ff;
+    outline-offset: 3px;
 }
 
 .bars {

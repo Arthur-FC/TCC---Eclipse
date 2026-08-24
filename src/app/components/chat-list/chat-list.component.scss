@@ -14,11 +14,16 @@ small {
     font-size: 10px;
 }
 
-button {
+.chat-row {
+    position: relative;
     display: block;
     width: 188px;
     height: 34px;
     margin-bottom: 20px;
+}
+
+button {
+    height: 34px;
     padding: 0 12px;
     overflow: hidden;
     border: 0;
@@ -33,9 +38,118 @@ button {
     cursor: pointer;
 }
 
-button:hover,
-button.selected {
+.chat-button {
+    width: 100%;
+    transition: padding-right .15s ease;
+}
+
+.chat-button:hover,
+.chat-button.selected {
     background: #4a3a52;
+}
+
+.chat-row.renaming .chat-button {
+    outline: 2px solid #c466ff;
+    outline-offset: 2px;
+}
+
+.rename-button,
+.delete-button {
+    position: absolute;
+    z-index: 1;
+    top: 3px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    opacity: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #c466ff;
+    text-align: center;
+    line-height: 28px;
+    pointer-events: none;
+    transition: opacity .15s ease, background .15s ease;
+}
+
+.rename-button {
+    right: 33px;
+}
+
+.delete-button { right: 3px; }
+
+.chat-row:hover .chat-button,
+.chat-row:focus-within .chat-button {
+    padding-right: 68px;
+}
+
+.chat-row:hover .rename-button,
+.chat-row:hover .delete-button,
+.chat-row:focus-within .rename-button,
+.chat-row:focus-within .delete-button {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.rename-button:hover,
+.delete-button:hover {
+    background: #553d61;
+}
+
+.rename-button {
+    font-size: 16px;
+}
+
+.delete-button {
+    font-size: 20px;
+}
+
+.rename-form {
+    width: 188px;
+    margin: 12px 0 18px;
+    padding: 10px;
+    border-radius: 12px;
+    background: #303030;
+    box-shadow: 0 4px 12px #0004;
+}
+
+.rename-form label {
+    display: block;
+    margin-bottom: 7px;
+    color: #b5b5b5;
+    font-size: 10px;
+}
+
+.rename-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.rename-input {
+    flex: 1;
+    min-width: 0;
+    height: 30px;
+    padding: 0 8px;
+    border: 1px solid #c466ff;
+    border-radius: 45px;
+    outline: 0;
+    background: #383838;
+    color: #fff;
+    font: 400 13px Inter;
+}
+
+.rename-input:focus {
+    box-shadow: 0 0 0 2px #c466ff40;
+}
+
+.rename-confirm,
+.rename-cancel {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 30px;
+    padding: 0;
+    color: #c466ff;
+    text-align: center;
 }
 
 button:focus-visible {

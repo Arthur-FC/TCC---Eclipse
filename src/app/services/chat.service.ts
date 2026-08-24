@@ -46,6 +46,23 @@ export class ChatService {
         return chat;
     }
 
+    deleteChat(chatId: number): void {
+        this.chats = this.chats.filter(chat => chat.id !== chatId);
+        this.saveChats();
+    }
+
+    renameChat(chatId: number, title: string): void {
+        const chat = this.chats.find(item => item.id === chatId);
+        const normalizedTitle = title.trim();
+
+        if (!chat || !normalizedTitle) {
+            return;
+        }
+
+        chat.title = normalizedTitle;
+        this.saveChats();
+    }
+
     private createMessage(content: string, createdAt = new Date().toISOString()): Message {
         return {
             id: Date.now(),
