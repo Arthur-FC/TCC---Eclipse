@@ -1,0 +1,11 @@
+<form (ngSubmit)="send()">
+    <ion-input
+        [(ngModel)]="message"
+        name="message"
+        aria-label="Mensagem"
+        placeholder="Digite aqui:"
+    ></ion-input>
+    <ion-button type="submit" fill="clear" aria-label="Enviar mensagem">
+        <ion-icon name="send" aria-hidden="true"></ion-icon>
+    </ion-button>
+</form>

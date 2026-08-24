@@ -1,0 +1,48 @@
+section {
+    margin-top: 43px;
+    color: #b5b5b5;
+}
+
+h2 {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+small {
+    display: block;
+    margin: 18px 0 10px;
+    font-size: 10px;
+}
+
+button {
+    display: block;
+    width: 188px;
+    height: 34px;
+    margin-bottom: 20px;
+    padding: 0 12px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 45px;
+    background: #383838;
+    box-shadow: 0 4px 4px #0004;
+    color: #fff;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 400 13px Inter;
+    cursor: pointer;
+}
+
+button:hover,
+button.selected {
+    background: #4a3a52;
+}
+
+button:focus-visible {
+    outline: 2px solid #c466ff;
+    outline-offset: 3px;
+}
+
+p {
+    font-size: 12px;
+}

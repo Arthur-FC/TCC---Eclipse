@@ -1,0 +1,31 @@
+<div class="ring top" aria-hidden="true"></div>
+<div class="ring bottom" aria-hidden="true"></div>
+
+<section *ngIf="chat; else welcome" class="conversation" aria-live="polite">
+    <header>
+        <h1>{{ chat.title }}</h1>
+    </header>
+
+    <div class="messages">
+        <app-message
+            *ngFor="let message of chat.messages"
+            [message]="message"
+        ></app-message>
+
+        <p *ngIf="chat.messages.length === 0" class="empty-state">
+            Esta conversa ainda não possui mensagens.
+        </p>
+    </div>
+
+    <app-message-input (messageSent)="messageSent.emit($event)"></app-message-input>
+</section>
+
+<ng-template #welcome>
+    <section class="hero">
+        <div class="logo">
+            <span class="bars big" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            Eclipse
+        </div>
+        <app-message-input (messageSent)="messageSent.emit($event)"></app-message-input>
+    </section>
+</ng-template>

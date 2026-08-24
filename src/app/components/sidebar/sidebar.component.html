@@ -1,0 +1,30 @@
+<aside>
+    <div class="small-logo">
+        <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        Eclipse
+    </div>
+
+    <div class="actions">
+        <ion-button (click)="newChat.emit()" fill="clear">
+            <ion-icon name="add" aria-hidden="true"></ion-icon>
+            Novo Chat
+        </ion-button>
+
+        <label>
+            <span class="visually-hidden">Procurar conversas</span>
+            <ion-icon name="search" aria-hidden="true"></ion-icon>
+            <input
+                [ngModel]="filter"
+                (ngModelChange)="filterChange.emit($event)"
+                placeholder="Procurar"
+            >
+        </label>
+    </div>
+
+    <app-chat-list
+        [chats]="chats"
+        [filter]="filter"
+        [selectedChatId]="selectedChatId"
+        (chatSelected)="chatSelected.emit($event)"
+    ></app-chat-list>
+</aside>

@@ -1,0 +1,18 @@
+<section aria-labelledby="history-title">
+    <h2 id="history-title">Seu histórico</h2>
+
+    <ng-container *ngFor="let group of groups">
+        <small>{{ group.label }}</small>
+        <button
+            *ngFor="let chat of group.chats; trackBy: trackByChatId"
+            type="button"
+            [class.selected]="chat.id === selectedChatId"
+            [attr.aria-current]="chat.id === selectedChatId ? 'true' : null"
+            (click)="chatSelected.emit(chat)"
+        >
+            {{ chat.title }}
+        </button>
+    </ng-container>
+
+    <p *ngIf="groups.length === 0">Nenhuma conversa encontrada.</p>
+</section>

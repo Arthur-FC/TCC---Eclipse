@@ -1,4 +1,45 @@
 import { Component } from '@angular/core';
-type Day='Hoje'|'Ontem'; interface Chat{id:number;title:string;day:Day}
-@Component({selector:'app-root',standalone:false,templateUrl:'./app.component.html',styleUrls:['./app.component.scss']})
-export class AppComponent { filter=''; message=''; chats:Chat[]=[{id:1,title:'Ajuda na organização...',day:'Hoje'},{id:2,title:'Escolha do Instrumento...',day:'Hoje'},{id:3,title:'Separação da Playlist...',day:'Ontem'}]; get today(){return this.list('Hoje')} get yesterday(){return this.list('Ontem')} list(day:Day){return this.chats.filter(c=>c.day===day&&c.title.toLowerCase().includes(this.filter.toLowerCase()))} newChat(){this.chats.unshift({id:Date.now(),title:'Nova conversa',day:'Hoje'});this.filter=''} send(){const text=this.message.trim();if(text){this.chats.unshift({id:Date.now(),title:text,day:'Hoje'});this.message='';this.filter=''}} }
+import { Chat } from './models/chat.model';
+import { ChatService } from './services/chat.service';
+
+@Component({
+    selector: 'app-root',
+    standalone: false,
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss']
+})
+export class AppComponent {
+    chats: Chat[] = [];
+    selectedChat: Chat | null = null;
+    filter = '';
+
+    constructor(private readonly chatService: ChatService) {
+        this.refreshChats();
+    }
+
+    startNewChat(): void {
+        const chat = this.chatService.createChat();
+        this.filter = '';
+        this.refreshChats(chat.id);
+    }
+
+    selectChat(chat: Chat): void {
+        this.selectedChat = chat;
+    }
+
+    sendMessage(content: string): void {
+        const chat = this.selectedChat
+            ? this.chatService.addMessage(this.selectedChat.id, content)
+            : this.chatService.createChat(content);
+
+        this.filter = '';
+        this.refreshChats(chat.id);
+    }
+
+    private refreshChats(selectedId = this.selectedChat?.id): void {
+        this.chats = this.chatService.getChats();
+        this.selectedChat = selectedId
+            ? this.chats.find(chat => chat.id === selectedId) ?? null
+            : null;
+    }
+}
