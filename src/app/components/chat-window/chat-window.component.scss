@@ -8,10 +8,14 @@
     overflow: hidden;
 }
 
-.hero,
-.conversation {
+.hero {
     z-index: 1;
     width: min(805px, calc(100vw - 330px));
+}
+
+.conversation {
+    z-index: 1;
+    width: min(1050px, calc(100vw - 330px));
 }
 
 .hero {

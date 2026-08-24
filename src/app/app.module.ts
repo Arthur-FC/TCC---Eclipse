@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { add, search, send } from 'ionicons/icons';
 import { AppComponent } from './app.component';
 import { ChatListComponent } from './components/chat-list/chat-list.component';
 import { ChatWindowComponent } from './components/chat-window/chat-window.component';
@@ -21,4 +23,8 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
     imports: [BrowserModule, FormsModule, IonicModule.forRoot()],
     bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+    constructor() {
+        addIcons({ add, search, send });
+    }
+}
