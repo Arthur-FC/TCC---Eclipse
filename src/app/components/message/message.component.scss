@@ -25,3 +25,16 @@ p {
     overflow-wrap: anywhere;
     line-height: 1.45;
 }
+
+@media (max-width: 720px) {
+    article {
+        max-width: 86%;
+        padding: 10px 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    article {
+        max-width: 90%;
+    }
+}

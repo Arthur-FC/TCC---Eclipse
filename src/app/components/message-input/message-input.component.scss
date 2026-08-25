@@ -10,6 +10,7 @@ form {
 
 ion-input {
     flex: 1;
+    min-width: 0;
     --color: #fff;
     --placeholder-color: #d0d0d0;
     --highlight-color-focused: #c466ff;
@@ -29,6 +30,12 @@ ion-icon {
     form {
         height: 56px;
         padding-left: 20px;
+    }
+
+    ion-button {
+        min-width: 44px;
+        min-height: 44px;
+        margin: 0;
     }
 }
 

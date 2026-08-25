@@ -3,14 +3,25 @@
         type="button"
         class="small-logo"
         aria-label="Voltar para a página inicial"
-        (click)="homeRequested.emit()"
+        (click)="requestHome()"
     >
         <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
         Eclipse
     </button>
 
+    <button
+        type="button"
+        class="mobile-history-toggle"
+        aria-controls="mobile-history-panel"
+        [attr.aria-expanded]="mobileHistoryOpen"
+        [attr.aria-label]="mobileHistoryOpen ? 'Fechar histórico' : 'Abrir histórico'"
+        (click)="toggleMobileHistory()"
+    >
+        <ion-icon [name]="mobileHistoryOpen ? 'close' : 'menu'" aria-hidden="true"></ion-icon>
+    </button>
+
     <div class="actions">
-        <ion-button (click)="newChat.emit()" fill="clear">
+        <ion-button (click)="requestNewChat()" fill="clear">
             <ion-icon name="add" aria-hidden="true"></ion-icon>
             Novo Chat
         </ion-button>
@@ -27,11 +38,23 @@
     </div>
 
     <app-chat-list
+        id="mobile-history-panel"
+        [class.mobile-open]="mobileHistoryOpen"
         [chats]="chats"
         [filter]="filter"
+        (filterChange)="filterChange.emit($event)"
+        (newChatRequested)="requestNewChat()"
         [selectedChatId]="selectedChatId"
-        (chatSelected)="chatSelected.emit($event)"
+        (chatSelected)="selectChat($event)"
         (chatDeleted)="chatDeleted.emit($event)"
         (chatRenamed)="chatRenamed.emit($event)"
     ></app-chat-list>
 </aside>
+
+<button
+    *ngIf="mobileHistoryOpen"
+    type="button"
+    class="history-backdrop"
+    aria-label="Fechar histórico"
+    (click)="closeMobileHistory()"
+></button>

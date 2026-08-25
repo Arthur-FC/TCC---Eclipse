@@ -16,6 +16,8 @@ export class ChatListComponent {
     @Input() chats: Chat[] = [];
     @Input() filter = '';
     @Input() selectedChatId: number | null = null;
+    @Output() filterChange = new EventEmitter<string>();
+    @Output() newChatRequested = new EventEmitter<void>();
     @Output() chatSelected = new EventEmitter<Chat>();
     @Output() chatDeleted = new EventEmitter<number>();
     @Output() chatRenamed = new EventEmitter<{ chatId: number; title: string }>();

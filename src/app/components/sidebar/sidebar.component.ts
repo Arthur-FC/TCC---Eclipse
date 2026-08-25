@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { Chat } from '../../models/chat.model';
 
 @Component({
@@ -18,4 +18,34 @@ export class SidebarComponent {
     @Output() chatSelected = new EventEmitter<Chat>();
     @Output() chatDeleted = new EventEmitter<number>();
     @Output() chatRenamed = new EventEmitter<{ chatId: number; title: string }>();
+
+    mobileHistoryOpen = false;
+
+    toggleMobileHistory(): void {
+        this.mobileHistoryOpen = !this.mobileHistoryOpen;
+    }
+
+    closeMobileHistory(): void {
+        this.mobileHistoryOpen = false;
+    }
+
+    requestHome(): void {
+        this.closeMobileHistory();
+        this.homeRequested.emit();
+    }
+
+    requestNewChat(): void {
+        this.closeMobileHistory();
+        this.newChat.emit();
+    }
+
+    selectChat(chat: Chat): void {
+        this.closeMobileHistory();
+        this.chatSelected.emit(chat);
+    }
+
+    @HostListener('document:keydown.escape')
+    handleEscape(): void {
+        this.closeMobileHistory();
+    }
 }

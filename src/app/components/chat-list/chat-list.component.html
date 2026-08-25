@@ -1,4 +1,24 @@
 <section aria-labelledby="history-title">
+    <ion-button
+        class="mobile-new-chat"
+        fill="clear"
+        (click)="newChatRequested.emit()"
+    >
+        <ion-icon name="add" aria-hidden="true"></ion-icon>
+        Novo Chat
+    </ion-button>
+
+    <label class="mobile-search">
+        <span class="visually-hidden">Procurar conversas</span>
+        <ion-icon name="search" aria-hidden="true"></ion-icon>
+        <input
+            type="search"
+            [ngModel]="filter"
+            (ngModelChange)="filterChange.emit($event)"
+            placeholder="Procurar"
+        >
+    </label>
+
     <h2 id="history-title">Seu histórico</h2>
 
     <form

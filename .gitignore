@@ -4,3 +4,4 @@ dist/
 out-tsc/
 .env
 .pnpm-store/
+.env.example
