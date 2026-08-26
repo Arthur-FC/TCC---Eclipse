@@ -4,8 +4,9 @@
         name="message"
         aria-label="Mensagem"
         placeholder="Digite aqui:"
+        [disabled]="disabled"
     ></ion-input>
-    <ion-button type="submit" fill="clear" aria-label="Enviar mensagem">
+    <ion-button type="submit" fill="clear" aria-label="Enviar mensagem" [disabled]="disabled">
         <ion-icon name="send" aria-hidden="true"></ion-icon>
     </ion-button>
 </form>

@@ -21,7 +21,7 @@
     </button>
 
     <div class="actions">
-        <ion-button (click)="requestNewChat()" fill="clear">
+        <ion-button [disabled]="busy" (click)="requestNewChat()" fill="clear">
             <ion-icon name="add" aria-hidden="true"></ion-icon>
             Novo Chat
         </ion-button>
@@ -45,10 +45,16 @@
         (filterChange)="filterChange.emit($event)"
         (newChatRequested)="requestNewChat()"
         [selectedChatId]="selectedChatId"
+        [busy]="busy"
         (chatSelected)="selectChat($event)"
         (chatDeleted)="chatDeleted.emit($event)"
         (chatRenamed)="chatRenamed.emit($event)"
     ></app-chat-list>
+
+    <div class="account">
+        <span [title]="userName">{{ userName }}</span>
+        <button type="button" [disabled]="busy" (click)="logoutRequested.emit()">Sair</button>
+    </div>
 </aside>
 
 <button

@@ -1,109 +1,121 @@
 import { Injectable } from '@angular/core';
 import { Chat } from '../models/chat.model';
 import { Message } from '../models/message.model';
+import { ConversationsApiService } from './conversations-api.service';
+import { ApiProject, ProjectsApiService } from './projects-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
-    private readonly storageKey = 'eclipse.chats';
-    private chats: Chat[] = this.loadChats();
+    constructor(
+        private readonly projectsApi: ProjectsApiService,
+        private readonly conversationsApi: ConversationsApiService
+    ) {}
 
-    getChats(): Chat[] {
-        return this.chats.map(chat => ({
-            ...chat,
-            messages: [...chat.messages]
-        }));
+    async getChats(): Promise<Chat[]> {
+        const projects = await this.projectsApi.list();
+        return Promise.all(projects.items.map(project => this.loadProjectChat(project)));
     }
 
-    createChat(firstMessage?: string): Chat {
-        const content = firstMessage?.trim();
-        const createdAt = new Date().toISOString();
-        const chat: Chat = {
-            id: Date.now(),
-            title: content || 'Nova conversa',
-            createdAt,
-            messages: content ? [this.createMessage(content, createdAt)] : []
-        };
+    async createChat(firstMessage: string): Promise<Chat> {
+        const content = this.normalizeMessage(firstMessage);
+        const title = this.titleFrom(content);
+        const project = await this.projectsApi.create(title);
+        const conversation = await this.conversationsApi.create(project.id, title);
+        const message = await this.conversationsApi.createMessage(
+            project.id,
+            conversation.id,
+            content
+        );
 
-        this.chats.unshift(chat);
-        this.saveChats();
-        return chat;
-    }
-
-    addMessage(chatId: number, content: string): Chat {
-        const chat = this.chats.find(item => item.id === chatId);
-        const normalizedContent = content.trim();
-
-        if (!chat || !normalizedContent) {
-            throw new Error('Conversa ou mensagem inválida.');
-        }
-
-        chat.messages.push(this.createMessage(normalizedContent));
-        if (chat.title === 'Nova conversa') {
-            chat.title = normalizedContent;
-        }
-
-        this.saveChats();
-        return chat;
-    }
-
-    deleteChat(chatId: number): void {
-        this.chats = this.chats.filter(chat => chat.id !== chatId);
-        this.saveChats();
-    }
-
-    renameChat(chatId: number, title: string): void {
-        const chat = this.chats.find(item => item.id === chatId);
-        const normalizedTitle = title.trim();
-
-        if (!chat || !normalizedTitle) {
-            return;
-        }
-
-        chat.title = normalizedTitle;
-        this.saveChats();
-    }
-
-    private createMessage(content: string, createdAt = new Date().toISOString()): Message {
         return {
-            id: Date.now(),
-            content,
-            author: 'user',
-            createdAt
+            id: project.id,
+            conversationId: conversation.id,
+            title: project.title,
+            createdAt: project.createdAt,
+            updatedAt: conversation.updatedAt,
+            messages: [this.mapMessage(message)]
         };
     }
 
-    private loadChats(): Chat[] {
-        if (typeof localStorage === 'undefined') {
-            return this.seedChats();
+    async addMessage(chat: Chat, content: string): Promise<Chat> {
+        const normalizedContent = this.normalizeMessage(content);
+        let conversationId = chat.conversationId;
+
+        if (!conversationId) {
+            const conversation = await this.conversationsApi.create(chat.id, chat.title);
+            conversationId = conversation.id;
         }
 
-        try {
-            const storedChats = localStorage.getItem(this.storageKey);
-            return storedChats ? JSON.parse(storedChats) as Chat[] : this.seedChats();
-        } catch {
-            return this.seedChats();
+        const message = await this.conversationsApi.createMessage(
+            chat.id,
+            conversationId,
+            normalizedContent
+        );
+
+        return {
+            ...chat,
+            conversationId,
+            updatedAt: message.createdAt,
+            messages: [...chat.messages, this.mapMessage(message)]
+        };
+    }
+
+    deleteChat(projectId: string): Promise<void> {
+        return this.projectsApi.archive(projectId);
+    }
+
+    async renameChat(chat: Chat, title: string): Promise<Chat> {
+        const normalizedTitle = title.trim();
+        if (!normalizedTitle) {
+            throw new Error('O título não pode ficar vazio.');
         }
+
+        const project = await this.projectsApi.update(chat.id, normalizedTitle);
+        return { ...chat, title: project.title, updatedAt: project.updatedAt };
     }
 
-    private saveChats(): void {
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(this.storageKey, JSON.stringify(this.chats));
+    private async loadProjectChat(project: ApiProject): Promise<Chat> {
+        const conversations = await this.conversationsApi.list(project.id);
+        const conversation = conversations.items[0] ?? null;
+        const messages = conversation
+            ? await this.conversationsApi.listMessages(project.id, conversation.id)
+            : null;
+
+        return {
+            id: project.id,
+            conversationId: conversation?.id ?? null,
+            title: project.title,
+            createdAt: project.createdAt,
+            updatedAt: conversation?.updatedAt ?? project.updatedAt,
+            messages: messages
+                ? [...messages.items].reverse().map(message => this.mapMessage(message))
+                : []
+        };
+    }
+
+    private mapMessage(message: {
+        id: string;
+        content: string;
+        role: Message['author'];
+        createdAt: string;
+    }): Message {
+        return {
+            id: message.id,
+            content: message.content,
+            author: message.role,
+            createdAt: message.createdAt
+        };
+    }
+
+    private normalizeMessage(content: string): string {
+        const normalizedContent = content.trim();
+        if (!normalizedContent) {
+            throw new Error('A mensagem não pode ficar vazia.');
         }
+        return normalizedContent;
     }
 
-    private seedChats(): Chat[] {
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-
-        return [
-            this.seedChat(1, 'Ajuda na organização...', today),
-            this.seedChat(2, 'Escolha do Instrumento...', today),
-            this.seedChat(3, 'Separação da Playlist...', yesterday)
-        ];
-    }
-
-    private seedChat(id: number, title: string, date: Date): Chat {
-        return { id, title, createdAt: date.toISOString(), messages: [] };
+    private titleFrom(content: string): string {
+        return content.length <= 120 ? content : `${content.slice(0, 117)}...`;
     }
 }

@@ -1,7 +1,7 @@
 export type MessageAuthor = 'user' | 'assistant';
 
 export interface Message {
-    id: number;
+    id: string;
     content: string;
     author: MessageAuthor;
     createdAt: string;

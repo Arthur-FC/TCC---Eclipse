@@ -21,7 +21,7 @@ Variáveis disponíveis nesta etapa:
 | Variável | Padrão | Descrição |
 |---|---|---|
 | `NODE_ENV` | `development` | Ambiente: `development`, `test` ou `production` |
-| `PORT` | `3001` | Porta HTTP da API |
+| `PORT` | `3002` | Porta HTTP da API |
 | `CORS_ORIGINS` | `http://localhost:4200` | Origens permitidas, separadas por vírgula |
 | `DATABASE_HOST` | `127.0.0.1` | Endereço do PostgreSQL |
 | `DATABASE_PORT` | `5432` | Porta do PostgreSQL |
@@ -66,7 +66,7 @@ O Corepack acompanha o Node.js e permite usar a versão de pnpm registrada no `p
 .\node_modules\.bin\nest.cmd start --watch
 ```
 
-A API fica disponível em `http://localhost:3001/api` e o endpoint de saúde em `http://localhost:3001/api/health`.
+A API fica disponível em `http://localhost:3002/api` e o endpoint de saúde em `http://localhost:3002/api/health`.
 
 O frontend continua sendo executado a partir da raiz do repositório, normalmente em `http://localhost:4200`.
 
@@ -112,4 +112,4 @@ As listagens devolvem `items`, `page`, `limit`, `total` e `totalPages`. O limite
 
 ## Limites atuais
 
-O backend já persiste projetos e o histórico de conversas, mas a interface Angular ainda usa seu estado local. A conexão da interface pertence à etapa 5 e a resposta real da IA pertence à etapa 6.
+O Angular já utiliza o backend como fonte oficial para autenticação, projetos e histórico. A resposta real da IA pertence à etapa 6.

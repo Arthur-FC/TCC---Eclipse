@@ -15,14 +15,15 @@ interface ChatGroup {
 export class ChatListComponent {
     @Input() chats: Chat[] = [];
     @Input() filter = '';
-    @Input() selectedChatId: number | null = null;
+    @Input() selectedChatId: string | null = null;
+    @Input() busy = false;
     @Output() filterChange = new EventEmitter<string>();
     @Output() newChatRequested = new EventEmitter<void>();
     @Output() chatSelected = new EventEmitter<Chat>();
-    @Output() chatDeleted = new EventEmitter<number>();
-    @Output() chatRenamed = new EventEmitter<{ chatId: number; title: string }>();
+    @Output() chatDeleted = new EventEmitter<string>();
+    @Output() chatRenamed = new EventEmitter<{ chatId: string; title: string }>();
 
-    editingChatId: number | null = null;
+    editingChatId: string | null = null;
     editedTitle = '';
     private originalTitle = '';
 
@@ -40,7 +41,7 @@ export class ChatListComponent {
         return groups.filter(group => group.chats.length > 0);
     }
 
-    trackByChatId(_: number, chat: Chat): number {
+    trackByChatId(_: number, chat: Chat): string {
         return chat.id;
     }
 

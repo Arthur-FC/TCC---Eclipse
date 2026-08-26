@@ -2,6 +2,7 @@
     <ion-button
         class="mobile-new-chat"
         fill="clear"
+        [disabled]="busy"
         (click)="newChatRequested.emit()"
     >
         <ion-icon name="add" aria-hidden="true"></ion-icon>
@@ -69,6 +70,7 @@
                 [class.selected]="chat.id === selectedChatId"
                 [attr.aria-current]="chat.id === selectedChatId ? 'true' : null"
                 (click)="chatSelected.emit(chat)"
+                [disabled]="busy"
             >
                 {{ chat.title }}
             </button>
@@ -79,6 +81,7 @@
                 [attr.aria-label]="'Renomear conversa ' + chat.title"
                 title="Renomear conversa"
                 (click)="startRename(chat)"
+                [disabled]="busy"
             >
                 &#9998;
             </button>
@@ -89,6 +92,7 @@
                 [attr.aria-label]="'Excluir conversa ' + chat.title"
                 title="Excluir conversa"
                 (click)="chatDeleted.emit(chat.id)"
+                [disabled]="busy"
             >
                 &times;
             </button>

@@ -189,6 +189,8 @@ O histórico permanece disponível após reiniciar o backend e não depende do `
 
 ## Etapa 5 - Conectar o Angular ao backend
 
+**Status atual:** concluída em 26 de agosto de 2026.
+
 ### Objetivo
 
 Adaptar o protótipo atual para usar os dados e operações da API.
@@ -213,6 +215,24 @@ Interface atual operando integralmente sobre o backend.
 ### Critério de conclusão
 
 Usuário entra, cria projeto, envia mensagem, atualiza a página e recupera o mesmo histórico.
+
+### Verificação realizada
+
+- endereço da API separado por ambiente Angular: `localhost:3002` no desenvolvimento e `/api` na produção;
+- cliente HTTP configurado para enviar o cookie de sessão em todas as chamadas autenticadas;
+- tela de cadastro, login e logout integrada à API;
+- serviços separados para autenticação, projetos, conversas e mensagens;
+- IDs locais numéricos substituídos por UUIDs do backend;
+- criação de chat convertida em projeto, conversa principal e primeira mensagem persistidos;
+- listagem, renomeação e arquivamento da barra lateral executados no PostgreSQL;
+- mensagens recuperadas do servidor em ordem cronológica após atualizar a página;
+- estados de carregamento, falha de conexão e sessão inválida exibidos na interface;
+- formulário bloqueado durante o envio para impedir mensagens duplicadas;
+- texto mantido no campo quando uma mensagem falha, permitindo tentar novamente;
+- `localStorage` removido como fonte de dados do chat;
+- build Angular de desenvolvimento e produção aprovado;
+- tela de autenticação verificada no navegador sem erros de console;
+- 7 testes unitários e 12 testes de integração do backend continuam aprovados.
 
 ## Etapa 6 - Integrar a IA principal pela Groq
 

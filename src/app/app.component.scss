@@ -1,10 +1,69 @@
 .shell {
+    position: relative;
     display: flex;
     min-height: 100vh;
     overflow: hidden;
     background: linear-gradient(105deg, #272727 8%, #303030);
     color: #fff;
     font-family: Inter, Arial, sans-serif;
+}
+
+.loading-screen {
+    display: grid;
+    min-height: 100vh;
+    place-content: center;
+    gap: 12px;
+    background: linear-gradient(105deg, #272727 8%, #303030);
+    color: #c7c7c7;
+    font-family: Inter, Arial, sans-serif;
+    text-align: center;
+}
+
+.loading-logo {
+    background: linear-gradient(120deg, #f300d6, #5f87ff);
+    background-clip: text;
+    color: transparent;
+    font: 52px 'Varela Round';
+}
+
+.status-banner {
+    position: fixed;
+    z-index: 10;
+    top: 16px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(620px, calc(100vw - 32px));
+    padding: 12px 14px;
+    border: 1px solid #ff8fa055;
+    border-radius: 12px;
+    background: #572c35f2;
+    box-shadow: 0 8px 28px #0006;
+    color: #ffe0e5;
+    font: 13px Inter;
+    transform: translateX(-50%);
+}
+
+.status-banner span { flex: 1; }
+
+.status-banner button {
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.loading-overlay {
+    position: fixed;
+    z-index: 9;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: #282828d9;
+    color: #ddd;
+    font: 16px Inter;
 }
 
 @media (max-width: 720px) {

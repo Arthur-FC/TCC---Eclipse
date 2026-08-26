@@ -26,7 +26,11 @@
         </p>
     </div>
 
-    <app-message-input (messageSent)="messageSent.emit($event)"></app-message-input>
+    <app-message-input
+        [disabled]="sending"
+        [resetToken]="messageResetToken"
+        (messageSent)="messageSent.emit($event)"
+    ></app-message-input>
 </section>
 
 <ng-template #welcome>
@@ -35,6 +39,10 @@
             <span class="bars big" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
             Eclipse
         </div>
-        <app-message-input (messageSent)="messageSent.emit($event)"></app-message-input>
+        <app-message-input
+            [disabled]="sending"
+            [resetToken]="messageResetToken"
+            (messageSent)="messageSent.emit($event)"
+        ></app-message-input>
     </section>
 </ng-template>

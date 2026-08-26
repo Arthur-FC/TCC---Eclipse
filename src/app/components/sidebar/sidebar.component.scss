@@ -13,6 +13,39 @@ aside {
     box-shadow: 0 0 7px #d569ff40;
 }
 
+.account {
+    position: absolute;
+    right: 15px;
+    bottom: 14px;
+    left: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #ffffff12;
+    font: 11px Inter;
+}
+
+.account span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: #bdbdbd;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account button {
+    padding: 5px 8px;
+    border: 0;
+    border-radius: 20px;
+    background: #383838;
+    color: #c466ff;
+    cursor: pointer;
+}
+
+.account button:disabled { opacity: .5; }
+
 .mobile-history-toggle,
 .history-backdrop {
     display: none;
@@ -186,6 +219,23 @@ aside {
         box-shadow: 8px 10px 24px #0008, 0 0 7px #d569ff40;
         transform: translateX(-105%);
         transition: transform .2s ease, visibility .2s;
+    }
+
+    .account {
+        position: fixed;
+        z-index: 7;
+        right: auto;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        left: 16px;
+        width: min(288px, calc(86vw - 32px));
+        visibility: hidden;
+        transform: translateX(-105%);
+        transition: transform .2s ease, visibility .2s;
+    }
+
+    app-chat-list.mobile-open + .account {
+        visibility: visible;
+        transform: translateX(0);
     }
 
     app-chat-list.mobile-open {

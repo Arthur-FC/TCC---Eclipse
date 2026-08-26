@@ -17,12 +17,14 @@ import { Chat } from '../../models/chat.model';
 })
 export class ChatWindowComponent implements AfterViewChecked {
     @Input() chat: Chat | null = null;
+    @Input() sending = false;
+    @Input() messageResetToken = 0;
     @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 
-    private lastChatId: number | null = null;
+    private lastChatId: string | null = null;
     private lastMessageCount = 0;
 
     ngAfterViewChecked(): void {

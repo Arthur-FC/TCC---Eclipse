@@ -1,0 +1,64 @@
+<main class="auth-shell">
+    <section class="auth-card" aria-labelledby="auth-title">
+        <div class="brand" aria-label="Eclipse">
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            Eclipse
+        </div>
+
+        <h1 id="auth-title">{{ mode === 'login' ? 'Entre na sua conta' : 'Crie sua conta' }}</h1>
+        <p>Seus projetos e conversas ficarão salvos com segurança.</p>
+
+        <form (ngSubmit)="submit()">
+            <label *ngIf="mode === 'register'">
+                Nome
+                <input
+                    [(ngModel)]="name"
+                    name="name"
+                    autocomplete="name"
+                    minlength="2"
+                    maxlength="120"
+                    required
+                    [disabled]="loading"
+                >
+            </label>
+
+            <label>
+                E-mail
+                <input
+                    [(ngModel)]="email"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    maxlength="320"
+                    required
+                    [disabled]="loading"
+                >
+            </label>
+
+            <label>
+                Senha
+                <input
+                    [(ngModel)]="password"
+                    name="password"
+                    type="password"
+                    [autocomplete]="mode === 'login' ? 'current-password' : 'new-password'"
+                    [attr.minlength]="mode === 'register' ? 12 : 1"
+                    maxlength="128"
+                    required
+                    [disabled]="loading"
+                >
+                <small *ngIf="mode === 'register'">Use pelo menos 12 caracteres.</small>
+            </label>
+
+            <p *ngIf="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
+
+            <button type="submit" class="primary" [disabled]="loading">
+                {{ loading ? 'Aguarde...' : mode === 'login' ? 'Entrar' : 'Cadastrar' }}
+            </button>
+        </form>
+
+        <button type="button" class="switch" [disabled]="loading" (click)="switchMode()">
+            {{ mode === 'login' ? 'Ainda não tenho conta' : 'Já tenho uma conta' }}
+        </button>
+    </section>
+</main>
