@@ -5,15 +5,35 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { configureApplication } from '../src/bootstrap';
+import { AI_PROVIDER, AiProvider } from '../src/ai/ai-provider.interface';
+import { AiProviderError } from '../src/ai/ai-provider.error';
 
 describe('Eclipse API (e2e)', () => {
   let app: NestExpressApplication;
   let dataSource: DataSource;
+  let providerMode: 'success' | 'failure' = 'success';
+  const fakeAiProvider: AiProvider = {
+    name: 'fake-groq',
+    model: 'qwen/test-model',
+    async *streamChat() {
+      if (providerMode === 'failure') {
+        throw new AiProviderError('Limite simulado.', 'rate_limited', 2);
+      }
+      yield { content: 'Vamos explorar ' };
+      yield {
+        content: 'piano, cordas e texturas noturnas.',
+        usage: { promptTokens: 20, completionTokens: 9 },
+      };
+    },
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(AI_PROVIDER)
+      .useValue(fakeAiProvider)
+      .compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
     configureApplication(app, app.get(ConfigService));
@@ -24,6 +44,7 @@ describe('Eclipse API (e2e)', () => {
   });
 
   beforeEach(async () => {
+    providerMode = 'success';
     await dataSource.query(
       'TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE',
     );
@@ -179,8 +200,8 @@ describe('Eclipse API (e2e)', () => {
       .post(
         `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
       )
-      .send({ role: 'assistant', content: 'Vamos explorar timbres escuros.' })
-      .expect(201);
+      .send({ role: 'assistant', content: 'Mensagem falsificada.' })
+      .expect(400);
 
     const messages = await agent
       .get(
@@ -190,12 +211,109 @@ describe('Eclipse API (e2e)', () => {
     expect(messages.body).toMatchObject({
       page: 1,
       limit: 20,
-      total: 2,
+      total: 1,
       totalPages: 1,
     });
-    expect(messages.body.items.map((item: { role: string }) => item.role)).toEqual(
-      ['assistant', 'user'],
-    );
+    expect(messages.body.items.map((item: { role: string }) => item.role)).toEqual([
+      'user',
+    ]);
+  });
+
+  it('streams and persists an AI response with usage metadata', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/auth/register')
+      .send({
+        name: 'IA',
+        email: 'ia@example.com',
+        password: 'senha-segura-para-testar-ia',
+      })
+      .expect(201);
+    const project = await agent
+      .post('/api/projects')
+      .send({ title: 'Trilha com IA' })
+      .expect(201);
+    const conversation = await agent
+      .post(`/api/projects/${project.body.id}/conversations`)
+      .send({ title: 'Conversa com IA' })
+      .expect(201);
+
+    const stream = await agent
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/assistant/stream`,
+      )
+      .send({ content: 'Quero uma atmosfera noturna.' })
+      .expect('content-type', /text\/event-stream/)
+      .expect(200);
+
+    expect(stream.text).toContain('event: user_message');
+    expect(stream.text).toContain('event: delta');
+    expect(stream.text).toContain('event: done');
+    expect(stream.text).toContain('piano, cordas e texturas noturnas');
+
+    const messages = await agent
+      .get(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .expect(200);
+    expect(messages.body.total).toBe(2);
+    expect(messages.body.items[0]).toMatchObject({
+      role: 'assistant',
+      aiProvider: 'fake-groq',
+      aiModel: 'qwen/test-model',
+      promptTokens: 20,
+      completionTokens: 9,
+    });
+  });
+
+  it('keeps the user message when AI fails and retries without duplication', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/auth/register')
+      .send({
+        name: 'Fallback',
+        email: 'fallback@example.com',
+        password: 'senha-segura-para-fallback',
+      })
+      .expect(201);
+    const project = await agent
+      .post('/api/projects')
+      .send({ title: 'Falha da IA' })
+      .expect(201);
+    const conversation = await agent
+      .post(`/api/projects/${project.body.id}/conversations`)
+      .send({})
+      .expect(201);
+
+    providerMode = 'failure';
+    const failedStream = await agent
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/assistant/stream`,
+      )
+      .send({ content: 'Esta mensagem deve permanecer.' })
+      .expect(200);
+    expect(failedStream.text).toContain('event: user_message');
+    expect(failedStream.text).toContain('event: error');
+    expect(failedStream.text).toContain('rate_limited');
+
+    providerMode = 'success';
+    const retryStream = await agent
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/assistant/stream`,
+      )
+      .send({ retry: true })
+      .expect(200);
+    expect(retryStream.text).toContain('event: done');
+
+    const messages = await agent
+      .get(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .expect(200);
+    expect(messages.body.total).toBe(2);
+    expect(
+      messages.body.items.filter((item: { role: string }) => item.role === 'user'),
+    ).toHaveLength(1);
   });
 
   it('paginates projects and validates pagination parameters', async () => {

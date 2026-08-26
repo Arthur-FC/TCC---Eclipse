@@ -1,9 +1,9 @@
 import { Transform } from 'class-transformer';
-import { IsEnum, IsString, Length } from 'class-validator';
+import { IsIn, IsString, Length } from 'class-validator';
 import { MessageRole } from '../message-role.enum';
 
 export class CreateMessageDto {
-  @IsEnum(MessageRole)
+  @IsIn([MessageRole.USER])
   role!: MessageRole;
 
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))

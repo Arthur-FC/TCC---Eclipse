@@ -16,28 +16,31 @@ export class ChatService {
         return Promise.all(projects.items.map(project => this.loadProjectChat(project)));
     }
 
-    async createChat(firstMessage: string): Promise<Chat> {
+    async createChat(
+        firstMessage: string,
+        onUpdate: ChatStreamUpdate
+    ): Promise<Chat> {
         const content = this.normalizeMessage(firstMessage);
         const title = this.titleFrom(content);
         const project = await this.projectsApi.create(title);
         const conversation = await this.conversationsApi.create(project.id, title);
-        const message = await this.conversationsApi.createMessage(
-            project.id,
-            conversation.id,
-            content
-        );
-
-        return {
+        const chat: Chat = {
             id: project.id,
             conversationId: conversation.id,
             title: project.title,
             createdAt: project.createdAt,
             updatedAt: conversation.updatedAt,
-            messages: [this.mapMessage(message)]
-        };
+            messages: []
+        }
+        onUpdate(chat, 'prepared');
+        return this.streamReply(chat, { content }, onUpdate);
     }
 
-    async addMessage(chat: Chat, content: string): Promise<Chat> {
+    async addMessage(
+        chat: Chat,
+        content: string,
+        onUpdate: ChatStreamUpdate
+    ): Promise<Chat> {
         const normalizedContent = this.normalizeMessage(content);
         let conversationId = chat.conversationId;
 
@@ -46,17 +49,103 @@ export class ChatService {
             conversationId = conversation.id;
         }
 
-        const message = await this.conversationsApi.createMessage(
-            chat.id,
-            conversationId,
-            normalizedContent
-        );
-
-        return {
+        const preparedChat = {
             ...chat,
             conversationId,
-            updatedAt: message.createdAt,
-            messages: [...chat.messages, this.mapMessage(message)]
+        };
+        return this.streamReply(
+            preparedChat,
+            { content: normalizedContent },
+            onUpdate
+        );
+    }
+
+    retryAssistant(chat: Chat, onUpdate: ChatStreamUpdate): Promise<Chat> {
+        if (!chat.conversationId) {
+            throw new Error('Esta conversa ainda não pode ser repetida.');
+        }
+        return this.streamReply(chat, { retry: true }, onUpdate);
+    }
+
+    private async streamReply(
+        chat: Chat,
+        request: { content?: string; retry?: boolean },
+        onUpdate: ChatStreamUpdate
+    ): Promise<Chat> {
+        if (!chat.conversationId) {
+            throw new Error('A conversa não foi criada corretamente.');
+        }
+
+        let updatedChat = chat;
+        const streamingMessageId = `streaming-${chat.conversationId}`;
+        try {
+            await this.conversationsApi.streamAssistant(
+                chat.id,
+                chat.conversationId,
+                request,
+                event => {
+                    if (event.type === 'user_message') {
+                        updatedChat = {
+                            ...updatedChat,
+                            updatedAt: event.message.createdAt,
+                            messages: [
+                                ...updatedChat.messages,
+                                this.mapMessage(event.message)
+                            ]
+                        };
+                        onUpdate(updatedChat, 'user-saved');
+                        return;
+                    }
+
+                    if (event.type === 'delta') {
+                        const existing = updatedChat.messages.find(
+                            message => message.id === streamingMessageId
+                        );
+                        const streamingMessage: Message = {
+                            id: streamingMessageId,
+                            author: 'assistant',
+                            content: `${existing?.content ?? ''}${event.content}`,
+                            createdAt: new Date().toISOString()
+                        };
+                        updatedChat = {
+                            ...updatedChat,
+                            messages: existing
+                                ? updatedChat.messages.map(message =>
+                                    message.id === streamingMessageId
+                                        ? streamingMessage
+                                        : message
+                                )
+                                : [...updatedChat.messages, streamingMessage]
+                        };
+                        onUpdate(updatedChat, 'assistant-delta');
+                        return;
+                    }
+
+                    updatedChat = {
+                        ...updatedChat,
+                        updatedAt: event.message.createdAt,
+                        messages: [
+                            ...updatedChat.messages.filter(
+                                message => message.id !== streamingMessageId
+                            ),
+                            this.mapMessage(event.message)
+                        ]
+                    };
+                    onUpdate(updatedChat, 'completed');
+                }
+            );
+            return updatedChat;
+        } catch (error) {
+            if (updatedChat.messages.some(message => message.id === streamingMessageId)) {
+                updatedChat = {
+                    ...updatedChat,
+                    messages: updatedChat.messages.filter(
+                        message => message.id !== streamingMessageId
+                    )
+                };
+                onUpdate(updatedChat, 'failed');
+            }
+            throw error;
         };
     }
 
@@ -119,3 +208,12 @@ export class ChatService {
         return content.length <= 120 ? content : `${content.slice(0, 117)}...`;
     }
 }
+
+export type ChatStreamPhase =
+    | 'prepared'
+    | 'user-saved'
+    | 'assistant-delta'
+    | 'completed'
+    | 'failed';
+
+export type ChatStreamUpdate = (chat: Chat, phase: ChatStreamPhase) => void;

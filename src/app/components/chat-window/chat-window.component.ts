@@ -19,8 +19,10 @@ export class ChatWindowComponent implements AfterViewChecked {
     @Input() chat: Chat | null = null;
     @Input() sending = false;
     @Input() messageResetToken = 0;
+    @Input() retryAvailable = false;
     @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
+    @Output() retryRequested = new EventEmitter<void>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 

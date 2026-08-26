@@ -17,8 +17,11 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Desativação de conta disponível pela API.
 - Projetos, conversas e mensagens persistidos no PostgreSQL e isolados por usuário.
 - Paginação do histórico e arquivamento lógico de projetos.
+- Respostas progressivas pela Groq com o modelo Qwen 3.6 27B.
+- Persistência de respostas da IA com tokens, modelo e latência.
+- Repetição controlada quando a geração falha.
 
-A interface está conectada ao backend para autenticação, projetos e histórico. A resposta automática e a integração com IA pertencem às próximas etapas.
+A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.
 
 ## Tecnologias
 
@@ -31,6 +34,7 @@ A interface está conectada ao backend para autenticação, projetos e históric
 - Node.js 22+
 - PostgreSQL 17
 - TypeORM
+- Groq API
 
 ## Como executar
 
@@ -102,5 +106,6 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 
 ## Próximos passos
 
-- Integrar o modelo de IA pela Groq.
+- Implementar o briefing estruturado.
+- Criar o sistema de ferramentas controladas da IA.
 - Implementar biblioteca e busca semântica.

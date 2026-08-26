@@ -7,3 +7,5 @@ process.env.DATABASE_NAME = 'eclipse_test';
 process.env.DATABASE_USER = 'eclipse';
 process.env.DATABASE_PASSWORD = 'eclipse_dev';
 process.env.SESSION_TTL_DAYS = '7';
+process.env.GROQ_API_KEY = '';
+process.env.GROQ_MODEL = 'qwen/qwen3.6-27b';

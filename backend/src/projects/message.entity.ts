@@ -27,6 +27,21 @@ export class MessageEntity {
   @Column({ type: 'text' })
   content!: string;
 
+  @Column({ name: 'ai_provider', type: 'varchar', length: 30, nullable: true })
+  aiProvider!: string | null;
+
+  @Column({ name: 'ai_model', type: 'varchar', length: 120, nullable: true })
+  aiModel!: string | null;
+
+  @Column({ name: 'prompt_tokens', type: 'integer', nullable: true })
+  promptTokens!: number | null;
+
+  @Column({ name: 'completion_tokens', type: 'integer', nullable: true })
+  completionTokens!: number | null;
+
+  @Column({ name: 'ai_latency_ms', type: 'integer', nullable: true })
+  aiLatencyMs!: number | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

@@ -28,7 +28,7 @@ export const environmentValidationSchema = Joi.object({
   NODE_ENV: Joi.string()
     .valid(...nodeEnvironments)
     .default('development'),
-  PORT: Joi.number().integer().min(1).max(65_535).default(3001),
+  PORT: Joi.number().integer().min(1).max(65_535).default(3002),
   CORS_ORIGINS: Joi.string()
     .custom(validateCorsOrigins, 'CORS origins validation')
     .default('http://localhost:4200'),
@@ -42,6 +42,15 @@ export const environmentValidationSchema = Joi.object({
     otherwise: Joi.string().min(8).default('eclipse_dev'),
   }),
   SESSION_TTL_DAYS: Joi.number().integer().min(1).max(30).default(7),
+  GROQ_API_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(20).required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  GROQ_MODEL: Joi.string().min(1).max(120).default('qwen/qwen3.6-27b'),
+  GROQ_TIMEOUT_MS: Joi.number().integer().min(5_000).max(120_000).default(45_000),
+  AI_MAX_COMPLETION_TOKENS: Joi.number().integer().min(128).max(16_384).default(1_500),
+  AI_CONTEXT_MESSAGES: Joi.number().integer().min(1).max(100).default(20),
 }).unknown(true);
 
 export function parseCorsOrigins(value: string): string[] {

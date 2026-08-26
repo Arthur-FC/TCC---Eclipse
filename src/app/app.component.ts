@@ -3,7 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { AuthRequest, AuthenticatedUser } from './models/auth.model';
 import { Chat } from './models/chat.model';
 import { AuthService } from './services/auth.service';
-import { ChatService } from './services/chat.service';
+import { ChatService, ChatStreamPhase } from './services/chat.service';
+import { AssistantStreamError } from './services/conversations-api.service';
 
 @Component({
     selector: 'app-root',
@@ -24,6 +25,7 @@ export class AppComponent implements OnInit {
     errorMessage = '';
     authErrorMessage = '';
     messageResetToken = 0;
+    failedReplyChatId: string | null = null;
     private isDraftChat = false;
 
     constructor(
@@ -97,6 +99,9 @@ export class AppComponent implements OnInit {
         this.errorMessage = '';
         this.isDraftChat = false;
         this.selectedChat = chat;
+        this.failedReplyChatId = chat.messages.at(-1)?.author === 'user'
+            ? chat.id
+            : null;
     }
 
     goHome(): void {
@@ -154,17 +159,63 @@ export class AppComponent implements OnInit {
 
         this.isSending = true;
         this.errorMessage = '';
+        this.failedReplyChatId = null;
+        let userSaved = false;
+        const updateChat = (chat: Chat, phase: ChatStreamPhase) => {
+            if (phase === 'prepared') {
+                this.isDraftChat = false;
+                this.filter = '';
+            }
+            if (phase === 'user-saved') {
+                userSaved = true;
+                this.messageResetToken++;
+            }
+            this.replaceChat(chat, true);
+        };
         try {
             const chat = this.isDraftChat || !this.selectedChat
-                ? await this.chatService.createChat(content)
-                : await this.chatService.addMessage(this.selectedChat, content);
+                ? await this.chatService.createChat(content, updateChat)
+                : await this.chatService.addMessage(
+                    this.selectedChat,
+                    content,
+                    updateChat
+                );
 
             this.isDraftChat = false;
             this.filter = '';
-            this.messageResetToken++;
             this.replaceChat(chat, true);
         } catch (error) {
-            this.errorMessage = `${this.describeError(error)} A mensagem foi mantida para você tentar novamente.`;
+            if (userSaved && this.selectedChat) {
+                this.failedReplyChatId = this.selectedChat.id;
+                this.errorMessage = `${this.describeError(error)} Sua mensagem foi salva; você pode tentar gerar somente a resposta novamente.`;
+            } else {
+                this.errorMessage = `${this.describeError(error)} A mensagem foi mantida no campo para você tentar novamente.`;
+            }
+        } finally {
+            this.isSending = false;
+        }
+    }
+
+    async retryAssistant(): Promise<void> {
+        if (
+            this.isSending ||
+            !this.selectedChat ||
+            this.failedReplyChatId !== this.selectedChat.id
+        ) {
+            return;
+        }
+
+        this.isSending = true;
+        this.errorMessage = '';
+        try {
+            const chat = await this.chatService.retryAssistant(
+                this.selectedChat,
+                updated => this.replaceChat(updated, true)
+            );
+            this.failedReplyChatId = null;
+            this.replaceChat(chat, true);
+        } catch (error) {
+            this.errorMessage = this.describeError(error);
         } finally {
             this.isSending = false;
         }
@@ -213,6 +264,9 @@ export class AppComponent implements OnInit {
     }
 
     private describeError(error: unknown): string {
+        if (error instanceof AssistantStreamError) {
+            return error.message;
+        }
         if (error instanceof HttpErrorResponse) {
             if (error.status === 0) {
                 return 'Não foi possível conectar à API na porta 3002. Confirme se o backend está ligado.';

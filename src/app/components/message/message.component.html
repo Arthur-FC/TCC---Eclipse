@@ -1,4 +1,15 @@
 <article [class.assistant]="message.author === 'assistant'">
-    <span class="author">{{ message.author === 'user' ? 'Você' : 'Eclipse' }}</span>
-    <p>{{ message.content }}</p>
+    <header class="message-header">
+        <span class="author">{{ message.author === 'user' ? 'Você' : 'Eclipse' }}</span>
+        <button
+            type="button"
+            class="copy-button"
+            [class.copied]="copied"
+            [attr.aria-label]="copied ? 'Mensagem copiada' : 'Copiar mensagem'"
+            (click)="copyMessage(messageContent)"
+        >
+            {{ copied ? 'Copiado!' : 'Copiar' }}
+        </button>
+    </header>
+    <div #messageContent class="content" [innerHTML]="message.content | markdown"></div>
 </article>

@@ -12,6 +12,7 @@ import { MessageInputComponent } from './components/message-input/message-input.
 import { MessageComponent } from './components/message/message.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthScreenComponent } from './components/auth-screen/auth-screen.component';
+import { MarkdownPipe } from './pipes/markdown.pipe';
 
 @NgModule({
     declarations: [
@@ -21,7 +22,8 @@ import { AuthScreenComponent } from './components/auth-screen/auth-screen.compon
         ChatListComponent,
         ChatWindowComponent,
         MessageComponent,
-        MessageInputComponent
+        MessageInputComponent,
+        MarkdownPipe
     ],
     imports: [BrowserModule, HttpClientModule, FormsModule, IonicModule.forRoot()],
     bootstrap: [AppComponent]

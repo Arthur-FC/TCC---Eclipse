@@ -236,6 +236,8 @@ Usuário entra, cria projeto, envia mensagem, atualiza a página e recupera o me
 
 ## Etapa 6 - Integrar a IA principal pela Groq
 
+**Status atual:** em validação; implementação concluída em 26 de agosto de 2026 e teste real aguardando `GROQ_API_KEY`.
+
 ### Objetivo
 
 Fazer a Eclipse responder usando o Qwen 3.6 27B sem expor a chave da Groq.
@@ -262,6 +264,35 @@ Chat real com respostas progressivas do Qwen.
 ### Critério de conclusão
 
 A resposta aparece por streaming, é persistida corretamente e uma falha da Groq não apaga a mensagem do usuário.
+
+### Implementação e verificação realizadas
+
+- modelo `qwen/qwen3.6-27b` confirmado na documentação oficial da Groq, atualmente classificado como Preview;
+- interface interna de provedor criada para evitar dependência direta das regras de chat com a Groq;
+- adaptador Groq implementado sobre HTTPS, com chave disponível somente no backend;
+- personalidade musical central da Eclipse definida em português do Brasil;
+- contexto limitado às 20 mensagens finais por padrão e configurável por ambiente;
+- raciocínio interno ocultado e limite de resposta configurável;
+- resposta transmitida do backend ao Angular por Server-Sent Events;
+- mensagem do usuário persistida antes da chamada externa;
+- mensagem final da assistente persistida somente após o streaming terminar corretamente;
+- provedor, modelo, tokens de entrada, tokens de saída e latência registrados na mensagem da assistente;
+- timeout, falta de chave, resposta inválida, indisponibilidade e erro `429` tratados com mensagens seguras;
+- repetição da resposta implementada sem duplicar a mensagem do usuário;
+- envio direto de mensagens com papel `assistant` bloqueado para o cliente;
+- 14 testes unitários e 14 testes de integração aprovados usando provedor simulado;
+- migração de metadados da IA aplicada e esquema do banco verificado;
+- build de desenvolvimento do Angular e build do backend aprovados.
+
+### Validação pendente
+
+Adicionar uma chave pessoal ao `backend/.env`, reiniciar o backend e executar uma conversa real para confirmar a resposta do modelo. A chave não deve ser enviada ao frontend nem adicionada ao Git.
+
+Referências oficiais consultadas:
+
+- [Qwen 3.6 27B na Groq](https://console.groq.com/docs/model/qwen/qwen3.6-27b);
+- [Streaming de texto](https://console.groq.com/docs/text-chat);
+- [Limites gratuitos](https://console.groq.com/docs/rate-limits).
 
 ## Etapa 7 - Implementar o briefing estruturado
 

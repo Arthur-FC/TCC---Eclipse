@@ -135,6 +135,25 @@
     text-align: center;
 }
 
+.composer-area {
+    display: grid;
+    gap: 9px;
+}
+
+.retry-button {
+    justify-self: center;
+    padding: 8px 16px;
+    border: 1px solid #c466ff66;
+    border-radius: 30px;
+    background: #4a3a52;
+    color: #f1dcff;
+    font: 600 12px Inter;
+    cursor: pointer;
+}
+
+.retry-button:hover { background: #594262; }
+.retry-button:disabled { cursor: wait; opacity: .6; }
+
 .ring {
     position: absolute;
     z-index: -1;

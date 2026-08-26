@@ -29,6 +29,11 @@ Variáveis disponíveis nesta etapa:
 | `DATABASE_USER` | `eclipse` | Usuário local do banco |
 | `DATABASE_PASSWORD` | `eclipse_dev` | Senha apenas para desenvolvimento |
 | `SESSION_TTL_DAYS` | `7` | Duração da sessão em dias |
+| `GROQ_API_KEY` | vazio | Chave secreta da Groq; obrigatória em produção |
+| `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |
+| `GROQ_TIMEOUT_MS` | `45000` | Tempo máximo de uma geração |
+| `AI_MAX_COMPLETION_TOKENS` | `1500` | Limite de tokens da resposta |
+| `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -110,6 +115,34 @@ Todas as rotas abaixo exigem o cookie de sessão. Os IDs são UUIDs criados no b
 
 As listagens devolvem `items`, `page`, `limit`, `total` e `totalPages`. O limite máximo é 100. Para incluir projetos arquivados, use `GET /api/projects?includeArchived=true`. Um projeto arquivado pode ser consultado, mas não recebe novas conversas ou mensagens.
 
+## Assistente pela Groq
+
+Crie uma chave em [Groq API Keys](https://console.groq.com/keys) e preencha localmente no arquivo `.env`:
+
+```env
+GROQ_API_KEY=gsk_sua_chave_aqui
+```
+
+Nunca coloque essa chave no Angular, no Git ou em capturas de tela. Reinicie o backend depois da alteração.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/projects/:projectId/conversations/:conversationId/assistant/stream` | Salvar a mensagem do usuário e transmitir a resposta da IA |
+
+Envio normal:
+
+```json
+{ "content": "Quero uma trilha melancólica com piano." }
+```
+
+Repetição após falha da Groq, sem duplicar a mensagem:
+
+```json
+{ "retry": true }
+```
+
+A resposta utiliza `text/event-stream` com eventos `user_message`, `delta`, `done` e `error`. As respostas da assistente guardam modelo, provedor, tokens e latência no PostgreSQL.
+
 ## Limites atuais
 
-O Angular já utiliza o backend como fonte oficial para autenticação, projetos e histórico. A resposta real da IA pertence à etapa 6.
+O briefing estruturado, as ferramentas, o YouTube, o Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.

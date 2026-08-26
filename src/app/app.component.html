@@ -39,8 +39,10 @@
             [chat]="selectedChat"
             [sending]="isSending"
             [messageResetToken]="messageResetToken"
+            [retryAvailable]="failedReplyChatId === selectedChat?.id"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
+            (retryRequested)="retryAssistant()"
         ></app-chat-window>
     </main>
 </ion-app>

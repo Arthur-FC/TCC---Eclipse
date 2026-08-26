@@ -26,11 +26,22 @@
         </p>
     </div>
 
-    <app-message-input
-        [disabled]="sending"
-        [resetToken]="messageResetToken"
-        (messageSent)="messageSent.emit($event)"
-    ></app-message-input>
+    <div class="composer-area">
+        <button
+            *ngIf="retryAvailable"
+            type="button"
+            class="retry-button"
+            [disabled]="sending"
+            (click)="retryRequested.emit()"
+        >
+            Tentar gerar a resposta novamente
+        </button>
+        <app-message-input
+            [disabled]="sending"
+            [resetToken]="messageResetToken"
+            (messageSent)="messageSent.emit($event)"
+        ></app-message-input>
+    </div>
 </section>
 
 <ng-template #welcome>

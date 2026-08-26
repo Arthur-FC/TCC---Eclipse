@@ -9,8 +9,17 @@ import { ListProjectsDto } from './dto/list-projects.dto';
 import { PaginationDto } from './dto/pagination.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { MessageEntity } from './message.entity';
+import { MessageRole } from './message-role.enum';
 import { PaginatedResult } from './paginated-result.interface';
 import { ProjectEntity } from './project.entity';
+
+export interface AssistantMessageMetadata {
+  provider: string;
+  model: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  latencyMs: number;
+}
 
 @Injectable()
 export class ProjectsService {
@@ -118,18 +127,45 @@ export class ProjectsService {
     conversationId: string,
     dto: CreateMessageDto,
   ): Promise<MessageEntity> {
-    await this.getActiveConversation(ownerId, projectId, conversationId);
-    const message = await this.messagesRepository.save(
-      this.messagesRepository.create({
-        conversationId,
-        role: dto.role,
-        content: dto.content,
-      }),
+    return this.persistMessage(
+      ownerId,
+      projectId,
+      conversationId,
+      dto.role,
+      dto.content,
     );
-    await this.conversationsRepository.update(conversationId, {
-      updatedAt: new Date(),
+  }
+
+  async createAssistantMessage(
+    ownerId: string,
+    projectId: string,
+    conversationId: string,
+    content: string,
+    metadata: AssistantMessageMetadata,
+  ): Promise<MessageEntity> {
+    return this.persistMessage(
+      ownerId,
+      projectId,
+      conversationId,
+      MessageRole.ASSISTANT,
+      content,
+      metadata,
+    );
+  }
+
+  async getConversationContext(
+    ownerId: string,
+    projectId: string,
+    conversationId: string,
+    limit: number,
+  ): Promise<MessageEntity[]> {
+    await this.getActiveConversation(ownerId, projectId, conversationId);
+    const messages = await this.messagesRepository.find({
+      where: { conversationId },
+      order: { createdAt: 'DESC', id: 'DESC' },
+      take: limit,
     });
-    return message;
+    return messages.reverse();
   }
 
   async listMessages(
@@ -193,6 +229,35 @@ export class ProjectsService {
       throw new NotFoundException('Conversa não encontrada.');
     }
     return conversation;
+  }
+
+  private async persistMessage(
+    ownerId: string,
+    projectId: string,
+    conversationId: string,
+    role: MessageRole,
+    content: string,
+    metadata?: AssistantMessageMetadata,
+  ): Promise<MessageEntity> {
+    await this.getActiveConversation(ownerId, projectId, conversationId);
+    const message = await this.messagesRepository.save(
+      this.messagesRepository.create({
+        conversationId,
+        role,
+        content,
+        aiProvider: metadata?.provider ?? null,
+        aiModel: metadata?.model ?? null,
+        promptTokens: metadata?.promptTokens ?? null,
+        completionTokens: metadata?.completionTokens ?? null,
+        aiLatencyMs: metadata?.latencyMs ?? null,
+      }),
+    );
+    const updatedAt = new Date();
+    await Promise.all([
+      this.conversationsRepository.update(conversationId, { updatedAt }),
+      this.projectsRepository.update(projectId, { updatedAt }),
+    ]);
+    return message;
   }
 
   private paginate<T>(
