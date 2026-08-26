@@ -1,0 +1,9 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = '3000';
+process.env.CORS_ORIGINS = 'http://localhost:4200';
+process.env.DATABASE_HOST = '127.0.0.1';
+process.env.DATABASE_PORT = '5432';
+process.env.DATABASE_NAME = 'eclipse_test';
+process.env.DATABASE_USER = 'eclipse';
+process.env.DATABASE_PASSWORD = 'eclipse_dev';
+process.env.SESSION_TTL_DAYS = '7';

@@ -5,3 +5,6 @@ out-tsc/
 .env
 .pnpm-store/
 .env.example
+coverage/
+!.env.example
+!**/.env.example
