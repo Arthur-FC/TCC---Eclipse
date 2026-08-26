@@ -92,6 +92,24 @@ Os testes de integração exigem que o PostgreSQL do Compose esteja saudável.
 
 A sessão é enviada pelo cookie `eclipse_session`, configurado como `HttpOnly` e `SameSite=Lax`. O banco armazena somente o hash do token. Senhas são protegidas com `scrypt` e salt aleatório.
 
+## Projetos e histórico disponíveis
+
+Todas as rotas abaixo exigem o cookie de sessão. Os IDs são UUIDs criados no backend e cada consulta é limitada ao proprietário autenticado.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/projects` | Criar projeto |
+| `GET` | `/api/projects?page=1&limit=20` | Listar projetos ativos |
+| `GET` | `/api/projects/:projectId` | Consultar um projeto |
+| `PATCH` | `/api/projects/:projectId` | Editar título ou descrição |
+| `DELETE` | `/api/projects/:projectId` | Arquivar projeto sem apagar o histórico |
+| `POST` | `/api/projects/:projectId/conversations` | Abrir conversa |
+| `GET` | `/api/projects/:projectId/conversations` | Listar conversas |
+| `POST` | `/api/projects/:projectId/conversations/:conversationId/messages` | Salvar mensagem |
+| `GET` | `/api/projects/:projectId/conversations/:conversationId/messages` | Listar mensagens |
+
+As listagens devolvem `items`, `page`, `limit`, `total` e `totalPages`. O limite máximo é 100. Para incluir projetos arquivados, use `GET /api/projects?includeArchived=true`. Um projeto arquivado pode ser consultado, mas não recebe novas conversas ou mensagens.
+
 ## Limites atuais
 
-O backend ainda não possui projetos, conversas persistidas, integração com o frontend ou IA. Esses recursos pertencem às próximas etapas do plano.
+O backend já persiste projetos e o histórico de conversas, mas a interface Angular ainda usa seu estado local. A conexão da interface pertence à etapa 5 e a resposta real da IA pertence à etapa 6.

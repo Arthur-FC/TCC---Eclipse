@@ -14,6 +14,8 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Endpoint de saúde da API.
 - PostgreSQL executado com Docker Compose e migrações versionadas.
 - Cadastro, login, sessão segura por cookie, logout e desativação de conta.
+- Projetos, conversas e mensagens persistidos no PostgreSQL e isolados por usuário.
+- Paginação do histórico e arquivamento lógico de projetos.
 
 A interface ainda não está conectada ao backend. A resposta automática e a integração com IA pertencem às próximas etapas.
 
@@ -91,7 +93,6 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 
 ## Próximos passos
 
-- Persistir projetos, conversas e mensagens no backend.
 - Conectar o Angular à API.
 - Integrar o modelo de IA pela Groq.
 - Implementar biblioteca e busca semântica.

@@ -3,7 +3,11 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DataSourceOptions } from 'typeorm';
 import { SessionEntity } from '../auth/session.entity';
 import { UserEntity } from '../users/user.entity';
+import { ConversationEntity } from '../projects/conversation.entity';
+import { MessageEntity } from '../projects/message.entity';
+import { ProjectEntity } from '../projects/project.entity';
 import { InitialAuthSchema1756152000000 } from './migrations/1756152000000-initial-auth-schema';
+import { ProjectsAndConversations1756155600000 } from './migrations/1756155600000-projects-and-conversations';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -24,8 +28,17 @@ export function createDataSourceOptions(
     database: configService.getOrThrow<string>('DATABASE_NAME'),
     username: configService.getOrThrow<string>('DATABASE_USER'),
     password: configService.getOrThrow<string>('DATABASE_PASSWORD'),
-    entities: [UserEntity, SessionEntity],
-    migrations: [InitialAuthSchema1756152000000],
+    entities: [
+      UserEntity,
+      SessionEntity,
+      ProjectEntity,
+      ConversationEntity,
+      MessageEntity,
+    ],
+    migrations: [
+      InitialAuthSchema1756152000000,
+      ProjectsAndConversations1756155600000,
+    ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,
     migrationsRun: false,

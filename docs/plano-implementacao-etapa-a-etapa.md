@@ -147,6 +147,8 @@ Dois usuários distintos não conseguem acessar ou alterar os dados um do outro.
 
 ## Etapa 4 - Persistir projetos, conversas e mensagens
 
+**Status atual:** concluída em 25 de agosto de 2026.
+
 ### Objetivo
 
 Transferir o histórico atualmente local para uma estrutura oficial no servidor.
@@ -170,6 +172,20 @@ Projetos e conversas disponíveis pela API, ainda sem resposta real de IA.
 ### Critério de conclusão
 
 O histórico permanece disponível após reiniciar o backend e não depende do `localStorage`.
+
+### Verificação realizada
+
+- tabelas `projects`, `conversations` e `messages` criadas por migração versionada;
+- identificadores UUID gerados pelo PostgreSQL;
+- criação, consulta, edição e arquivamento lógico de projetos disponíveis pela API;
+- criação e consulta paginada de conversas e mensagens;
+- mensagens com papéis `user` e `assistant` persistidas, ainda sem geração por IA;
+- datas de criação e atualização registradas pelo banco;
+- páginas limitadas a 100 registros e metadados de paginação devolvidos pela API;
+- projetos arquivados preservam o histórico, mas não aceitam novas conversas ou mensagens;
+- rotas protegidas pela sessão e consultas filtradas pelo proprietário;
+- tentativa de acesso com um segundo usuário verificada com resposta `404`;
+- 7 testes unitários, 12 testes de integração e build de produção aprovados.
 
 ## Etapa 5 - Conectar o Angular ao backend
 

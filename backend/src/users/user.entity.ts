@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -10,6 +11,7 @@ import { SessionEntity } from '../auth/session.entity';
 import { UserStatus } from './user-status.enum';
 
 @Entity({ name: 'users' })
+@Check('CHK_users_status', `"status" IN ('active', 'disabled')`)
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

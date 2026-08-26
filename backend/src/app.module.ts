@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { environmentValidationSchema } from './config/environment.config';
 import { createTypeOrmOptions } from './database/typeorm-options';
 import { HealthModule } from './health/health.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { HealthModule } from './health/health.module';
     }),
     HealthModule,
     AuthModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}

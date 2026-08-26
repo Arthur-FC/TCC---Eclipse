@@ -1,0 +1,16 @@
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, Length, MaxLength } from 'class-validator';
+
+export class UpdateProjectDto {
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @Length(1, 120)
+  title?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MaxLength(2000)
+  description?: string;
+}

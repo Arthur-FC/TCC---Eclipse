@@ -142,6 +142,193 @@ describe('Eclipse API (e2e)', () => {
       .expect(401);
   });
 
+  it('persists a project, a conversation and their messages', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/auth/register')
+      .send({
+        name: 'Compositora',
+        email: 'projeto@example.com',
+        password: 'senha-segura-para-projeto',
+      })
+      .expect(201);
+
+    const project = await agent
+      .post('/api/projects')
+      .send({ title: '  Trilha do curta  ', description: 'Suspense urbano' })
+      .expect(201);
+    expect(project.body).toMatchObject({
+      title: 'Trilha do curta',
+      description: 'Suspense urbano',
+      archivedAt: null,
+    });
+    expect(project.body.id).toMatch(/^[0-9a-f-]{36}$/);
+
+    const conversation = await agent
+      .post(`/api/projects/${project.body.id}/conversations`)
+      .send({ title: 'Briefing inicial' })
+      .expect(201);
+
+    await agent
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .send({ role: 'user', content: 'Quero uma atmosfera noturna.' })
+      .expect(201);
+    await agent
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .send({ role: 'assistant', content: 'Vamos explorar timbres escuros.' })
+      .expect(201);
+
+    const messages = await agent
+      .get(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .expect(200);
+    expect(messages.body).toMatchObject({
+      page: 1,
+      limit: 20,
+      total: 2,
+      totalPages: 1,
+    });
+    expect(messages.body.items.map((item: { role: string }) => item.role)).toEqual(
+      ['assistant', 'user'],
+    );
+  });
+
+  it('paginates projects and validates pagination parameters', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/auth/register')
+      .send({
+        name: 'Paginação',
+        email: 'paginacao@example.com',
+        password: 'senha-segura-para-paginacao',
+      })
+      .expect(201);
+    await agent.post('/api/projects').send({ title: 'Projeto A' }).expect(201);
+    await agent.post('/api/projects').send({ title: 'Projeto B' }).expect(201);
+
+    const page = await agent.get('/api/projects?page=2&limit=1').expect(200);
+    expect(page.body).toMatchObject({
+      page: 2,
+      limit: 1,
+      total: 2,
+      totalPages: 2,
+    });
+    expect(page.body.items).toHaveLength(1);
+
+    await agent.get('/api/projects?page=0').expect(400);
+    await agent.get('/api/projects?limit=101').expect(400);
+    await agent.get('/api/projects?includeArchived=sim').expect(400);
+  });
+
+  it('updates and logically archives a project', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/auth/register')
+      .send({
+        name: 'Arquivo',
+        email: 'arquivo@example.com',
+        password: 'senha-segura-para-arquivo',
+      })
+      .expect(201);
+    const created = await agent
+      .post('/api/projects')
+      .send({ title: 'Título inicial' })
+      .expect(201);
+
+    const updated = await agent
+      .patch(`/api/projects/${created.body.id}`)
+      .send({ title: 'Título definitivo', description: 'Descrição final' })
+      .expect(200);
+    expect(updated.body).toMatchObject({
+      title: 'Título definitivo',
+      description: 'Descrição final',
+    });
+
+    await agent.delete(`/api/projects/${created.body.id}`).expect(204);
+    const active = await agent.get('/api/projects').expect(200);
+    expect(active.body.total).toBe(0);
+    const all = await agent
+      .get('/api/projects?includeArchived=true')
+      .expect(200);
+    expect(all.body.total).toBe(1);
+    expect(all.body.items[0].archivedAt).toBeTruthy();
+    await agent
+      .post(`/api/projects/${created.body.id}/conversations`)
+      .send({})
+      .expect(404);
+  });
+
+  it('isolates projects, conversations and messages by owner', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const intruder = request.agent(app.getHttpServer());
+    await owner
+      .post('/api/auth/register')
+      .send({
+        name: 'Proprietário',
+        email: 'owner@example.com',
+        password: 'senha-segura-do-proprietario',
+      })
+      .expect(201);
+    await intruder
+      .post('/api/auth/register')
+      .send({
+        name: 'Outro usuário',
+        email: 'intruder@example.com',
+        password: 'senha-segura-do-outro-usuario',
+      })
+      .expect(201);
+
+    const project = await owner
+      .post('/api/projects')
+      .send({ title: 'Projeto privado' })
+      .expect(201);
+    const conversation = await owner
+      .post(`/api/projects/${project.body.id}/conversations`)
+      .send({})
+      .expect(201);
+    await owner
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .send({ role: 'user', content: 'Conteúdo confidencial' })
+      .expect(201);
+
+    await intruder.get(`/api/projects/${project.body.id}`).expect(404);
+    await intruder
+      .get(`/api/projects/${project.body.id}/conversations`)
+      .expect(404);
+    await intruder
+      .get(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .expect(404);
+    await intruder.delete(`/api/projects/${project.body.id}`).expect(404);
+  });
+
+  it('requires authentication and rejects invalid project content', async () => {
+    await request(app.getHttpServer()).get('/api/projects').expect(401);
+
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/auth/register')
+      .send({
+        name: 'Validação',
+        email: 'validacao@example.com',
+        password: 'senha-segura-para-validacao',
+      })
+      .expect(201);
+    await agent.post('/api/projects').send({ title: '   ' }).expect(400);
+    await agent
+      .post('/api/projects')
+      .send({ title: 'Projeto', campoDesconhecido: true })
+      .expect(400);
+  });
+
   it('returns a consistent body for unknown routes', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/unknown')
