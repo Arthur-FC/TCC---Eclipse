@@ -1,0 +1,54 @@
+import { ConfigService } from '@nestjs/config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { DataSourceOptions } from 'typeorm';
+import { SessionEntity } from '../auth/session.entity';
+import { UserEntity } from '../users/user.entity';
+import { ConversationEntity } from '../projects/conversation.entity';
+import { MessageEntity } from '../projects/message.entity';
+import { ProjectEntity } from '../projects/project.entity';
+import { InitialAuthSchema1756152000000 } from './migrations/1756152000000-initial-auth-schema';
+import { ProjectsAndConversations1756155600000 } from './migrations/1756155600000-projects-and-conversations';
+import { AiMessageMetadata1787702400000 } from './migrations/1787702400000-ai-message-metadata';
+
+export function createTypeOrmOptions(
+  configService: ConfigService,
+): TypeOrmModuleOptions {
+  return {
+    ...createDataSourceOptions(configService),
+    autoLoadEntities: true,
+  };
+}
+
+export function createDataSourceOptions(
+  configService: ConfigService,
+): DataSourceOptions {
+  return {
+    type: 'postgres',
+    host: configService.getOrThrow<string>('DATABASE_HOST'),
+    port: configService.getOrThrow<number>('DATABASE_PORT'),
+    database: configService.getOrThrow<string>('DATABASE_NAME'),
+    username: configService.getOrThrow<string>('DATABASE_USER'),
+    password: configService.getOrThrow<string>('DATABASE_PASSWORD'),
+    entities: [
+      UserEntity,
+      SessionEntity,
+      ProjectEntity,
+      ConversationEntity,
+      MessageEntity,
+    ],
+    migrations: [
+      InitialAuthSchema1756152000000,
+      ProjectsAndConversations1756155600000,
+      AiMessageMetadata1787702400000,
+    ],
+    migrationsTableName: 'typeorm_migrations',
+    synchronize: false,
+    migrationsRun: false,
+    logging: false,
+    applicationName: 'eclipse-api',
+    ssl:
+      configService.get<string>('NODE_ENV') === 'production'
+        ? { rejectUnauthorized: true }
+        : false,
+  };
+}

@@ -1,0 +1,103 @@
+<section aria-labelledby="history-title">
+    <ion-button
+        class="mobile-new-chat"
+        fill="clear"
+        [disabled]="busy"
+        (click)="newChatRequested.emit()"
+    >
+        <ion-icon name="add" aria-hidden="true"></ion-icon>
+        Novo Chat
+    </ion-button>
+
+    <label class="mobile-search">
+        <span class="visually-hidden">Procurar conversas</span>
+        <ion-icon name="search" aria-hidden="true"></ion-icon>
+        <input
+            type="search"
+            [ngModel]="filter"
+            (ngModelChange)="filterChange.emit($event)"
+            placeholder="Procurar"
+        >
+    </label>
+
+    <h2 id="history-title">Seu histórico</h2>
+
+    <form
+        *ngIf="editingChatId !== null"
+        class="rename-form"
+        (ngSubmit)="saveRename()"
+    >
+        <label for="rename-chat-title">Renomear conversa</label>
+        <div class="rename-controls">
+            <input
+                id="rename-chat-title"
+                class="rename-input"
+                [(ngModel)]="editedTitle"
+                name="editedTitle"
+                maxlength="100"
+                (keydown.escape)="cancelRename(); $event.preventDefault()"
+            >
+            <button
+                type="submit"
+                class="rename-confirm"
+                aria-label="Salvar novo nome"
+                title="Salvar novo nome"
+            >
+                &#10003;
+            </button>
+            <button
+                type="button"
+                class="rename-cancel"
+                aria-label="Cancelar edição"
+                title="Cancelar edição"
+                (click)="cancelRename()"
+            >
+                &times;
+            </button>
+        </div>
+    </form>
+
+    <ng-container *ngFor="let group of groups">
+        <small>{{ group.label }}</small>
+        <div
+            *ngFor="let chat of group.chats; trackBy: trackByChatId"
+            class="chat-row"
+            [class.renaming]="editingChatId === chat.id"
+        >
+            <button
+                type="button"
+                class="chat-button"
+                [class.selected]="chat.id === selectedChatId"
+                [attr.aria-current]="chat.id === selectedChatId ? 'true' : null"
+                (click)="chatSelected.emit(chat)"
+                [disabled]="busy"
+            >
+                {{ chat.title }}
+            </button>
+
+            <button
+                type="button"
+                class="rename-button"
+                [attr.aria-label]="'Renomear conversa ' + chat.title"
+                title="Renomear conversa"
+                (click)="startRename(chat)"
+                [disabled]="busy"
+            >
+                &#9998;
+            </button>
+
+            <button
+                type="button"
+                class="delete-button"
+                [attr.aria-label]="'Excluir conversa ' + chat.title"
+                title="Excluir conversa"
+                (click)="chatDeleted.emit(chat.id)"
+                [disabled]="busy"
+            >
+                &times;
+            </button>
+        </div>
+    </ng-container>
+
+    <p *ngIf="groups.length === 0">Nenhuma conversa encontrada.</p>
+</section>

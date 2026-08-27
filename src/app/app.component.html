@@ -1,1 +1,48 @@
-<ion-app><main class="shell"><aside><div class="small-logo"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span>Eclipse</div><div class="actions"><ion-button (click)="newChat()" fill="clear"><ion-icon name="add"></ion-icon>Novo Chat</ion-button><label><ion-icon name="search"></ion-icon><input [(ngModel)]="filter" placeholder="Procurar"></label></div><section><h2>Seu histórico⌄</h2><ng-container *ngIf="today.length"><small>Hoje</small><button *ngFor="let c of today">{{c.title}}</button></ng-container><ng-container *ngIf="yesterday.length"><small>Ontem</small><button *ngFor="let c of yesterday">{{c.title}}</button></ng-container></section></aside><section class="content"><div class="ring top"></div><div class="ring bottom"></div><div class="hero"><div class="logo"><span class="bars big"><i></i><i></i><i></i><i></i><i></i></span>Eclipse</div><form (ngSubmit)="send()"><ion-input [(ngModel)]="message" name="message" placeholder="Digite Aqui:"></ion-input><ion-button type="submit" fill="clear"><ion-icon name="send"></ion-icon></ion-button></form></div></section></main></ion-app>
+<ion-app>
+    <main *ngIf="isInitializing" class="loading-screen" aria-live="polite">
+        <div class="loading-logo">Eclipse</div>
+        <p>Carregando sua sessão...</p>
+    </main>
+
+    <app-auth-screen
+        *ngIf="!isInitializing && !user"
+        [loading]="isAuthenticating"
+        [errorMessage]="authErrorMessage"
+        (authenticationRequested)="authenticate($event)"
+    ></app-auth-screen>
+
+    <main *ngIf="!isInitializing && user" class="shell">
+        <div *ngIf="errorMessage" class="status-banner" role="alert">
+            <span>{{ errorMessage }}</span>
+            <button type="button" aria-label="Fechar aviso" (click)="errorMessage = ''">&times;</button>
+        </div>
+
+        <div *ngIf="isLoadingChats" class="loading-overlay" aria-live="polite">
+            Carregando projetos...
+        </div>
+
+        <app-sidebar
+            [chats]="chats"
+            [selectedChatId]="selectedChat?.id ?? null"
+            [userName]="user.name"
+            [busy]="operationInProgress || isSending"
+            [(filter)]="filter"
+            (newChat)="startNewChat()"
+            (homeRequested)="goHome()"
+            (logoutRequested)="logout()"
+            (chatSelected)="selectChat($event)"
+            (chatDeleted)="deleteChat($event)"
+            (chatRenamed)="renameChat($event)"
+        ></app-sidebar>
+
+        <app-chat-window
+            [chat]="selectedChat"
+            [sending]="isSending"
+            [messageResetToken]="messageResetToken"
+            [retryAvailable]="failedReplyChatId === selectedChat?.id"
+            (closeRequested)="goHome()"
+            (messageSent)="sendMessage($event)"
+            (retryRequested)="retryAssistant()"
+        ></app-chat-window>
+    </main>
+</ion-app>

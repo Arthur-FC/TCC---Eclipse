@@ -1,0 +1,59 @@
+<div class="ring top" aria-hidden="true"></div>
+<div class="ring bottom" aria-hidden="true"></div>
+
+<section *ngIf="chat; else welcome" class="conversation" aria-live="polite">
+    <header>
+        <h1>{{ chat.title }}</h1>
+        <button
+            type="button"
+            class="close-button"
+            aria-label="Fechar conversa"
+            title="Fechar conversa"
+            (click)="closeRequested.emit()"
+        >
+            &times;
+        </button>
+    </header>
+
+    <div #messages class="messages">
+        <app-message
+            *ngFor="let message of chat.messages"
+            [message]="message"
+        ></app-message>
+
+        <p *ngIf="chat.messages.length === 0" class="empty-state">
+            Esta conversa ainda não possui mensagens.
+        </p>
+    </div>
+
+    <div class="composer-area">
+        <button
+            *ngIf="retryAvailable"
+            type="button"
+            class="retry-button"
+            [disabled]="sending"
+            (click)="retryRequested.emit()"
+        >
+            Tentar gerar a resposta novamente
+        </button>
+        <app-message-input
+            [disabled]="sending"
+            [resetToken]="messageResetToken"
+            (messageSent)="messageSent.emit($event)"
+        ></app-message-input>
+    </div>
+</section>
+
+<ng-template #welcome>
+    <section class="hero">
+        <div class="logo">
+            <span class="bars big" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+            Eclipse
+        </div>
+        <app-message-input
+            [disabled]="sending"
+            [resetToken]="messageResetToken"
+            (messageSent)="messageSent.emit($event)"
+        ></app-message-input>
+    </section>
+</ng-template>

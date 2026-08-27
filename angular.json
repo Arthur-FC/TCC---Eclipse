@@ -21,13 +21,38 @@
             "styles": [
               "src/global.scss"
             ]
-          }
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.production.ts"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "eclipse:build"
-          }
+            "buildTarget": "eclipse:build:development"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "eclipse:build:production"
+            },
+            "development": {
+              "buildTarget": "eclipse:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }

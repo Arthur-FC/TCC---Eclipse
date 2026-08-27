@@ -1,0 +1,61 @@
+import Joi, { CustomHelpers } from 'joi';
+
+const nodeEnvironments = ['development', 'test', 'production'] as const;
+
+function validateCorsOrigins(value: string, helpers: CustomHelpers) {
+  const origins = value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (origins.length === 0) {
+    return helpers.error('any.invalid');
+  }
+
+  const allOriginsAreValid = origins.every((origin) => {
+    try {
+      const url = new URL(origin);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  });
+
+  return allOriginsAreValid ? value : helpers.error('any.invalid');
+}
+
+export const environmentValidationSchema = Joi.object({
+  NODE_ENV: Joi.string()
+    .valid(...nodeEnvironments)
+    .default('development'),
+  PORT: Joi.number().integer().min(1).max(65_535).default(3002),
+  CORS_ORIGINS: Joi.string()
+    .custom(validateCorsOrigins, 'CORS origins validation')
+    .default('http://localhost:4200'),
+  DATABASE_HOST: Joi.string().hostname().default('127.0.0.1'),
+  DATABASE_PORT: Joi.number().integer().min(1).max(65_535).default(5432),
+  DATABASE_NAME: Joi.string().pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/).default('eclipse'),
+  DATABASE_USER: Joi.string().min(1).max(63).default('eclipse'),
+  DATABASE_PASSWORD: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(16).required(),
+    otherwise: Joi.string().min(8).default('eclipse_dev'),
+  }),
+  SESSION_TTL_DAYS: Joi.number().integer().min(1).max(30).default(7),
+  GROQ_API_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(20).required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  GROQ_MODEL: Joi.string().min(1).max(120).default('qwen/qwen3.6-27b'),
+  GROQ_TIMEOUT_MS: Joi.number().integer().min(5_000).max(120_000).default(45_000),
+  AI_MAX_COMPLETION_TOKENS: Joi.number().integer().min(128).max(16_384).default(1_500),
+  AI_CONTEXT_MESSAGES: Joi.number().integer().min(1).max(100).default(20),
+}).unknown(true);
+
+export function parseCorsOrigins(value: string): string[] {
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
