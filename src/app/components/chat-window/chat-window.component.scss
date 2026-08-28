@@ -79,14 +79,14 @@
 }
 
 .close-button,
-.briefing-button {
+.panel-button {
     border: 0;
     background: #383838;
     color: #c466ff;
     cursor: pointer;
 }
 
-.briefing-button {
+.panel-button {
     flex: 0 0 auto;
     min-height: 34px;
     padding: 0 13px;
@@ -95,8 +95,8 @@
     font: 600 12px Inter;
 }
 
-.briefing-button:hover,
-.briefing-button.active {
+.panel-button:hover,
+.panel-button.active {
     background: #4a3a52;
     color: #f0d9ff;
 }
@@ -115,7 +115,7 @@
 }
 
 .close-button:focus-visible,
-.briefing-button:focus-visible {
+.panel-button:focus-visible {
     outline: 2px solid #c466ff;
     outline-offset: 3px;
 }
@@ -256,10 +256,12 @@
     }
 
     .conversation h1 {
+        order: 1;
         font-size: 24px;
     }
 
     .close-button {
+        order: 2;
         flex-basis: 42px;
         width: 42px;
         height: 42px;
@@ -267,9 +269,16 @@
         line-height: 42px;
     }
 
-    .briefing-button {
+    .panel-button {
+        order: 3;
+        flex: 1 1 calc(50% - 4px);
         min-height: 42px;
         padding: 0 12px;
+    }
+
+    .conversation header {
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .messages {

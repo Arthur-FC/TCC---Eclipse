@@ -249,7 +249,7 @@ export class ProjectsService {
     }));
   }
 
-  private async getActiveProject(
+  async getActiveProject(
     ownerId: string,
     projectId: string,
   ): Promise<ProjectEntity> {

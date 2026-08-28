@@ -350,7 +350,7 @@ Referência oficial consultada:
 
 ## Etapa 8 - Criar o sistema de ferramentas da IA
 
-**Status atual:** em validação; implementação concluída em 28 de agosto de 2026 e aguardando uma chamada real do Qwen pela interface.
+**Status atual:** concluída em 28 de agosto de 2026.
 
 ### Objetivo
 
@@ -392,9 +392,9 @@ A IA consegue consultar dados permitidos, mas não consegue executar uma ferrame
 - migração `AiToolExecutions1787961600000` aplicada ao PostgreSQL de desenvolvimento;
 - 25 testes unitários em 7 conjuntos, 16 testes de integração e build do backend aprovados.
 
-### Validação pendente
+### Validação real realizada
 
-Reiniciar o backend e perguntar em uma conversa real algo como **“O que eu já falei sobre piano neste projeto?”**. A resposta deve recuperar uma mensagem anterior e o terminal deve registrar `Ferramenta name=search_project_messages status=completed`.
+O Qwen consultou dados internos pela interface e o terminal confirmou a execução controlada da ferramenta no projeto correto.
 
 Referências oficiais consultadas:
 
@@ -402,6 +402,8 @@ Referências oficiais consultadas:
 - [Local Tool Calling da Groq](https://console.groq.com/docs/tool-use/local-tool-calling).
 
 ## Etapa 9 - Integrar a pesquisa no YouTube
+
+**Status atual:** em validação; implementação concluída em 28 de agosto de 2026 e aguardando uma chave pessoal da YouTube Data API.
 
 ### Objetivo
 
@@ -429,6 +431,35 @@ Lista de referências reais do YouTube vinculadas ao projeto.
 ### Critério de conclusão
 
 O usuário recebe resultados reproduzíveis, com origem e link válidos, sem dados inventados pela IA.
+
+### Implementação e verificação realizadas
+
+- conector HTTPS da YouTube Data API v3 implementado sem expor a chave ao Angular;
+- termos de pesquisa criados deterministicamente a partir do briefing confirmado;
+- pesquisa bloqueada para projeto arquivado, briefing ausente ou briefing ainda não confirmado;
+- busca limitada a vídeos da categoria musical e que permitem incorporação;
+- detalhes normalizados com ID, título, canal, miniatura, duração, link e disponibilidade;
+- vídeos privados, não processados ou não incorporáveis removidos antes da persistência;
+- referências deduplicadas por projeto, fonte e ID externo;
+- cache persistente de 24 horas por consulta normalizada;
+- controle diário separado para chamadas de pesquisa e quota geral, usando o fuso de renovação do Google;
+- margens locais configuradas em 90 pesquisas e 9.000 unidades gerais;
+- decisões pendente, aprovada e rejeitada preservadas quando uma busca é repetida;
+- rotas autenticadas verificam propriedade do projeto e da referência;
+- painel Angular criado com miniatura, título, canal, duração, link e botões de aprovação ou rejeição;
+- migração `YoutubeReferences1788048000000` aplicada ao PostgreSQL de desenvolvimento;
+- 27 testes unitários em 8 conjuntos, 17 testes de integração, build do backend e build Angular aprovados.
+
+### Validação pendente
+
+Criar uma chave da YouTube Data API v3, adicionar `YOUTUBE_API_KEY` ao `backend/.env`, reiniciar o backend e pesquisar em **Referências** dentro de um projeto com briefing confirmado.
+
+Referências oficiais consultadas:
+
+- [Visão geral e quota da YouTube Data API](https://developers.google.com/youtube/v3/getting-started);
+- [`search.list`](https://developers.google.com/youtube/v3/docs/search/list);
+- [recurso e status de vídeos](https://developers.google.com/youtube/v3/docs/videos);
+- [calculadora de quota](https://developers.google.com/youtube/v3/determine_quota_cost).
 
 ## Etapa 10 - Adicionar referências do Spotify por link
 

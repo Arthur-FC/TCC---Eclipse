@@ -13,6 +13,10 @@ import { BriefingEntity } from '../briefings/briefing.entity';
 import { StructuredBriefings1787788800000 } from './migrations/1787788800000-structured-briefings';
 import { AiToolExecutionEntity } from '../ai-tools/ai-tool-execution.entity';
 import { AiToolExecutions1787961600000 } from './migrations/1787961600000-ai-tool-executions';
+import { MusicReferenceEntity } from '../references/music-reference.entity';
+import { YouTubeSearchCacheEntity } from '../references/youtube-search-cache.entity';
+import { YouTubeQuotaUsageEntity } from '../references/youtube-quota-usage.entity';
+import { YoutubeReferences1788048000000 } from './migrations/1788048000000-youtube-references';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -41,6 +45,9 @@ export function createDataSourceOptions(
       MessageEntity,
       BriefingEntity,
       AiToolExecutionEntity,
+      MusicReferenceEntity,
+      YouTubeSearchCacheEntity,
+      YouTubeQuotaUsageEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
@@ -48,6 +55,7 @@ export function createDataSourceOptions(
       AiMessageMetadata1787702400000,
       StructuredBriefings1787788800000,
       AiToolExecutions1787961600000,
+      YoutubeReferences1788048000000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

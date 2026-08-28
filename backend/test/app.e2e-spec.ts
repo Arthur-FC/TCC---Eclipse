@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module';
 import { configureApplication } from '../src/bootstrap';
 import { AI_PROVIDER, AiProvider } from '../src/ai/ai-provider.interface';
 import { AiProviderError } from '../src/ai/ai-provider.error';
+import { YouTubeClient } from '../src/references/youtube.client';
 
 describe('Eclipse API (e2e)', () => {
   let app: NestExpressApplication;
@@ -81,6 +82,32 @@ describe('Eclipse API (e2e)', () => {
       };
     },
   };
+  const fakeYouTubeClient = {
+    search: jest.fn(async (query: string) => ({
+      query,
+      fromCache: false,
+      items: [
+        {
+          externalId: 'youtube-video-1',
+          title: 'Canção do Sol e da Lua',
+          creator: 'Canal Eclipse',
+          thumbnailUrl: 'https://img.youtube.test/video-1.jpg',
+          url: 'https://www.youtube.com/watch?v=youtube-video-1',
+          durationSeconds: 215,
+          embeddable: true,
+        },
+        {
+          externalId: 'youtube-video-2',
+          title: 'Pop Noturno Instrumental',
+          creator: 'Outro Canal',
+          thumbnailUrl: 'https://img.youtube.test/video-2.jpg',
+          url: 'https://www.youtube.com/watch?v=youtube-video-2',
+          durationSeconds: 184,
+          embeddable: true,
+        },
+      ],
+    })),
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -88,6 +115,8 @@ describe('Eclipse API (e2e)', () => {
     })
       .overrideProvider(AI_PROVIDER)
       .useValue(fakeAiProvider)
+      .overrideProvider(YouTubeClient)
+      .useValue(fakeYouTubeClient)
       .compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
@@ -101,6 +130,7 @@ describe('Eclipse API (e2e)', () => {
   beforeEach(async () => {
     providerMode = 'success';
     jsonGenerationCalls = 0;
+    fakeYouTubeClient.search.mockClear();
     await dataSource.query(
       'TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE',
     );
@@ -520,6 +550,104 @@ describe('Eclipse API (e2e)', () => {
     await intruder
       .get(`/api/projects/${project.body.id}/briefings/latest`)
       .expect(404);
+  });
+
+  it('searches, deduplicates and curates YouTube references after confirmation', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const intruder = request.agent(app.getHttpServer());
+    await owner
+      .post('/api/auth/register')
+      .send({
+        name: 'Curadoria',
+        email: 'curadoria@example.com',
+        password: 'senha-segura-para-curadoria',
+      })
+      .expect(201);
+    await intruder
+      .post('/api/auth/register')
+      .send({
+        name: 'Outro curador',
+        email: 'outro-curador@example.com',
+        password: 'senha-segura-outro-curador',
+      })
+      .expect(201);
+    const project = await owner
+      .post('/api/projects')
+      .send({ title: 'Referências reais' })
+      .expect(201);
+    const conversation = await owner
+      .post(`/api/projects/${project.body.id}/conversations`)
+      .send({})
+      .expect(201);
+    await owner
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .send({ role: 'user', content: 'Quero pop noturno sobre o Sol e a Lua.' })
+      .expect(201);
+    const briefing = await owner
+      .post(`/api/projects/${project.body.id}/briefings/generate`)
+      .send({ conversationId: conversation.body.id })
+      .expect(201);
+    await owner
+      .post(
+        `/api/projects/${project.body.id}/briefings/${briefing.body.version}/confirm`,
+      )
+      .send({})
+      .expect(201);
+
+    const search = await owner
+      .post(`/api/projects/${project.body.id}/references/youtube/search`)
+      .send({})
+      .expect(201);
+    expect(search.body.query).toContain('Sol e Lua');
+    expect(search.body.items).toHaveLength(2);
+    expect(search.body.items[0]).toMatchObject({
+      source: 'youtube',
+      status: 'pending',
+      embeddable: true,
+    });
+
+    const approved = await owner
+      .patch(
+        `/api/projects/${project.body.id}/references/${search.body.items[0].id}`,
+      )
+      .send({ status: 'approved' })
+      .expect(200);
+    expect(approved.body.status).toBe('approved');
+
+    const repeated = await owner
+      .post(`/api/projects/${project.body.id}/references/youtube/search`)
+      .send({})
+      .expect(201);
+    expect(repeated.body.items).toHaveLength(2);
+    expect(
+      repeated.body.items.find(
+        (item: { id: string }) => item.id === approved.body.id,
+      ).status,
+    ).toBe('approved');
+
+    await intruder
+      .get(`/api/projects/${project.body.id}/references`)
+      .expect(404);
+    await intruder
+      .patch(
+        `/api/projects/${project.body.id}/references/${approved.body.id}`,
+      )
+      .send({ status: 'rejected' })
+      .expect(404);
+
+    const projectWithoutBriefing = await owner
+      .post('/api/projects')
+      .send({ title: 'Sem briefing' })
+      .expect(201);
+    await owner
+      .post(
+        `/api/projects/${projectWithoutBriefing.body.id}/references/youtube/search`,
+      )
+      .send({})
+      .expect(409);
+    expect(fakeYouTubeClient.search).toHaveBeenCalledTimes(2);
   });
 
   it('paginates projects and validates pagination parameters', async () => {

@@ -36,6 +36,12 @@ Variáveis disponíveis nesta etapa:
 | `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
 | `AI_BRIEFING_MAX_ATTEMPTS` | `2` | Máximo de tentativas para obter um briefing JSON válido |
 | `AI_MAX_TOOL_CALLS` | `4` | Máximo de ferramentas executadas em uma resposta |
+| `YOUTUBE_API_KEY` | vazio | Chave da YouTube Data API v3; obrigatória em produção |
+| `YOUTUBE_TIMEOUT_MS` | `15000` | Tempo máximo de cada chamada ao YouTube |
+| `YOUTUBE_CACHE_TTL_SECONDS` | `86400` | Validade do cache de pesquisa, em segundos |
+| `YOUTUBE_RESULTS_LIMIT` | `10` | Máximo de vídeos por pesquisa |
+| `YOUTUBE_DAILY_SEARCH_LIMIT` | `90` | Margem local para o limite diário de pesquisas |
+| `YOUTUBE_DAILY_GENERAL_LIMIT` | `9000` | Margem local para a quota geral diária |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -173,6 +179,26 @@ As ferramentas não recebem `ownerId` ou `projectId` em seus argumentos. Esses v
 
 Cada tentativa registra nome, estado, duração e código de falha em `ai_tool_executions`. Argumentos e resultados não são duplicados na auditoria. Conteúdo recuperado é identificado para o modelo como dado não confiável e não pode substituir as instruções centrais da Eclipse.
 
+## Pesquisa de referências no YouTube
+
+No Google Cloud Console, crie ou selecione um projeto, habilite **YouTube Data API v3** e crie uma chave de API. Restrinja a chave à YouTube Data API v3 e, no ambiente publicado, também ao servidor que executa o backend. Depois, configure somente em `backend/.env`:
+
+```env
+YOUTUBE_API_KEY=sua_chave_do_google
+```
+
+Reinicie o backend após alterar o arquivo. Nunca envie essa chave ao Angular ou ao Git.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/projects/:projectId/references/youtube/search` | Pesquisar usando o briefing confirmado |
+| `GET` | `/api/projects/:projectId/references` | Listar referências persistidas |
+| `PATCH` | `/api/projects/:projectId/references/:referenceId` | Marcar como pendente, aprovada ou rejeitada |
+
+A busca usa `type=video`, categoria musical e filtro de incorporação. Depois consulta os detalhes para normalizar título, canal, miniatura, duração, link e disponibilidade. Vídeos privados, não processados ou não incorporáveis são descartados.
+
+O cache padrão dura 24 horas. O contador local separa chamadas de pesquisa da quota geral e usa margens abaixo dos limites padrão do Google. Repetir uma busca mantém as decisões já tomadas e não duplica o mesmo vídeo no projeto.
+
 ## Limites atuais
 
-O YouTube, o Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.
+O Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.

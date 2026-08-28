@@ -24,6 +24,8 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Versionamento e confirmação explícita do briefing.
 - Ferramentas internas controladas para leitura do projeto, briefing e histórico.
 - Auditoria e limite de chamadas de ferramentas da IA.
+- Pesquisa de referências reais pela YouTube Data API.
+- Cards de referências com aprovação e rejeição persistidas.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.
 
@@ -39,6 +41,7 @@ A interface está conectada ao backend para autenticação, projetos, histórico
 - PostgreSQL 17
 - TypeORM
 - Groq API
+- YouTube Data API v3
 
 ## Como executar
 
@@ -122,5 +125,5 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 
 ## Próximos passos
 
-- Integrar a pesquisa de referências no YouTube.
+- Adicionar referências do Spotify por link.
 - Implementar biblioteca e busca semântica.

@@ -7,6 +7,8 @@ import { ChatService, ChatStreamPhase } from './services/chat.service';
 import { AssistantStreamError } from './services/conversations-api.service';
 import { Briefing, BriefingData } from './models/briefing.model';
 import { BriefingsApiService } from './services/briefings-api.service';
+import { MusicReference, ReferenceStatus } from './models/reference.model';
+import { ReferencesApiService } from './services/references-api.service';
 
 @Component({
     selector: 'app-root',
@@ -31,12 +33,18 @@ export class AppComponent implements OnInit {
     briefing: Briefing | null = null;
     isBriefingBusy = false;
     briefingErrorMessage = '';
+    references: MusicReference[] = [];
+    isReferencesBusy = false;
+    referencesErrorMessage = '';
+    referenceSearchQuery = '';
+    referencesFromCache = false;
     private isDraftChat = false;
 
     constructor(
         private readonly authService: AuthService,
         private readonly chatService: ChatService,
-        private readonly briefingsApi: BriefingsApiService
+        private readonly briefingsApi: BriefingsApiService,
+        private readonly referencesApi: ReferencesApiService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -84,6 +92,8 @@ export class AppComponent implements OnInit {
             this.chats = [];
             this.selectedChat = null;
             this.briefing = null;
+            this.references = [];
+            this.referencesFromCache = false;
             this.isDraftChat = false;
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -108,6 +118,10 @@ export class AppComponent implements OnInit {
         this.selectedChat = chat;
         this.briefing = null;
         this.briefingErrorMessage = '';
+        this.references = [];
+        this.referencesErrorMessage = '';
+        this.referenceSearchQuery = '';
+        this.referencesFromCache = false;
         this.failedReplyChatId = chat.messages.at(-1)?.author === 'user'
             ? chat.id
             : null;
@@ -119,6 +133,10 @@ export class AppComponent implements OnInit {
         this.selectedChat = null;
         this.briefing = null;
         this.briefingErrorMessage = '';
+        this.references = [];
+        this.referencesErrorMessage = '';
+        this.referenceSearchQuery = '';
+        this.referencesFromCache = false;
     }
 
     async deleteChat(chatId: string): Promise<void> {
@@ -134,6 +152,8 @@ export class AppComponent implements OnInit {
             if (this.selectedChat?.id === chatId) {
                 this.selectedChat = null;
                 this.briefing = null;
+                this.references = [];
+                this.referencesFromCache = false;
             }
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -303,6 +323,65 @@ export class AppComponent implements OnInit {
         }
     }
 
+    async loadReferences(): Promise<void> {
+        if (!this.selectedChat || this.selectedChat.id.startsWith('draft-')) return;
+
+        this.isReferencesBusy = true;
+        this.referencesErrorMessage = '';
+        try {
+            this.references = await this.referencesApi.list(this.selectedChat.id);
+            this.referenceSearchQuery = this.references[0]?.searchQuery ?? '';
+        } catch (error) {
+            this.referencesErrorMessage = this.describeError(error);
+        } finally {
+            this.isReferencesBusy = false;
+        }
+    }
+
+    async searchYouTubeReferences(refresh = false): Promise<void> {
+        if (!this.selectedChat || this.isReferencesBusy) return;
+
+        this.isReferencesBusy = true;
+        this.referencesErrorMessage = '';
+        try {
+            const response = await this.referencesApi.searchYouTube(
+                this.selectedChat.id,
+                refresh
+            );
+            this.references = response.items;
+            this.referenceSearchQuery = response.query;
+            this.referencesFromCache = response.fromCache;
+        } catch (error) {
+            this.referencesErrorMessage = this.describeError(error);
+        } finally {
+            this.isReferencesBusy = false;
+        }
+    }
+
+    async updateReferenceStatus(event: {
+        referenceId: string;
+        status: ReferenceStatus;
+    }): Promise<void> {
+        if (!this.selectedChat || this.isReferencesBusy) return;
+
+        this.isReferencesBusy = true;
+        this.referencesErrorMessage = '';
+        try {
+            const updated = await this.referencesApi.updateStatus(
+                this.selectedChat.id,
+                event.referenceId,
+                event.status
+            );
+            this.references = this.references.map(reference =>
+                reference.id === updated.id ? updated : reference
+            );
+        } catch (error) {
+            this.referencesErrorMessage = this.describeError(error);
+        } finally {
+            this.isReferencesBusy = false;
+        }
+    }
+
     private async refreshChats(): Promise<void> {
         this.isLoadingChats = true;
         this.errorMessage = '';
@@ -356,16 +435,15 @@ export class AppComponent implements OnInit {
             if (error.status === 401) {
                 return 'E-mail ou senha inválidos, ou sua sessão expirou.';
             }
-            if (error.status === 409) {
-                return 'Este e-mail já está cadastrado.';
-            }
-
             const message = error.error?.message;
             if (Array.isArray(message)) {
                 return message.join(' ');
             }
             if (typeof message === 'string') {
                 return message;
+            }
+            if (error.status === 409) {
+                return 'A operação entrou em conflito com uma alteração recente.';
             }
         }
 

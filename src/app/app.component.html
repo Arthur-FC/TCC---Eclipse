@@ -43,6 +43,11 @@
             [briefing]="briefing"
             [briefingBusy]="isBriefingBusy"
             [briefingError]="briefingErrorMessage"
+            [references]="references"
+            [referencesBusy]="isReferencesBusy"
+            [referencesError]="referencesErrorMessage"
+            [referenceSearchQuery]="referenceSearchQuery"
+            [referencesFromCache]="referencesFromCache"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
             (retryRequested)="retryAssistant()"
@@ -50,6 +55,9 @@
             (briefingGenerateRequested)="generateBriefing()"
             (briefingSaveRequested)="saveBriefing($event)"
             (briefingConfirmRequested)="confirmBriefing()"
+            (referencesRequested)="loadReferences()"
+            (referencesSearchRequested)="searchYouTubeReferences($event)"
+            (referenceStatusChanged)="updateReferenceStatus($event)"
         ></app-chat-window>
     </main>
 </ion-app>

@@ -14,6 +14,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthScreenComponent } from './components/auth-screen/auth-screen.component';
 import { MarkdownPipe } from './pipes/markdown.pipe';
 import { BriefingPanelComponent } from './components/briefing-panel/briefing-panel.component';
+import { ReferencesPanelComponent } from './components/references-panel/references-panel.component';
 
 @NgModule({
     declarations: [
@@ -25,7 +26,8 @@ import { BriefingPanelComponent } from './components/briefing-panel/briefing-pan
         MessageComponent,
         MessageInputComponent,
         MarkdownPipe,
-        BriefingPanelComponent
+        BriefingPanelComponent,
+        ReferencesPanelComponent
     ],
     imports: [BrowserModule, HttpClientModule, FormsModule, IonicModule.forRoot()],
     bootstrap: [AppComponent]

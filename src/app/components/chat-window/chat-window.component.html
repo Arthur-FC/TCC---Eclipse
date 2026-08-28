@@ -7,11 +7,20 @@
         <button
             *ngIf="chat.conversationId"
             type="button"
-            class="briefing-button"
+            class="panel-button"
             [class.active]="briefingOpen"
             (click)="toggleBriefing()"
         >
             {{ briefingOpen ? 'Voltar ao chat' : 'Briefing' }}
+        </button>
+        <button
+            *ngIf="chat.conversationId"
+            type="button"
+            class="panel-button references-button"
+            [class.active]="referencesOpen"
+            (click)="toggleReferences()"
+        >
+            {{ referencesOpen ? 'Voltar ao chat' : 'Referências' }}
         </button>
         <button
             type="button"
@@ -35,7 +44,18 @@
         (confirmRequested)="briefingConfirmRequested.emit()"
     ></app-briefing-panel>
 
-    <div *ngIf="!briefingOpen" #messages class="messages">
+    <app-references-panel
+        *ngIf="referencesOpen"
+        [references]="references"
+        [busy]="referencesBusy"
+        [errorMessage]="referencesError"
+        [searchQuery]="referenceSearchQuery"
+        [fromCache]="referencesFromCache"
+        (searchRequested)="referencesSearchRequested.emit($event)"
+        (statusChanged)="referenceStatusChanged.emit($event)"
+    ></app-references-panel>
+
+    <div *ngIf="!briefingOpen && !referencesOpen" #messages class="messages">
         <app-message
             *ngFor="let message of chat.messages"
             [message]="message"
@@ -46,7 +66,7 @@
         </p>
     </div>
 
-    <div *ngIf="!briefingOpen" class="composer-area">
+    <div *ngIf="!briefingOpen && !referencesOpen" class="composer-area">
         <button
             *ngIf="retryAvailable"
             type="button"
