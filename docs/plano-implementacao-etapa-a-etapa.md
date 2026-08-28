@@ -296,7 +296,7 @@ Referências oficiais consultadas:
 
 ## Etapa 7 - Implementar o briefing estruturado
 
-**Status atual:** em validação; implementação concluída em 26 de agosto de 2026 e aguardando uma geração real pela interface.
+**Status atual:** concluída em 28 de agosto de 2026.
 
 ### Objetivo
 
@@ -340,15 +340,17 @@ Um briefing livre é convertido para o formato definido sem campos inventados e 
 - migração `StructuredBriefings1787788800000` aplicada ao PostgreSQL de desenvolvimento;
 - 18 testes unitários em 6 conjuntos, 15 testes de integração, build do backend e build Angular aprovados.
 
-### Validação pendente
+### Validação real realizada
 
-Reiniciar o backend, abrir uma conversa real, acessar **Briefing**, gerar, revisar, salvar uma alteração e confirmar. Após esse fluxo visual, a etapa pode ser marcada como concluída.
+O briefing foi gerado, revisado e confirmado pela interface com a Groq configurada somente no backend.
 
 Referência oficial consultada:
 
 - [JSON Object Mode e Structured Outputs da Groq](https://console.groq.com/docs/structured-outputs).
 
 ## Etapa 8 - Criar o sistema de ferramentas da IA
+
+**Status atual:** em validação; implementação concluída em 28 de agosto de 2026 e aguardando uma chamada real do Qwen pela interface.
 
 ### Objetivo
 
@@ -373,6 +375,31 @@ Orquestrador capaz de executar ferramentas solicitadas pela IA.
 ### Critério de conclusão
 
 A IA consegue consultar dados permitidos, mas não consegue executar uma ferramenta inexistente ou acessar outro usuário.
+
+### Implementação e verificação realizadas
+
+- contratos de ferramentas definidos no formato de function calling aceito pela Groq;
+- ferramentas `read_project_summary`, `read_confirmed_briefing` e `search_project_messages` implementadas;
+- IDs de usuário, projeto e conversa derivados exclusivamente da sessão e da rota, sem controle pelo modelo;
+- argumentos analisados como JSON e validados contra propriedades, tipos, tamanhos e limites permitidos;
+- ferramentas inexistentes e argumentos desconhecidos rejeitados sem execução;
+- resultados limitados e compactados antes de retornar ao Qwen;
+- resultados e histórico marcados como conteúdo não confiável nas instruções centrais, protegendo contra instruções maliciosas armazenadas;
+- ciclo local de orquestração integrado ao streaming, permitindo novas chamadas até a resposta final;
+- limite configurável de quatro ferramentas por resposta;
+- tokens acumulados entre todas as rodadas do modelo;
+- auditoria persistida em `ai_tool_executions` com ferramenta, estado, duração e código de falha, sem copiar argumentos ou resultados;
+- migração `AiToolExecutions1787961600000` aplicada ao PostgreSQL de desenvolvimento;
+- 25 testes unitários em 7 conjuntos, 16 testes de integração e build do backend aprovados.
+
+### Validação pendente
+
+Reiniciar o backend e perguntar em uma conversa real algo como **“O que eu já falei sobre piano neste projeto?”**. A resposta deve recuperar uma mensagem anterior e o terminal deve registrar `Ferramenta name=search_project_messages status=completed`.
+
+Referências oficiais consultadas:
+
+- [Qwen 3.6 27B e suporte a Tool Use](https://console.groq.com/docs/model/qwen/qwen3.6-27b);
+- [Local Tool Calling da Groq](https://console.groq.com/docs/tool-use/local-tool-calling).
 
 ## Etapa 9 - Integrar a pesquisa no YouTube
 

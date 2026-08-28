@@ -21,6 +21,14 @@ export interface AssistantMessageMetadata {
   latencyMs: number;
 }
 
+export interface ProjectMessageSearchResult {
+  messageId: string;
+  conversationId: string;
+  role: MessageRole;
+  excerpt: string;
+  createdAt: Date;
+}
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -182,6 +190,63 @@ export class ProjectsService {
       take: query.limit,
     });
     return this.paginate(items, total, query);
+  }
+
+  async getProjectSummary(
+    ownerId: string,
+    projectId: string,
+  ): Promise<{
+    id: string;
+    title: string;
+    description: string | null;
+    conversationCount: number;
+    messageCount: number;
+  }> {
+    const project = await this.getProject(ownerId, projectId);
+    const [conversationCount, messageCount] = await Promise.all([
+      this.conversationsRepository.countBy({ projectId }),
+      this.messagesRepository
+        .createQueryBuilder('message')
+        .innerJoin('message.conversation', 'conversation')
+        .where('conversation.project_id = :projectId', { projectId })
+        .getCount(),
+    ]);
+    return {
+      id: project.id,
+      title: project.title,
+      description: project.description,
+      conversationCount,
+      messageCount,
+    };
+  }
+
+  async searchProjectMessages(
+    ownerId: string,
+    projectId: string,
+    query: string,
+    limit: number,
+  ): Promise<ProjectMessageSearchResult[]> {
+    await this.getProject(ownerId, projectId);
+    const messages = await this.messagesRepository
+      .createQueryBuilder('message')
+      .innerJoin('message.conversation', 'conversation')
+      .where('conversation.project_id = :projectId', { projectId })
+      .andWhere('message.content ILIKE :pattern', { pattern: `%${query}%` })
+      .orderBy('message.created_at', 'DESC')
+      .addOrderBy('message.id', 'DESC')
+      .take(limit)
+      .getMany();
+
+    return messages.map((message) => ({
+      messageId: message.id,
+      conversationId: message.conversationId,
+      role: message.role,
+      excerpt:
+        message.content.length <= 280
+          ? message.content
+          : `${message.content.slice(0, 277)}...`,
+      createdAt: message.createdAt,
+    }));
   }
 
   private async getActiveProject(

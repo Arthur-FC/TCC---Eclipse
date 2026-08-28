@@ -35,6 +35,7 @@ Variáveis disponíveis nesta etapa:
 | `AI_MAX_COMPLETION_TOKENS` | `1500` | Limite de tokens da resposta |
 | `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
 | `AI_BRIEFING_MAX_ATTEMPTS` | `2` | Máximo de tentativas para obter um briefing JSON válido |
+| `AI_MAX_TOOL_CALLS` | `4` | Máximo de ferramentas executadas em uma resposta |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -158,6 +159,20 @@ O briefing transforma o histórico da conversa em dados editáveis. O Qwen usa o
 
 A edição e a confirmação verificam a versão informada para evitar sobrescrever uma alteração mais recente. O backend também disponibiliza uma regra interna que impede as futuras pesquisas de avançarem sem um briefing confirmado.
 
+## Ferramentas internas da IA
+
+O Qwen pode solicitar três operações locais durante o chat:
+
+| Ferramenta | Acesso permitido |
+|---|---|
+| `read_project_summary` | Título, descrição e contagens do projeto atual |
+| `read_confirmed_briefing` | Versão confirmada mais recente do briefing atual |
+| `search_project_messages` | Até cinco trechos do histórico do projeto atual |
+
+As ferramentas não recebem `ownerId` ou `projectId` em seus argumentos. Esses valores são obtidos da sessão e da rota autenticada. Argumentos desconhecidos são rejeitados, ferramentas inexistentes não são executadas e o limite padrão é quatro chamadas por resposta.
+
+Cada tentativa registra nome, estado, duração e código de falha em `ai_tool_executions`. Argumentos e resultados não são duplicados na auditoria. Conteúdo recuperado é identificado para o modelo como dado não confiável e não pode substituir as instruções centrais da Eclipse.
+
 ## Limites atuais
 
-As ferramentas, o YouTube, o Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.
+O YouTube, o Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.

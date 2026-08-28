@@ -52,6 +52,7 @@ export const environmentValidationSchema = Joi.object({
   AI_MAX_COMPLETION_TOKENS: Joi.number().integer().min(128).max(16_384).default(1_500),
   AI_CONTEXT_MESSAGES: Joi.number().integer().min(1).max(100).default(20),
   AI_BRIEFING_MAX_ATTEMPTS: Joi.number().integer().min(1).max(3).default(2),
+  AI_MAX_TOOL_CALLS: Joi.number().integer().min(1).max(10).default(4),
 }).unknown(true);
 
 export function parseCorsOrigins(value: string): string[] {

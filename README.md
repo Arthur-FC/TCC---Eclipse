@@ -22,6 +22,8 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Repetição controlada quando a geração falha.
 - Briefing estruturado gerado pela IA, revisável e editável.
 - Versionamento e confirmação explícita do briefing.
+- Ferramentas internas controladas para leitura do projeto, briefing e histórico.
+- Auditoria e limite de chamadas de ferramentas da IA.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.
 
@@ -120,5 +122,5 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 
 ## Próximos passos
 
-- Criar o sistema de ferramentas controladas da IA.
+- Integrar a pesquisa de referências no YouTube.
 - Implementar biblioteca e busca semântica.

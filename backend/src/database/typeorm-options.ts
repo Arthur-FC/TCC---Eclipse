@@ -11,6 +11,8 @@ import { ProjectsAndConversations1756155600000 } from './migrations/175615560000
 import { AiMessageMetadata1787702400000 } from './migrations/1787702400000-ai-message-metadata';
 import { BriefingEntity } from '../briefings/briefing.entity';
 import { StructuredBriefings1787788800000 } from './migrations/1787788800000-structured-briefings';
+import { AiToolExecutionEntity } from '../ai-tools/ai-tool-execution.entity';
+import { AiToolExecutions1787961600000 } from './migrations/1787961600000-ai-tool-executions';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -38,12 +40,14 @@ export function createDataSourceOptions(
       ConversationEntity,
       MessageEntity,
       BriefingEntity,
+      AiToolExecutionEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
       ProjectsAndConversations1756155600000,
       AiMessageMetadata1787702400000,
       StructuredBriefings1787788800000,
+      AiToolExecutions1787961600000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

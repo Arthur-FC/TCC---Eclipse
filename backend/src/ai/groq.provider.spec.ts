@@ -116,4 +116,60 @@ describe('GroqProvider', () => {
       reasoning_format: 'hidden',
     });
   });
+
+  it('assembles streamed tool calls and sends tool schemas', async () => {
+    const stream = [
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","function":{"name":"search_project_","arguments":"{\\"query\\":\\"pi"}}]}}]}',
+      '',
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"messages","arguments":"ano\\"}"}}]}}]}',
+      '',
+      'data: [DONE]',
+      '',
+    ].join('\n');
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }),
+    );
+    const provider = new GroqProvider(config('gsk_test_key_for_unit_tests'));
+    const chunks = [];
+
+    for await (const chunk of provider.streamChat(
+      [{ role: 'user', content: 'O que eu disse sobre piano?' }],
+      new AbortController().signal,
+      [
+        {
+          type: 'function',
+          function: {
+            name: 'search_project_messages',
+            description: 'Pesquisa mensagens.',
+            parameters: { type: 'object' },
+          },
+        },
+      ],
+    )) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toEqual([
+      {
+        toolCalls: [
+          {
+            id: 'call_1',
+            name: 'search_project_messages',
+            arguments: '{"query":"piano"}',
+          },
+        ],
+      },
+    ]);
+    const request = (fetch as jest.Mock).mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(request.body as string)).toMatchObject({
+      tool_choice: 'auto',
+      disable_tool_validation: false,
+      tools: [
+        { function: { name: 'search_project_messages' } },
+      ],
+    });
+  });
 });

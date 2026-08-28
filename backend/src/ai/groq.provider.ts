@@ -5,11 +5,22 @@ import {
   AiProvider,
   AiProviderChunk,
   AiProviderResponse,
+  AiToolCall,
+  AiToolDefinition,
 } from './ai-provider.interface';
 import { AiProviderError } from './ai-provider.error';
 
 interface GroqStreamPayload {
-  choices?: Array<{ delta?: { content?: string | null } }>;
+  choices?: Array<{
+    delta?: {
+      content?: string | null;
+      tool_calls?: Array<{
+        index: number;
+        id?: string;
+        function?: { name?: string; arguments?: string };
+      }>;
+    };
+  }>;
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
@@ -54,6 +65,7 @@ export class GroqProvider implements AiProvider {
   async *streamChat(
     messages: AiChatMessage[],
     signal: AbortSignal,
+    tools?: AiToolDefinition[],
   ): AsyncIterable<AiProviderChunk> {
     if (!this.apiKey) {
       throw new AiProviderError(
@@ -78,7 +90,7 @@ export class GroqProvider implements AiProvider {
           },
           body: JSON.stringify({
             model: this.model,
-            messages,
+            messages: this.serializeMessages(messages),
             stream: true,
             reasoning_effort: 'none',
             reasoning_format: 'hidden',
@@ -86,6 +98,9 @@ export class GroqProvider implements AiProvider {
             top_p: 0.8,
             max_completion_tokens: this.maxCompletionTokens,
             stream_options: { include_usage: true },
+            ...(tools?.length
+              ? { tools, tool_choice: 'auto', disable_tool_validation: false }
+              : {}),
           }),
           signal: requestController.signal,
         },
@@ -104,6 +119,7 @@ export class GroqProvider implements AiProvider {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      const pendingToolCalls = new Map<number, AiToolCall>();
 
       while (true) {
         const { done, value } = await reader.read();
@@ -126,6 +142,17 @@ export class GroqProvider implements AiProvider {
           }
 
           const content = payload.choices?.[0]?.delta?.content ?? undefined;
+          for (const toolCall of payload.choices?.[0]?.delta?.tool_calls ?? []) {
+            const current = pendingToolCalls.get(toolCall.index) ?? {
+              id: '',
+              name: '',
+              arguments: '',
+            };
+            current.id += toolCall.id ?? '';
+            current.name += toolCall.function?.name ?? '';
+            current.arguments += toolCall.function?.arguments ?? '';
+            pendingToolCalls.set(toolCall.index, current);
+          }
           const usagePayload = payload.usage ?? payload.x_groq?.usage;
           const usage = usagePayload
             ? {
@@ -137,6 +164,13 @@ export class GroqProvider implements AiProvider {
         }
 
         if (done) break;
+      }
+      if (pendingToolCalls.size > 0) {
+        yield {
+          toolCalls: [...pendingToolCalls.entries()]
+            .sort(([left], [right]) => left - right)
+            .map(([, toolCall]) => toolCall),
+        };
       }
     } catch (error) {
       if (error instanceof AiProviderError) throw error;
@@ -185,7 +219,7 @@ export class GroqProvider implements AiProvider {
           },
           body: JSON.stringify({
             model: this.model,
-            messages,
+            messages: this.serializeMessages(messages),
             stream: false,
             response_format: { type: 'json_object' },
             reasoning_effort: 'none',
@@ -261,5 +295,26 @@ export class GroqProvider implements AiProvider {
       `A Groq recusou a solicitação com status ${response.status}.`,
       'invalid_response',
     );
+  }
+
+  private serializeMessages(messages: AiChatMessage[]): unknown[] {
+    return messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+      ...(message.toolCalls
+        ? {
+            tool_calls: message.toolCalls.map((toolCall) => ({
+              id: toolCall.id,
+              type: 'function',
+              function: {
+                name: toolCall.name,
+                arguments: toolCall.arguments,
+              },
+            })),
+          }
+        : {}),
+      ...(message.toolCallId ? { tool_call_id: message.toolCallId } : {}),
+      ...(message.name ? { name: message.name } : {}),
+    }));
   }
 }

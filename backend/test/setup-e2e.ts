@@ -10,3 +10,4 @@ process.env.SESSION_TTL_DAYS = '7';
 process.env.GROQ_API_KEY = '';
 process.env.GROQ_MODEL = 'qwen/qwen3.6-27b';
 process.env.AI_BRIEFING_MAX_ATTEMPTS = '2';
+process.env.AI_MAX_TOOL_CALLS = '4';

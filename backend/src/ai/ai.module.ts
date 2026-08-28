@@ -3,17 +3,13 @@ import { AuthModule } from '../auth/auth.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { AiChatService } from './ai-chat.service';
 import { AiController } from './ai.controller';
-import { AI_PROVIDER } from './ai-provider.interface';
-import { GroqProvider } from './groq.provider';
+import { AiProviderModule } from './ai-provider.module';
+import { AiToolsModule } from '../ai-tools/ai-tools.module';
 
 @Module({
-  imports: [AuthModule, ProjectsModule],
+  imports: [AuthModule, ProjectsModule, AiProviderModule, AiToolsModule],
   controllers: [AiController],
-  providers: [
-    GroqProvider,
-    { provide: AI_PROVIDER, useExisting: GroqProvider },
-    AiChatService,
-  ],
-  exports: [AiChatService, AI_PROVIDER],
+  providers: [AiChatService],
+  exports: [AiChatService],
 })
 export class AiModule {}
