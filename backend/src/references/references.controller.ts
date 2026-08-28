@@ -12,6 +12,7 @@ import { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { SearchYouTubeDto } from './dto/search-youtube.dto';
+import { AddSpotifyReferenceDto } from './dto/add-spotify-reference.dto';
 import { UpdateReferenceDto } from './dto/update-reference.dto';
 import { MusicReferenceEntity } from './music-reference.entity';
 import {
@@ -31,6 +32,15 @@ export class ReferencesController {
     @Body() dto: SearchYouTubeDto,
   ): Promise<ReferenceSearchResponse> {
     return this.referencesService.searchYouTube(user.id, projectId, dto.refresh);
+  }
+
+  @Post('spotify')
+  addSpotify(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: AddSpotifyReferenceDto,
+  ): Promise<MusicReferenceEntity> {
+    return this.referencesService.addSpotify(user.id, projectId, dto.url);
   }
 
   @Get()

@@ -11,6 +11,8 @@ import { ProjectsService } from '../projects/projects.service';
 import { MusicReferenceEntity } from './music-reference.entity';
 import { ReferenceSource, ReferenceStatus } from './reference-status.enum';
 import { YouTubeClient } from './youtube.client';
+import { SpotifyClient } from './spotify.client';
+import { parseSpotifyTrackLink } from './spotify-link';
 
 export interface ReferenceSearchResponse {
   query: string;
@@ -26,6 +28,7 @@ export class ReferencesService {
     private readonly projectsService: ProjectsService,
     private readonly briefingsService: BriefingsService,
     private readonly youtubeClient: YouTubeClient,
+    private readonly spotifyClient: SpotifyClient,
   ) {}
 
   async searchYouTube(
@@ -90,6 +93,38 @@ export class ReferencesService {
       where: { projectId },
       order: { updatedAt: 'DESC', id: 'DESC' },
     });
+  }
+
+  async addSpotify(
+    ownerId: string,
+    projectId: string,
+    link: string,
+  ): Promise<MusicReferenceEntity> {
+    await this.projectsService.getActiveProject(ownerId, projectId);
+    const parsed = parseSpotifyTrackLink(link);
+    const track = await this.spotifyClient.getTrack(parsed.trackId);
+    const existing = await this.referencesRepository.findOneBy({
+      projectId,
+      source: ReferenceSource.SPOTIFY,
+      externalId: track.externalId,
+    });
+    const values = {
+      ...track,
+      projectId,
+      source: ReferenceSource.SPOTIFY,
+      searchQuery: parsed.canonicalUrl,
+    };
+
+    if (existing) {
+      Object.assign(existing, values);
+      return this.referencesRepository.save(existing);
+    }
+    return this.referencesRepository.save(
+      this.referencesRepository.create({
+        ...values,
+        status: ReferenceStatus.PENDING,
+      }),
+    );
   }
 
   async updateStatus(

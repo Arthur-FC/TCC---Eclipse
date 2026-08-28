@@ -37,6 +37,9 @@ export class MusicReferenceEntity {
   @Column({ type: 'varchar', length: 200 })
   creator!: string;
 
+  @Column({ type: 'varchar', length: 300, nullable: true })
+  album!: string | null;
+
   @Column({ name: 'thumbnail_url', type: 'varchar', length: 1000 })
   thumbnailUrl!: string;
 

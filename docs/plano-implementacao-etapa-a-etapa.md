@@ -463,6 +463,8 @@ Referências oficiais consultadas:
 
 ## Etapa 10 - Adicionar referências do Spotify por link
 
+**Status atual:** em validação; implementação concluída em 28 de agosto de 2026 e aguardando credenciais pessoais do Spotify.
+
 ### Objetivo
 
 Permitir referências do Spotify sem depender de busca avançada ou análise depreciada da plataforma.
@@ -486,6 +488,32 @@ Referências do Spotify adicionadas manualmente à mesma curadoria do projeto.
 ### Critério de conclusão
 
 Um link válido é registrado com metadados reais e um link inválido produz mensagem compreensível.
+
+### Implementação e verificação realizadas
+
+- fluxo Client Credentials implementado exclusivamente no backend, com token reutilizado até perto do vencimento;
+- Client ID e Client Secret configuráveis somente por variáveis de ambiente;
+- aceitos apenas links HTTPS de faixa no domínio `open.spotify.com`, incluindo o prefixo localizado `intl-pt`;
+- links de álbum, playlist, artista, outros domínios e IDs fora do formato oficial são rejeitados antes da chamada externa;
+- consulta limitada ao endpoint de faixa e ao mercado brasileiro configurável;
+- título, artistas, álbum, capa original, duração e link oficial normalizados;
+- faixas ausentes, restritas ou indisponíveis no mercado tratado retornam mensagens compreensíveis;
+- origem Spotify adicionada ao mesmo modelo de curadoria, preservando decisões ao repetir o mesmo link;
+- nenhuma URL de prévia, arquivo de áudio ou conteúdo do Spotify é persistido ou enviado à IA;
+- formulário Angular adicionado ao painel de referências, com cards identificados visualmente como Spotify;
+- migração `SpotifyReferences1788134400000` aplicada ao PostgreSQL de desenvolvimento;
+- 10 testes unitários das integrações, 18 testes de integração, build do backend e build Angular aprovados.
+
+### Validação pendente
+
+Criar um aplicativo no Spotify for Developers, adicionar `SPOTIFY_CLIENT_ID` e `SPOTIFY_CLIENT_SECRET` ao `backend/.env`, reiniciar o backend e incluir uma faixa real pelo painel **Referências**. Aplicativos novos operam em modo de desenvolvimento e estão sujeitos às regras atuais de conta, usuários permitidos e quota do Spotify.
+
+Referências oficiais consultadas:
+
+- [Client Credentials Flow](https://developer.spotify.com/documentation/web-api/tutorials/client-credentials-flow);
+- [Get Track](https://developer.spotify.com/documentation/web-api/reference/get-track);
+- [modos e limites de quota](https://developer.spotify.com/documentation/web-api/concepts/quota-modes);
+- [limites de requisição](https://developer.spotify.com/documentation/web-api/concepts/rate-limits).
 
 ## Etapa 11 - Criar a biblioteca musical e o armazenamento
 

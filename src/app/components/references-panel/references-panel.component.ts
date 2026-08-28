@@ -14,10 +14,12 @@ export class ReferencesPanelComponent {
     @Input() searchQuery = '';
     @Input() fromCache = false;
     @Output() searchRequested = new EventEmitter<boolean>();
+    @Output() spotifyAddRequested = new EventEmitter<string>();
     @Output() statusChanged = new EventEmitter<{
         referenceId: string;
         status: ReferenceStatus;
     }>();
+    spotifyUrl = '';
 
     formatDuration(seconds: number | null): string {
         if (seconds === null) return 'Duração não informada';
@@ -35,6 +37,15 @@ export class ReferencesPanelComponent {
 
     requestSearch(): void {
         if (!this.busy) this.searchRequested.emit(!!this.searchQuery);
+    }
+
+    addSpotify(): void {
+        const url = this.spotifyUrl.trim();
+        if (url && !this.busy) this.spotifyAddRequested.emit(url);
+    }
+
+    sourceLabel(reference: MusicReference): string {
+        return reference.source === 'spotify' ? 'Spotify' : 'YouTube';
     }
 
     trackReference(_index: number, reference: MusicReference): string {

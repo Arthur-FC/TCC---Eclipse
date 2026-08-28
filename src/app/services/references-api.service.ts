@@ -33,6 +33,16 @@ export class ReferencesApiService {
         );
     }
 
+    addSpotify(projectId: string, url: string): Promise<MusicReference> {
+        return firstValueFrom(
+            this.http.post<MusicReference>(
+                `${this.projectsUrl}/${projectId}/references/spotify`,
+                { url },
+                { withCredentials: true }
+            )
+        );
+    }
+
     updateStatus(
         projectId: string,
         referenceId: string,

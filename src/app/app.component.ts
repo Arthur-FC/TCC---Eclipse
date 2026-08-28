@@ -330,7 +330,9 @@ export class AppComponent implements OnInit {
         this.referencesErrorMessage = '';
         try {
             this.references = await this.referencesApi.list(this.selectedChat.id);
-            this.referenceSearchQuery = this.references[0]?.searchQuery ?? '';
+            this.referenceSearchQuery =
+                this.references.find(reference => reference.source === 'youtube')
+                    ?.searchQuery ?? '';
         } catch (error) {
             this.referencesErrorMessage = this.describeError(error);
         } finally {
@@ -351,6 +353,27 @@ export class AppComponent implements OnInit {
             this.references = response.items;
             this.referenceSearchQuery = response.query;
             this.referencesFromCache = response.fromCache;
+        } catch (error) {
+            this.referencesErrorMessage = this.describeError(error);
+        } finally {
+            this.isReferencesBusy = false;
+        }
+    }
+
+    async addSpotifyReference(url: string): Promise<void> {
+        if (!this.selectedChat || this.isReferencesBusy) return;
+
+        this.isReferencesBusy = true;
+        this.referencesErrorMessage = '';
+        try {
+            const added = await this.referencesApi.addSpotify(
+                this.selectedChat.id,
+                url
+            );
+            this.references = [
+                added,
+                ...this.references.filter(reference => reference.id !== added.id)
+            ];
         } catch (error) {
             this.referencesErrorMessage = this.describeError(error);
         } finally {

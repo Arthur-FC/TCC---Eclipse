@@ -8,6 +8,7 @@ import { configureApplication } from '../src/bootstrap';
 import { AI_PROVIDER, AiProvider } from '../src/ai/ai-provider.interface';
 import { AiProviderError } from '../src/ai/ai-provider.error';
 import { YouTubeClient } from '../src/references/youtube.client';
+import { SpotifyClient } from '../src/references/spotify.client';
 
 describe('Eclipse API (e2e)', () => {
   let app: NestExpressApplication;
@@ -108,6 +109,18 @@ describe('Eclipse API (e2e)', () => {
       ],
     })),
   };
+  const fakeSpotifyClient = {
+    getTrack: jest.fn(async (trackId: string) => ({
+      externalId: trackId,
+      title: 'Faixa Lunar',
+      creator: 'Artista Eclipse',
+      album: 'Álbum Noturno',
+      thumbnailUrl: 'https://img.spotify.test/album.jpg',
+      url: `https://open.spotify.com/track/${trackId}`,
+      durationSeconds: 203,
+      embeddable: false as const,
+    })),
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -117,6 +130,8 @@ describe('Eclipse API (e2e)', () => {
       .useValue(fakeAiProvider)
       .overrideProvider(YouTubeClient)
       .useValue(fakeYouTubeClient)
+      .overrideProvider(SpotifyClient)
+      .useValue(fakeSpotifyClient)
       .compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
@@ -131,6 +146,7 @@ describe('Eclipse API (e2e)', () => {
     providerMode = 'success';
     jsonGenerationCalls = 0;
     fakeYouTubeClient.search.mockClear();
+    fakeSpotifyClient.getTrack.mockClear();
     await dataSource.query(
       'TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE',
     );
@@ -648,6 +664,71 @@ describe('Eclipse API (e2e)', () => {
       .send({})
       .expect(409);
     expect(fakeYouTubeClient.search).toHaveBeenCalledTimes(2);
+  });
+
+  it('adds and deduplicates a Spotify track from a validated link', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const intruder = request.agent(app.getHttpServer());
+    await owner
+      .post('/api/auth/register')
+      .send({
+        name: 'Spotify',
+        email: 'spotify@example.com',
+        password: 'senha-segura-spotify',
+      })
+      .expect(201);
+    await intruder
+      .post('/api/auth/register')
+      .send({
+        name: 'Outro Spotify',
+        email: 'outro-spotify@example.com',
+        password: 'senha-segura-outro-spotify',
+      })
+      .expect(201);
+    const project = await owner
+      .post('/api/projects')
+      .send({ title: 'Referências Spotify' })
+      .expect(201);
+    const trackId = '11dFghVXANMlKmJXsNCbNl';
+    const localizedLink =
+      `https://open.spotify.com/intl-pt/track/${trackId}?si=rastreamento`;
+
+    const added = await owner
+      .post(`/api/projects/${project.body.id}/references/spotify`)
+      .send({ url: localizedLink })
+      .expect(201);
+    expect(added.body).toMatchObject({
+      source: 'spotify',
+      externalId: trackId,
+      title: 'Faixa Lunar',
+      creator: 'Artista Eclipse',
+      album: 'Álbum Noturno',
+      durationSeconds: 203,
+      embeddable: false,
+      status: 'pending',
+      searchQuery: `https://open.spotify.com/track/${trackId}`,
+    });
+
+    await owner
+      .patch(`/api/projects/${project.body.id}/references/${added.body.id}`)
+      .send({ status: 'approved' })
+      .expect(200);
+    const repeated = await owner
+      .post(`/api/projects/${project.body.id}/references/spotify`)
+      .send({ url: `https://open.spotify.com/track/${trackId}` })
+      .expect(201);
+    expect(repeated.body.id).toBe(added.body.id);
+    expect(repeated.body.status).toBe('approved');
+
+    await owner
+      .post(`/api/projects/${project.body.id}/references/spotify`)
+      .send({ url: 'https://open.spotify.com/album/11dFghVXANMlKmJXsNCbNl' })
+      .expect(400);
+    await intruder
+      .post(`/api/projects/${project.body.id}/references/spotify`)
+      .send({ url: `https://open.spotify.com/track/${trackId}` })
+      .expect(404);
+    expect(fakeSpotifyClient.getTrack).toHaveBeenCalledTimes(2);
   });
 
   it('paginates projects and validates pagination parameters', async () => {

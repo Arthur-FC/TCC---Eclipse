@@ -47,6 +47,41 @@ header button {
 
 .query { color: #dfc2f1; }
 
+.spotify-form {
+    display: grid;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid #ffffff18;
+    border-radius: 12px;
+    background: #252525;
+}
+
+.spotify-form label { color: #eee; font-size: 12px; font-weight: 650; }
+.spotify-form > div { display: flex; gap: 8px; }
+.spotify-form input {
+    min-width: 0;
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #555;
+    border-radius: 8px;
+    outline: none;
+    background: #1d1d1d;
+    color: #fff;
+    font: 12px Inter;
+}
+.spotify-form input:focus { border-color: #1ed760; }
+.spotify-form button {
+    border: 0;
+    border-radius: 8px;
+    padding: 0 14px;
+    background: #1ed760;
+    color: #101010;
+    cursor: pointer;
+    font: 700 11px Inter;
+}
+.spotify-form small { color: #999; font-size: 10px; }
+
 .panel-error {
     padding: 11px 13px;
     border-radius: 10px;
@@ -84,6 +119,9 @@ article {
 
 article.approved { border-color: #65d99588; }
 article.rejected { border-color: #ef718077; opacity: .66; }
+article.spotify { border-top-color: #1ed76088; }
+article.spotify .thumbnail { aspect-ratio: 1; }
+article.spotify .source { color: #1ed760; }
 
 .thumbnail {
     position: relative;
@@ -110,6 +148,7 @@ article.rejected { border-color: #ef718077; opacity: .66; }
 .title { color: #fff; font-size: 14px; font-weight: 650; line-height: 1.35; text-decoration: none; }
 .title:hover { text-decoration: underline; }
 .card-body p { margin: 0; color: #aaa; font-size: 11px; }
+.card-body .album { color: #858585; font-style: italic; }
 
 .decision { display: flex; gap: 8px; margin-top: 4px; }
 .decision button {
@@ -130,4 +169,6 @@ button:disabled { cursor: wait; opacity: .55; }
     .cards { grid-template-columns: 1fr; }
     .references > header { flex-direction: column; }
     header button { width: 100%; }
+    .spotify-form > div { flex-direction: column; }
+    .spotify-form button { min-height: 38px; }
 }

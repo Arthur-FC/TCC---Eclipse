@@ -42,6 +42,10 @@ Variáveis disponíveis nesta etapa:
 | `YOUTUBE_RESULTS_LIMIT` | `10` | Máximo de vídeos por pesquisa |
 | `YOUTUBE_DAILY_SEARCH_LIMIT` | `90` | Margem local para o limite diário de pesquisas |
 | `YOUTUBE_DAILY_GENERAL_LIMIT` | `9000` | Margem local para a quota geral diária |
+| `SPOTIFY_CLIENT_ID` | vazio | Identificador secreto do aplicativo Spotify; obrigatório em produção |
+| `SPOTIFY_CLIENT_SECRET` | vazio | Segredo do aplicativo Spotify; obrigatório em produção |
+| `SPOTIFY_MARKET` | `BR` | Mercado usado para verificar disponibilidade das faixas |
+| `SPOTIFY_TIMEOUT_MS` | `15000` | Tempo máximo de cada chamada ao Spotify |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -199,6 +203,24 @@ A busca usa `type=video`, categoria musical e filtro de incorporação. Depois c
 
 O cache padrão dura 24 horas. O contador local separa chamadas de pesquisa da quota geral e usa margens abaixo dos limites padrão do Google. Repetir uma busca mantém as decisões já tomadas e não duplica o mesmo vídeo no projeto.
 
+## Referências do Spotify por link
+
+Crie um aplicativo no [Spotify for Developers](https://developer.spotify.com/dashboard), copie o Client ID e o Client Secret e configure somente em `backend/.env`:
+
+```env
+SPOTIFY_CLIENT_ID=seu_client_id
+SPOTIFY_CLIENT_SECRET=seu_client_secret
+SPOTIFY_MARKET=BR
+```
+
+O backend usa o fluxo Client Credentials, próprio para comunicação servidor-a-servidor, e reutiliza o token até perto do vencimento. Em modo de desenvolvimento, a conta proprietária do aplicativo precisa atender às regras atuais do Spotify, incluindo a exigência de Premium. Reinicie o backend depois de configurar as credenciais.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/projects/:projectId/references/spotify` | Adicionar os metadados de uma faixa por link |
+
+São aceitos links HTTPS de faixa em `open.spotify.com/track/...`, inclusive links localizados como `open.spotify.com/intl-pt/track/...`. Links de álbum, playlist, artista, domínios externos e IDs inválidos são rejeitados. O sistema salva título, artistas, álbum, capa, duração e link oficial; não baixa, armazena nem envia áudio ou prévias do Spotify à IA.
+
 ## Limites atuais
 
-O Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.
+A busca no acervo ainda pertence às próximas etapas. A integração do Spotify adiciona apenas os metadados verificados da faixa e não fornece o áudio à IA.

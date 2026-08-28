@@ -63,6 +63,18 @@ export const environmentValidationSchema = Joi.object({
   YOUTUBE_RESULTS_LIMIT: Joi.number().integer().min(1).max(25).default(10),
   YOUTUBE_DAILY_SEARCH_LIMIT: Joi.number().integer().min(1).max(100).default(90),
   YOUTUBE_DAILY_GENERAL_LIMIT: Joi.number().integer().min(1).max(10_000).default(9_000),
+  SPOTIFY_CLIENT_ID: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(10).required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  SPOTIFY_CLIENT_SECRET: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(10).required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  SPOTIFY_MARKET: Joi.string().pattern(/^[A-Z]{2}$/).default('BR'),
+  SPOTIFY_TIMEOUT_MS: Joi.number().integer().min(3_000).max(60_000).default(15_000),
 }).unknown(true);
 
 export function parseCorsOrigins(value: string): string[] {

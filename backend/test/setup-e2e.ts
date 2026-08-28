@@ -17,3 +17,7 @@ process.env.YOUTUBE_CACHE_TTL_SECONDS = '86400';
 process.env.YOUTUBE_RESULTS_LIMIT = '10';
 process.env.YOUTUBE_DAILY_SEARCH_LIMIT = '90';
 process.env.YOUTUBE_DAILY_GENERAL_LIMIT = '9000';
+process.env.SPOTIFY_CLIENT_ID = 'spotify_test_client';
+process.env.SPOTIFY_CLIENT_SECRET = 'spotify_test_secret';
+process.env.SPOTIFY_MARKET = 'BR';
+process.env.SPOTIFY_TIMEOUT_MS = '15000';

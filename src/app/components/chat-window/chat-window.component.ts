@@ -41,6 +41,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() briefingConfirmRequested = new EventEmitter<void>();
     @Output() referencesRequested = new EventEmitter<void>();
     @Output() referencesSearchRequested = new EventEmitter<boolean>();
+    @Output() spotifyReferenceAddRequested = new EventEmitter<string>();
     @Output() referenceStatusChanged = new EventEmitter<{
         referenceId: string;
         status: ReferenceStatus;
@@ -50,14 +51,25 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
 
     private lastChatId: string | null = null;
     private lastMessageCount = 0;
+    private lastMessageContentLength = 0;
+    private lastTypingIndicatorVisible = false;
+    private scrollToBottomWhenChatReturns = false;
     briefingOpen = false;
     referencesOpen = false;
+
+    get showTypingIndicator(): boolean {
+        return !!this.chat &&
+            this.sending &&
+            this.chat.messages.at(-1)?.author !== 'assistant';
+    }
 
     toggleBriefing(): void {
         this.briefingOpen = !this.briefingOpen;
         this.referencesOpen = false;
         if (this.briefingOpen) {
             this.briefingRequested.emit();
+        } else {
+            this.scrollToBottomWhenChatReturns = true;
         }
     }
 
@@ -66,6 +78,8 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         this.briefingOpen = false;
         if (this.referencesOpen) {
             this.referencesRequested.emit();
+        } else {
+            this.scrollToBottomWhenChatReturns = true;
         }
     }
 
@@ -79,25 +93,41 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     ngAfterViewChecked(): void {
         const chatId = this.chat?.id ?? null;
         const messageCount = this.chat?.messages.length ?? 0;
+        const messageContentLength = this.chat?.messages.at(-1)?.content.length ?? 0;
         const chatChanged = chatId !== this.lastChatId;
         const messagesChanged = messageCount !== this.lastMessageCount;
+        const messageContentChanged =
+            messageContentLength !== this.lastMessageContentLength;
+        const typingIndicatorChanged =
+            this.showTypingIndicator !== this.lastTypingIndicatorVisible;
+        const chatReturned = this.scrollToBottomWhenChatReturns;
 
-        if (!chatChanged && !messagesChanged) {
+        if (
+            !chatChanged &&
+            !messagesChanged &&
+            !messageContentChanged &&
+            !typingIndicatorChanged &&
+            !chatReturned
+        ) {
             return;
         }
 
         this.lastChatId = chatId;
         this.lastMessageCount = messageCount;
+        this.lastMessageContentLength = messageContentLength;
+        this.lastTypingIndicatorVisible = this.showTypingIndicator;
 
         const container = this.messagesContainer?.nativeElement;
         if (!container) {
             return;
         }
 
+        this.scrollToBottomWhenChatReturns = false;
+
         requestAnimationFrame(() => {
             container.scrollTo({
                 top: container.scrollHeight,
-                behavior: chatChanged ? 'auto' : 'smooth'
+                behavior: chatChanged || chatReturned ? 'auto' : 'smooth'
             });
         });
     }

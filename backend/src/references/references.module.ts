@@ -9,6 +9,7 @@ import { ReferencesService } from './references.service';
 import { YouTubeClient } from './youtube.client';
 import { YouTubeQuotaUsageEntity } from './youtube-quota-usage.entity';
 import { YouTubeSearchCacheEntity } from './youtube-search-cache.entity';
+import { SpotifyClient } from './spotify.client';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { YouTubeSearchCacheEntity } from './youtube-search-cache.entity';
     ]),
   ],
   controllers: [ReferencesController],
-  providers: [ReferencesService, YouTubeClient],
+  providers: [ReferencesService, YouTubeClient, SpotifyClient],
   exports: [ReferencesService],
 })
 export class ReferencesModule {}

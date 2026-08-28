@@ -52,6 +52,7 @@
         [searchQuery]="referenceSearchQuery"
         [fromCache]="referencesFromCache"
         (searchRequested)="referencesSearchRequested.emit($event)"
+        (spotifyAddRequested)="spotifyReferenceAddRequested.emit($event)"
         (statusChanged)="referenceStatusChanged.emit($event)"
     ></app-references-panel>
 
@@ -61,7 +62,18 @@
             [message]="message"
         ></app-message>
 
-        <p *ngIf="chat.messages.length === 0" class="empty-state">
+        <div
+            *ngIf="showTypingIndicator"
+            class="typing-indicator"
+            role="status"
+            aria-label="Eclipse está escrevendo"
+        >
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </div>
+
+        <p *ngIf="chat.messages.length === 0 && !showTypingIndicator" class="empty-state">
             Esta conversa ainda não possui mensagens.
         </p>
     </div>

@@ -2,16 +2,34 @@
     <header>
         <div>
             <p class="eyebrow">Pesquisa musical</p>
-            <h2 id="references-title">Referências do YouTube</h2>
+            <h2 id="references-title">Referências musicais</h2>
         </div>
         <button type="button" [disabled]="busy" (click)="requestSearch()">
-            {{ searchQuery ? 'Tentar novamente' : 'Pesquisar referências' }}
+            {{ searchQuery ? 'Tentar novamente no YouTube' : 'Pesquisar no YouTube' }}
         </button>
     </header>
 
     <p class="requirement">
-        A busca usa somente o briefing confirmado e mantém sua chave do YouTube no backend.
+        Pesquise pelo briefing no YouTube ou adicione uma faixa do Spotify pelo link.
     </p>
+    <form class="spotify-form" (ngSubmit)="addSpotify()">
+        <label for="spotify-url">Link da faixa no Spotify</label>
+        <div>
+            <input
+                id="spotify-url"
+                name="spotifyUrl"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="https://open.spotify.com/track/..."
+                [(ngModel)]="spotifyUrl"
+                [disabled]="busy"
+                required
+            />
+            <button type="submit" [disabled]="busy || !spotifyUrl.trim()">Adicionar</button>
+        </div>
+        <small>Somente os metadados públicos da faixa serão salvos.</small>
+    </form>
     <p *ngIf="searchQuery" class="query">
         Busca utilizada: <strong>{{ searchQuery }}</strong>
         <span *ngIf="fromCache"> · resultado do cache</span>
@@ -22,6 +40,7 @@
     <div *ngIf="!busy && references.length" class="cards">
         <article
             *ngFor="let reference of references; trackBy: trackReference"
+            [class.spotify]="reference.source === 'spotify'"
             [class.approved]="reference.status === 'approved'"
             [class.rejected]="reference.status === 'rejected'"
         >
@@ -30,11 +49,12 @@
                 <span>{{ formatDuration(reference.durationSeconds) }}</span>
             </a>
             <div class="card-body">
-                <span class="source">YouTube</span>
+                <span class="source">{{ sourceLabel(reference) }}</span>
                 <a [href]="reference.url" target="_blank" rel="noopener noreferrer" class="title">
                     {{ reference.title }}
                 </a>
                 <p>{{ reference.creator }}</p>
+                <p *ngIf="reference.album" class="album">{{ reference.album }}</p>
                 <div class="decision">
                     <button
                         type="button"
@@ -66,7 +86,7 @@
         </ng-container>
         <ng-template #noSearchYet>
             <h3>Nenhuma referência pesquisada</h3>
-            <p>Confirme o briefing e inicie a pesquisa para receber vídeos reais do YouTube.</p>
+            <p>Pesquise pelo briefing no YouTube ou cole acima o link de uma faixa do Spotify.</p>
         </ng-template>
     </div>
 </section>

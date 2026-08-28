@@ -6,4 +6,5 @@ export enum ReferenceStatus {
 
 export enum ReferenceSource {
   YOUTUBE = 'youtube',
+  SPOTIFY = 'spotify',
 }
