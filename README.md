@@ -20,6 +20,8 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Respostas progressivas pela Groq com o modelo Qwen 3.6 27B.
 - Persistência de respostas da IA com tokens, modelo e latência.
 - Repetição controlada quando a geração falha.
+- Briefing estruturado gerado pela IA, revisável e editável.
+- Versionamento e confirmação explícita do briefing.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.
 
@@ -43,6 +45,11 @@ Requisitos: Node.js 22 ou uma versão compatível com Angular 19 e npm.
 ```bash
 npm ci
 npm start
+```
+ou
+```bash
+cd "\TCC---Eclipse"
+& ".\node_modules\.bin\ng.cmd" serve
 ```
 
 A aplicação ficará disponível no endereço mostrado pelo Angular CLI, normalmente `http://localhost:4200`.
@@ -71,6 +78,12 @@ docker compose up -d postgres
 corepack pnpm db:migration:run
 corepack pnpm start:dev
 ```
+ou
+```bash
+cd "\backend"
+docker compose up -d postgres
+& ".\node_modules\.bin\nest.cmd" start --watch
+```
 
 A API ficará disponível em `http://localhost:3002/api`. Para verificar sua saúde, acesse `http://localhost:3002/api/health`.
 
@@ -83,6 +96,7 @@ src/app/
 ├── components/       # Partes visuais reutilizáveis
 │   ├── chat-list/
 │   ├── chat-window/
+│   ├── briefing-panel/
 │   ├── message/
 │   ├── message-input/
 │   └── sidebar/
@@ -106,6 +120,5 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 
 ## Próximos passos
 
-- Implementar o briefing estruturado.
 - Criar o sistema de ferramentas controladas da IA.
 - Implementar biblioteca e busca semântica.

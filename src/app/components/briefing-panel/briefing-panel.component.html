@@ -1,0 +1,87 @@
+<section class="briefing" aria-labelledby="briefing-title">
+    <header>
+        <div>
+            <p class="eyebrow">Planejamento criativo</p>
+            <h2 id="briefing-title">Briefing musical</h2>
+        </div>
+        <span *ngIf="briefing" class="status" [class.confirmed]="briefing.status === 'confirmed'">
+            {{ briefing.status === 'confirmed' ? 'Confirmado' : 'Rascunho' }} · v{{ briefing.version }}
+        </span>
+    </header>
+
+    <p *ngIf="errorMessage" class="panel-error" role="alert">{{ errorMessage }}</p>
+
+    <div *ngIf="busy" class="panel-loading" aria-live="polite">
+        Processando o briefing...
+    </div>
+
+    <div *ngIf="!briefing && !busy" class="empty-briefing">
+        <h3>A conversa ainda não foi estruturada</h3>
+        <p>
+            A Eclipse analisará somente o histórico deste projeto. Informações ausentes
+            continuarão vazias e serão transformadas em perguntas complementares.
+        </p>
+        <button type="button" [disabled]="!canGenerate" (click)="generateRequested.emit()">
+            Gerar briefing da conversa
+        </button>
+        <small *ngIf="!canGenerate">Envie ao menos uma mensagem antes de gerar.</small>
+    </div>
+
+    <form *ngIf="briefing && draft" (submit)="$event.preventDefault(); save()">
+        <div class="review-notice" *ngIf="briefing.status !== 'confirmed'">
+            Revise os campos abaixo. A pesquisa só poderá avançar depois da sua confirmação.
+        </div>
+
+        <div class="fields-grid">
+            <label *ngFor="let field of scalarFields">
+                <span>{{ field.label }}</span>
+                <textarea
+                    [rows]="field.rows"
+                    [value]="scalarValue(field.key)"
+                    [disabled]="busy"
+                    (input)="updateScalar(field.key, $any($event.target).value)"
+                ></textarea>
+            </label>
+
+            <label *ngFor="let field of listFields">
+                <span>{{ field.label }}</span>
+                <textarea
+                    rows="3"
+                    [placeholder]="field.hint"
+                    [value]="listValue(field.key)"
+                    [disabled]="busy"
+                    (input)="updateList(field.key, $any($event.target).value)"
+                ></textarea>
+            </label>
+        </div>
+
+        <section *ngIf="draft.uncertainties.length" class="attention-block">
+            <h3>Pontos incertos</h3>
+            <ul><li *ngFor="let item of draft.uncertainties">{{ item }}</li></ul>
+        </section>
+
+        <section *ngIf="draft.followUpQuestions.length" class="questions-block">
+            <h3>Perguntas para completar o briefing</h3>
+            <ol><li *ngFor="let question of draft.followUpQuestions">{{ question }}</li></ol>
+            <p>Você pode fechar o briefing, responder no chat e depois clicar em “Atualizar pela conversa”.</p>
+        </section>
+
+        <div class="actions">
+            <button type="button" class="secondary" [disabled]="busy" (click)="generateRequested.emit()">
+                Atualizar pela conversa
+            </button>
+            <button type="submit" class="secondary" [disabled]="busy || !dirty">
+                Salvar nova versão
+            </button>
+            <button
+                type="button"
+                class="primary"
+                [disabled]="busy || dirty || briefing.status === 'confirmed'"
+                (click)="confirmRequested.emit()"
+            >
+                {{ briefing.status === 'confirmed' ? 'Briefing confirmado' : 'Confirmar briefing' }}
+            </button>
+        </div>
+        <small *ngIf="dirty" class="unsaved">Salve suas alterações antes de confirmar.</small>
+    </form>
+</section>

@@ -87,4 +87,33 @@ describe('GroqProvider', () => {
       retryAfterSeconds: 4,
     });
   });
+
+  it('requests and parses a JSON object without streaming', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '{"theme":"Lua"}' } }],
+          usage: { prompt_tokens: 11, completion_tokens: 4 },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const provider = new GroqProvider(config('gsk_test_key_for_unit_tests'));
+
+    const result = await provider.generateJson(
+      [{ role: 'user', content: 'Gere JSON.' }],
+      new AbortController().signal,
+    );
+
+    expect(result).toEqual({
+      content: '{"theme":"Lua"}',
+      usage: { promptTokens: 11, completionTokens: 4 },
+    });
+    const request = (fetch as jest.Mock).mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(request.body as string)).toMatchObject({
+      stream: false,
+      response_format: { type: 'json_object' },
+      reasoning_format: 'hidden',
+    });
+  });
 });

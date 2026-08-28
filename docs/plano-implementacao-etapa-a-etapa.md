@@ -236,7 +236,7 @@ Usuário entra, cria projeto, envia mensagem, atualiza a página e recupera o me
 
 ## Etapa 6 - Integrar a IA principal pela Groq
 
-**Status atual:** em validação; implementação concluída em 26 de agosto de 2026 e teste real aguardando `GROQ_API_KEY`.
+**Status atual:** concluída em 26 de agosto de 2026.
 
 ### Objetivo
 
@@ -284,9 +284,9 @@ A resposta aparece por streaming, é persistida corretamente e uma falha da Groq
 - migração de metadados da IA aplicada e esquema do banco verificado;
 - build de desenvolvimento do Angular e build do backend aprovados.
 
-### Validação pendente
+### Validação real realizada
 
-Adicionar uma chave pessoal ao `backend/.env`, reiniciar o backend e executar uma conversa real para confirmar a resposta do modelo. A chave não deve ser enviada ao frontend nem adicionada ao Git.
+Uma conversa real foi executada pela interface com a chave configurada somente no `backend/.env`. A resposta do Qwen foi recebida, exibida e persistida. A renderização de Markdown e a cópia do texto das mensagens também foram verificadas na interface.
 
 Referências oficiais consultadas:
 
@@ -295,6 +295,8 @@ Referências oficiais consultadas:
 - [Limites gratuitos](https://console.groq.com/docs/rate-limits).
 
 ## Etapa 7 - Implementar o briefing estruturado
+
+**Status atual:** em validação; implementação concluída em 26 de agosto de 2026 e aguardando uma geração real pela interface.
 
 ### Objetivo
 
@@ -320,6 +322,31 @@ Briefing estruturado, editável, validado e salvo.
 ### Critério de conclusão
 
 Um briefing livre é convertido para o formato definido sem campos inventados e somente avança após confirmação.
+
+### Implementação e verificação realizadas
+
+- esquema definido com objetivo, tema, narrativa, emoções, gêneros, clima, instrumentação, andamento, público, referências, restrições e observações;
+- campos ausentes, incertezas e perguntas complementares mantidos separadamente;
+- Qwen configurado no modo de objeto JSON da Groq, compatível com o modelo escolhido;
+- validação rígida no backend rejeita propriedades desconhecidas, tipos incorretos e identificadores de campos inexistentes;
+- geração repetida no máximo duas vezes quando o JSON não respeita o esquema;
+- briefing salvo em tabela própria com versão, estado, conversa de origem, modelo, provedor e tokens;
+- edições criam novas versões e não sobrescrevem o histórico anterior;
+- controle de versão impede edição ou confirmação desatualizada;
+- confirmação explícita separada do salvamento;
+- regra interna `requireConfirmedBriefing` preparada para bloquear as pesquisas das próximas etapas;
+- painel Angular permite gerar, revisar, editar, atualizar pela conversa e confirmar;
+- perguntas complementares ficam visíveis para o usuário responder no chat antes de uma nova geração;
+- migração `StructuredBriefings1787788800000` aplicada ao PostgreSQL de desenvolvimento;
+- 18 testes unitários em 6 conjuntos, 15 testes de integração, build do backend e build Angular aprovados.
+
+### Validação pendente
+
+Reiniciar o backend, abrir uma conversa real, acessar **Briefing**, gerar, revisar, salvar uma alteração e confirmar. Após esse fluxo visual, a etapa pode ser marcada como concluída.
+
+Referência oficial consultada:
+
+- [JSON Object Mode e Structured Outputs da Groq](https://console.groq.com/docs/structured-outputs).
 
 ## Etapa 8 - Criar o sistema de ferramentas da IA
 

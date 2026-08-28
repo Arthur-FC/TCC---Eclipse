@@ -13,6 +13,7 @@ import { MessageComponent } from './components/message/message.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthScreenComponent } from './components/auth-screen/auth-screen.component';
 import { MarkdownPipe } from './pipes/markdown.pipe';
+import { BriefingPanelComponent } from './components/briefing-panel/briefing-panel.component';
 
 @NgModule({
     declarations: [
@@ -23,7 +24,8 @@ import { MarkdownPipe } from './pipes/markdown.pipe';
         ChatWindowComponent,
         MessageComponent,
         MessageInputComponent,
-        MarkdownPipe
+        MarkdownPipe,
+        BriefingPanelComponent
     ],
     imports: [BrowserModule, HttpClientModule, FormsModule, IonicModule.forRoot()],
     bootstrap: [AppComponent]

@@ -4,6 +4,7 @@ import {
   AiChatMessage,
   AiProvider,
   AiProviderChunk,
+  AiProviderResponse,
 } from './ai-provider.interface';
 import { AiProviderError } from './ai-provider.error';
 
@@ -18,6 +19,14 @@ interface GroqStreamPayload {
       prompt_tokens?: number;
       completion_tokens?: number;
     };
+  };
+}
+
+interface GroqCompletionPayload {
+  choices?: Array<{ message?: { content?: string | null } }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
   };
 }
 
@@ -129,6 +138,86 @@ export class GroqProvider implements AiProvider {
 
         if (done) break;
       }
+    } catch (error) {
+      if (error instanceof AiProviderError) throw error;
+      if (requestController.signal.aborted) {
+        throw new AiProviderError(
+          signal.aborted
+            ? 'A geração foi cancelada.'
+            : 'A Groq demorou demais para responder.',
+          'timeout',
+        );
+      }
+      throw new AiProviderError(
+        'Não foi possível conectar à Groq.',
+        'unavailable',
+      );
+    } finally {
+      clearTimeout(timeout);
+      signal.removeEventListener('abort', abortFromCaller);
+    }
+  }
+
+  async generateJson(
+    messages: AiChatMessage[],
+    signal: AbortSignal,
+  ): Promise<AiProviderResponse> {
+    if (!this.apiKey) {
+      throw new AiProviderError(
+        'A chave da Groq não foi configurada.',
+        'not_configured',
+      );
+    }
+
+    const requestController = new AbortController();
+    const timeout = setTimeout(() => requestController.abort(), this.timeoutMs);
+    const abortFromCaller = () => requestController.abort();
+    signal.addEventListener('abort', abortFromCaller, { once: true });
+
+    try {
+      const response = await fetch(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages,
+            stream: false,
+            response_format: { type: 'json_object' },
+            reasoning_effort: 'none',
+            reasoning_format: 'hidden',
+            temperature: 0.2,
+            top_p: 0.8,
+            max_completion_tokens: this.maxCompletionTokens,
+          }),
+          signal: requestController.signal,
+        },
+      );
+
+      if (!response.ok) {
+        await this.throwResponseError(response);
+      }
+      const payload = (await response.json()) as GroqCompletionPayload;
+      const content = payload.choices?.[0]?.message?.content?.trim();
+      if (!content) {
+        throw new AiProviderError(
+          'A Groq não devolveu um objeto JSON.',
+          'invalid_response',
+        );
+      }
+      return {
+        content,
+        usage: payload.usage
+          ? {
+              promptTokens: payload.usage.prompt_tokens,
+              completionTokens: payload.usage.completion_tokens,
+            }
+          : undefined,
+      };
     } catch (error) {
       if (error instanceof AiProviderError) throw error;
       if (requestController.signal.aborted) {

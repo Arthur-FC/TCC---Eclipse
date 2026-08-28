@@ -34,6 +34,7 @@ Variáveis disponíveis nesta etapa:
 | `GROQ_TIMEOUT_MS` | `45000` | Tempo máximo de uma geração |
 | `AI_MAX_COMPLETION_TOKENS` | `1500` | Limite de tokens da resposta |
 | `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
+| `AI_BRIEFING_MAX_ATTEMPTS` | `2` | Máximo de tentativas para obter um briefing JSON válido |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -143,6 +144,20 @@ Repetição após falha da Groq, sem duplicar a mensagem:
 
 A resposta utiliza `text/event-stream` com eventos `user_message`, `delta`, `done` e `error`. As respostas da assistente guardam modelo, provedor, tokens e latência no PostgreSQL.
 
+## Briefing estruturado
+
+O briefing transforma o histórico da conversa em dados editáveis. O Qwen usa o modo de objeto JSON da Groq, mas o backend continua validando cada campo e faz no máximo duas tentativas. Valores ausentes permanecem `null` ou como listas vazias; dúvidas e perguntas complementares são mantidas separadamente.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/projects/:projectId/briefings/generate` | Gerar uma nova versão usando uma conversa do projeto |
+| `GET` | `/api/projects/:projectId/briefings/latest` | Consultar a versão mais recente |
+| `GET` | `/api/projects/:projectId/briefings` | Consultar o histórico de versões |
+| `PUT` | `/api/projects/:projectId/briefings/:version` | Salvar uma edição como nova versão |
+| `POST` | `/api/projects/:projectId/briefings/:version/confirm` | Confirmar explicitamente a versão mais recente |
+
+A edição e a confirmação verificam a versão informada para evitar sobrescrever uma alteração mais recente. O backend também disponibiliza uma regra interna que impede as futuras pesquisas de avançarem sem um briefing confirmado.
+
 ## Limites atuais
 
-O briefing estruturado, as ferramentas, o YouTube, o Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.
+As ferramentas, o YouTube, o Spotify e a busca no acervo ainda pertencem às próximas etapas. O modelo não deve afirmar que utilizou essas integrações.

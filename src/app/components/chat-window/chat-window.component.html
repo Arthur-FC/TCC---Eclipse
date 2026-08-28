@@ -5,6 +5,15 @@
     <header>
         <h1>{{ chat.title }}</h1>
         <button
+            *ngIf="chat.conversationId"
+            type="button"
+            class="briefing-button"
+            [class.active]="briefingOpen"
+            (click)="toggleBriefing()"
+        >
+            {{ briefingOpen ? 'Voltar ao chat' : 'Briefing' }}
+        </button>
+        <button
             type="button"
             class="close-button"
             aria-label="Fechar conversa"
@@ -15,7 +24,18 @@
         </button>
     </header>
 
-    <div #messages class="messages">
+    <app-briefing-panel
+        *ngIf="briefingOpen"
+        [briefing]="briefing"
+        [busy]="briefingBusy"
+        [errorMessage]="briefingError"
+        [canGenerate]="!!chat.conversationId && chat.messages.length > 0"
+        (generateRequested)="briefingGenerateRequested.emit()"
+        (saveRequested)="briefingSaveRequested.emit($event)"
+        (confirmRequested)="briefingConfirmRequested.emit()"
+    ></app-briefing-panel>
+
+    <div *ngIf="!briefingOpen" #messages class="messages">
         <app-message
             *ngFor="let message of chat.messages"
             [message]="message"
@@ -26,7 +46,7 @@
         </p>
     </div>
 
-    <div class="composer-area">
+    <div *ngIf="!briefingOpen" class="composer-area">
         <button
             *ngIf="retryAvailable"
             type="button"

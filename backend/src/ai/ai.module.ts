@@ -14,6 +14,6 @@ import { GroqProvider } from './groq.provider';
     { provide: AI_PROVIDER, useExisting: GroqProvider },
     AiChatService,
   ],
-  exports: [AiChatService],
+  exports: [AiChatService, AI_PROVIDER],
 })
 export class AiModule {}

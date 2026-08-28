@@ -11,7 +11,25 @@ import { AiProviderError } from '../src/ai/ai-provider.error';
 describe('Eclipse API (e2e)', () => {
   let app: NestExpressApplication;
   let dataSource: DataSource;
-  let providerMode: 'success' | 'failure' = 'success';
+  let providerMode: 'success' | 'failure' | 'invalid_json_once' = 'success';
+  let jsonGenerationCalls = 0;
+  const briefingFixture = {
+    objective: 'Criar uma canção sobre um encontro impossível.',
+    theme: 'Sol e Lua',
+    narrative: null,
+    emotions: ['saudade', 'esperança'],
+    genres: ['pop'],
+    mood: ['noturno'],
+    instrumentation: ['piano'],
+    tempo: null,
+    targetAudience: null,
+    references: [],
+    constraints: [],
+    additionalNotes: null,
+    missingFields: ['narrative', 'tempo', 'targetAudience', 'references'],
+    uncertainties: ['A relação entre os personagens ainda não foi definida.'],
+    followUpQuestions: ['O Sol e a Lua são amantes ou rivais?'],
+  };
   const fakeAiProvider: AiProvider = {
     name: 'fake-groq',
     model: 'qwen/test-model',
@@ -23,6 +41,19 @@ describe('Eclipse API (e2e)', () => {
       yield {
         content: 'piano, cordas e texturas noturnas.',
         usage: { promptTokens: 20, completionTokens: 9 },
+      };
+    },
+    async generateJson() {
+      jsonGenerationCalls++;
+      if (providerMode === 'failure') {
+        throw new AiProviderError('Limite simulado.', 'rate_limited', 2);
+      }
+      if (providerMode === 'invalid_json_once' && jsonGenerationCalls === 1) {
+        return { content: '{"theme":"incompleto"}' };
+      }
+      return {
+        content: JSON.stringify(briefingFixture),
+        usage: { promptTokens: 80, completionTokens: 45 },
       };
     },
   };
@@ -45,6 +76,7 @@ describe('Eclipse API (e2e)', () => {
 
   beforeEach(async () => {
     providerMode = 'success';
+    jsonGenerationCalls = 0;
     await dataSource.query(
       'TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE',
     );
@@ -314,6 +346,93 @@ describe('Eclipse API (e2e)', () => {
     expect(
       messages.body.items.filter((item: { role: string }) => item.role === 'user'),
     ).toHaveLength(1);
+  });
+
+  it('generates, versions and explicitly confirms a structured briefing', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const intruder = request.agent(app.getHttpServer());
+    await owner
+      .post('/api/auth/register')
+      .send({
+        name: 'Briefing',
+        email: 'briefing@example.com',
+        password: 'senha-segura-para-briefing',
+      })
+      .expect(201);
+    await intruder
+      .post('/api/auth/register')
+      .send({
+        name: 'Intruso',
+        email: 'briefing-intruso@example.com',
+        password: 'senha-segura-para-intruso',
+      })
+      .expect(201);
+    const project = await owner
+      .post('/api/projects')
+      .send({ title: 'Canção do Sol e da Lua' })
+      .expect(201);
+    const conversation = await owner
+      .post(`/api/projects/${project.body.id}/conversations`)
+      .send({ title: 'Ideia inicial' })
+      .expect(201);
+    await owner
+      .post(
+        `/api/projects/${project.body.id}/conversations/${conversation.body.id}/messages`,
+      )
+      .send({ role: 'user', content: 'Quero uma letra sobre o Sol e a Lua.' })
+      .expect(201);
+
+    providerMode = 'invalid_json_once';
+    const generated = await owner
+      .post(`/api/projects/${project.body.id}/briefings/generate`)
+      .send({ conversationId: conversation.body.id })
+      .expect(201);
+    expect(jsonGenerationCalls).toBe(2);
+    expect(generated.body).toMatchObject({
+      projectId: project.body.id,
+      version: 1,
+      status: 'draft',
+      aiProvider: 'fake-groq',
+      aiModel: 'qwen/test-model',
+      promptTokens: 80,
+      completionTokens: 45,
+      data: { theme: 'Sol e Lua' },
+    });
+
+    const editedData = {
+      ...generated.body.data,
+      narrative: 'Dois amantes que só se encontram durante um eclipse.',
+      missingFields: generated.body.data.missingFields.filter(
+        (field: string) => field !== 'narrative',
+      ),
+    };
+    const edited = await owner
+      .put(`/api/projects/${project.body.id}/briefings/1`)
+      .send({ data: editedData })
+      .expect(200);
+    expect(edited.body).toMatchObject({ version: 2, status: 'draft' });
+    expect(edited.body.aiProvider).toBeNull();
+
+    await owner
+      .post(`/api/projects/${project.body.id}/briefings/1/confirm`)
+      .send({})
+      .expect(409);
+    const confirmed = await owner
+      .post(`/api/projects/${project.body.id}/briefings/2/confirm`)
+      .send({})
+      .expect(201);
+    expect(confirmed.body.status).toBe('confirmed');
+    expect(confirmed.body.confirmedAt).toBeTruthy();
+
+    const versions = await owner
+      .get(`/api/projects/${project.body.id}/briefings`)
+      .expect(200);
+    expect(versions.body.map((item: { version: number }) => item.version)).toEqual([
+      2, 1,
+    ]);
+    await intruder
+      .get(`/api/projects/${project.body.id}/briefings/latest`)
+      .expect(404);
   });
 
   it('paginates projects and validates pagination parameters', async () => {

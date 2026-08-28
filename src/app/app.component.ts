@@ -5,6 +5,8 @@ import { Chat } from './models/chat.model';
 import { AuthService } from './services/auth.service';
 import { ChatService, ChatStreamPhase } from './services/chat.service';
 import { AssistantStreamError } from './services/conversations-api.service';
+import { Briefing, BriefingData } from './models/briefing.model';
+import { BriefingsApiService } from './services/briefings-api.service';
 
 @Component({
     selector: 'app-root',
@@ -26,11 +28,15 @@ export class AppComponent implements OnInit {
     authErrorMessage = '';
     messageResetToken = 0;
     failedReplyChatId: string | null = null;
+    briefing: Briefing | null = null;
+    isBriefingBusy = false;
+    briefingErrorMessage = '';
     private isDraftChat = false;
 
     constructor(
         private readonly authService: AuthService,
-        private readonly chatService: ChatService
+        private readonly chatService: ChatService,
+        private readonly briefingsApi: BriefingsApiService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -77,6 +83,7 @@ export class AppComponent implements OnInit {
             this.user = null;
             this.chats = [];
             this.selectedChat = null;
+            this.briefing = null;
             this.isDraftChat = false;
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -99,6 +106,8 @@ export class AppComponent implements OnInit {
         this.errorMessage = '';
         this.isDraftChat = false;
         this.selectedChat = chat;
+        this.briefing = null;
+        this.briefingErrorMessage = '';
         this.failedReplyChatId = chat.messages.at(-1)?.author === 'user'
             ? chat.id
             : null;
@@ -108,6 +117,8 @@ export class AppComponent implements OnInit {
         this.errorMessage = '';
         this.isDraftChat = false;
         this.selectedChat = null;
+        this.briefing = null;
+        this.briefingErrorMessage = '';
     }
 
     async deleteChat(chatId: string): Promise<void> {
@@ -122,6 +133,7 @@ export class AppComponent implements OnInit {
             this.chats = this.chats.filter(chat => chat.id !== chatId);
             if (this.selectedChat?.id === chatId) {
                 this.selectedChat = null;
+                this.briefing = null;
             }
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -218,6 +230,76 @@ export class AppComponent implements OnInit {
             this.errorMessage = this.describeError(error);
         } finally {
             this.isSending = false;
+        }
+    }
+
+    async loadBriefing(): Promise<void> {
+        if (!this.selectedChat || this.selectedChat.id.startsWith('draft-')) return;
+
+        this.isBriefingBusy = true;
+        this.briefingErrorMessage = '';
+        try {
+            this.briefing = await this.briefingsApi.getLatest(this.selectedChat.id);
+        } catch (error) {
+            if (error instanceof HttpErrorResponse && error.status === 404) {
+                this.briefing = null;
+            } else {
+                this.briefingErrorMessage = this.describeError(error);
+            }
+        } finally {
+            this.isBriefingBusy = false;
+        }
+    }
+
+    async generateBriefing(): Promise<void> {
+        if (!this.selectedChat?.conversationId || this.isBriefingBusy) return;
+
+        this.isBriefingBusy = true;
+        this.briefingErrorMessage = '';
+        try {
+            this.briefing = await this.briefingsApi.generate(
+                this.selectedChat.id,
+                this.selectedChat.conversationId
+            );
+        } catch (error) {
+            this.briefingErrorMessage = this.describeError(error);
+        } finally {
+            this.isBriefingBusy = false;
+        }
+    }
+
+    async saveBriefing(data: BriefingData): Promise<void> {
+        if (!this.selectedChat || !this.briefing || this.isBriefingBusy) return;
+
+        this.isBriefingBusy = true;
+        this.briefingErrorMessage = '';
+        try {
+            this.briefing = await this.briefingsApi.update(
+                this.selectedChat.id,
+                this.briefing.version,
+                data
+            );
+        } catch (error) {
+            this.briefingErrorMessage = this.describeError(error);
+        } finally {
+            this.isBriefingBusy = false;
+        }
+    }
+
+    async confirmBriefing(): Promise<void> {
+        if (!this.selectedChat || !this.briefing || this.isBriefingBusy) return;
+
+        this.isBriefingBusy = true;
+        this.briefingErrorMessage = '';
+        try {
+            this.briefing = await this.briefingsApi.confirm(
+                this.selectedChat.id,
+                this.briefing.version
+            );
+        } catch (error) {
+            this.briefingErrorMessage = this.describeError(error);
+        } finally {
+            this.isBriefingBusy = false;
         }
     }
 

@@ -40,9 +40,16 @@
             [sending]="isSending"
             [messageResetToken]="messageResetToken"
             [retryAvailable]="failedReplyChatId === selectedChat?.id"
+            [briefing]="briefing"
+            [briefingBusy]="isBriefingBusy"
+            [briefingError]="briefingErrorMessage"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
             (retryRequested)="retryAssistant()"
+            (briefingRequested)="loadBriefing()"
+            (briefingGenerateRequested)="generateBriefing()"
+            (briefingSaveRequested)="saveBriefing($event)"
+            (briefingConfirmRequested)="confirmBriefing()"
         ></app-chat-window>
     </main>
 </ion-app>

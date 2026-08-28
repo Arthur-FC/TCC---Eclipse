@@ -78,24 +78,44 @@
     white-space: nowrap;
 }
 
+.close-button,
+.briefing-button {
+    border: 0;
+    background: #383838;
+    color: #c466ff;
+    cursor: pointer;
+}
+
+.briefing-button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 13px;
+    border: 1px solid #c466ff44;
+    border-radius: 18px;
+    font: 600 12px Inter;
+}
+
+.briefing-button:hover,
+.briefing-button.active {
+    background: #4a3a52;
+    color: #f0d9ff;
+}
+
 .close-button {
     flex: 0 0 34px;
     width: 34px;
     height: 34px;
     padding: 0;
-    border: 0;
     border-radius: 50%;
-    background: #383838;
-    color: #c466ff;
     font: 24px/34px Inter;
-    cursor: pointer;
 }
 
 .close-button:hover {
     background: #4a3a52;
 }
 
-.close-button:focus-visible {
+.close-button:focus-visible,
+.briefing-button:focus-visible {
     outline: 2px solid #c466ff;
     outline-offset: 3px;
 }
@@ -245,6 +265,11 @@
         height: 42px;
         font-size: 26px;
         line-height: 42px;
+    }
+
+    .briefing-button {
+        min-height: 42px;
+        padding: 0 12px;
     }
 
     .messages {

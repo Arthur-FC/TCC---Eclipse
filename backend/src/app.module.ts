@@ -7,6 +7,7 @@ import { createTypeOrmOptions } from './database/typeorm-options';
 import { HealthModule } from './health/health.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AiModule } from './ai/ai.module';
+import { BriefingsModule } from './briefings/briefings.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AiModule } from './ai/ai.module';
     AuthModule,
     ProjectsModule,
     AiModule,
+    BriefingsModule,
   ],
 })
 export class AppModule {}

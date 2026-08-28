@@ -15,6 +15,11 @@ export interface AiProviderChunk {
   usage?: AiTokenUsage;
 }
 
+export interface AiProviderResponse {
+  content: string;
+  usage?: AiTokenUsage;
+}
+
 export interface AiProvider {
   readonly name: string;
   readonly model: string;
@@ -22,6 +27,10 @@ export interface AiProvider {
     messages: AiChatMessage[],
     signal: AbortSignal,
   ): AsyncIterable<AiProviderChunk>;
+  generateJson?(
+    messages: AiChatMessage[],
+    signal: AbortSignal,
+  ): Promise<AiProviderResponse>;
 }
 
 export const AI_PROVIDER = Symbol('AI_PROVIDER');
