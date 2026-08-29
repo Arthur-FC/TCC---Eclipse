@@ -138,6 +138,21 @@ export class StorageService {
     }
   }
 
+  async getObjectBytes(key: string): Promise<Uint8Array> {
+    await this.ensureBucket();
+    try {
+      const object = await this.client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      if (!object.Body) throw new Error('Objeto sem conteúdo.');
+      return object.Body.transformToByteArray();
+    } catch {
+      throw new BadGatewayException(
+        'Não foi possível ler o áudio para processamento.',
+      );
+    }
+  }
+
   async deleteObject(key: string): Promise<void> {
     try {
       await this.ensureBucket();

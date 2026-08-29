@@ -29,3 +29,5 @@ process.env.STORAGE_SECRET_KEY = 'eclipse_minio_dev';
 process.env.STORAGE_FORCE_PATH_STYLE = 'true';
 process.env.STORAGE_SIGNED_URL_TTL_SECONDS = '900';
 process.env.AUDIO_MAX_FILE_SIZE_BYTES = '52428800';
+process.env.AUDIO_ANALYSIS_WORKER_ENABLED = 'false';
+process.env.AUDIO_ANALYSIS_POLL_INTERVAL_MS = '1000';

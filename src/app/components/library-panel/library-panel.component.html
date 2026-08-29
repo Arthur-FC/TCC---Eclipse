@@ -84,6 +84,13 @@
                 <time [attr.datetime]="track.createdAt">{{ formatAddedDate(track.createdAt) }}</time>
                 <small *ngIf="track.notes">{{ track.notes }}</small>
                 <small *ngIf="track.status === 'failed'" class="track-error">{{ track.errorMessage }}</small>
+                <span
+                    *ngIf="track.status === 'ready'"
+                    class="analysis-status"
+                    [class.processing]="track.analysisStatus === 'queued' || track.analysisStatus === 'processing'"
+                    [class.complete]="track.analysisStatus === 'completed'"
+                    [class.analysis-failed]="track.analysisStatus === 'failed'"
+                >{{ analysisLabel(track) }}</span>
             </div>
             <div class="actions">
                 <button
@@ -104,10 +111,64 @@
                 >
                     Parar
                 </button>
+                <button
+                    *ngIf="track.analysisStatus === 'completed'"
+                    type="button"
+                    class="analysis-toggle"
+                    [class.expanded]="isAnalysisExpanded(track.id)"
+                    [attr.aria-expanded]="isAnalysisExpanded(track.id)"
+                    [attr.aria-controls]="'analysis-' + track.id"
+                    (click)="toggleAnalysis(track.id)"
+                >
+                    {{ isAnalysisExpanded(track.id) ? 'Ocultar análise' : 'Ver análise' }}
+                </button>
                 <span *ngIf="track.status === 'pending'">Envio pendente</span>
                 <button type="button" class="delete" [disabled]="busy" (click)="confirmDelete(track)">
                     Excluir
                 </button>
+            </div>
+            <div
+                *ngIf="track.analysisStatus === 'queued' || track.analysisStatus === 'processing'"
+                class="analysis-progress"
+                role="progressbar"
+                aria-label="Progresso da análise"
+                [attr.aria-valuenow]="track.analysisProgress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+            >
+                <i [style.width.%]="track.analysisProgress || 4"></i>
+            </div>
+            <section
+                *ngIf="track.analysisStatus === 'completed' && isAnalysisExpanded(track.id)"
+                class="analysis-result"
+                [id]="'analysis-' + track.id"
+                aria-label="Análise técnica"
+            >
+                <h4>Detalhes do áudio</h4>
+                <div class="technical-grid">
+                    <div class="technical-item"><small>Formato</small><strong>{{ track.detectedFormat || '—' }}</strong></div>
+                    <div class="technical-item"><small>Duração</small><strong>{{ formatDuration(track.durationSeconds) }}</strong></div>
+                    <div class="technical-item"><small>BPM estimado</small><strong>{{ track.estimatedBpm ? '≈ ' + track.estimatedBpm : '—' }}</strong></div>
+                    <div class="technical-item"><small>Tonalidade estimada</small><strong>{{ track.estimatedKey ? '≈ ' + track.estimatedKey : '—' }}</strong></div>
+                    <div class="technical-item"><small>Qualidade do áudio</small><strong>{{ track.sampleRateHz ? (track.sampleRateHz / 1000 | number:'1.1-1') + ' kHz' : '—' }} · {{ track.channels || '—' }} canal(is)</strong></div>
+                    <div class="technical-item"><small>Bitrate</small><strong>{{ formatBitrate(track.bitrateBps) }}</strong></div>
+                </div>
+                <div *ngIf="track.genreTags.length || track.moodTags.length || track.instrumentTags.length" class="characteristics">
+                    <h5>Características percebidas</h5>
+                    <div class="analysis-tags">
+                        <span *ngFor="let tag of track.genreTags">{{ tag }}</span>
+                        <span *ngFor="let tag of track.moodTags">{{ tag }} <em>estimado</em></span>
+                        <span *ngFor="let tag of track.instrumentTags">{{ tag }}</span>
+                    </div>
+                </div>
+                <div class="analysis-footer">
+                    <small class="analysis-note">O símbolo ≈ e as tags marcadas como “estimado” indicam valores aproximados.</small>
+                    <button type="button" class="reprocess" [disabled]="busy" (click)="reprocessRequested.emit(track.id)">Reprocessar análise</button>
+                </div>
+            </section>
+            <div *ngIf="track.analysisStatus === 'failed'" class="analysis-error" role="alert">
+                <span>{{ track.analysisError || 'Não foi possível analisar este áudio.' }}</span>
+                <button type="button" [disabled]="busy" (click)="reprocessRequested.emit(track.id)">Tentar novamente</button>
             </div>
             <audio
                 *ngIf="playbackTrackId === track.id && playbackUrl"

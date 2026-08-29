@@ -56,6 +56,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() libraryUploadRequested = new EventEmitter<TrackUploadRequest>();
     @Output() libraryPlaybackRequested = new EventEmitter<string>();
     @Output() libraryPlaybackStopped = new EventEmitter<void>();
+    @Output() libraryReprocessRequested = new EventEmitter<string>();
     @Output() libraryDeleteRequested = new EventEmitter<string>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;

@@ -13,6 +13,8 @@ import { LibraryTrackEntity } from './library-track.entity';
 import { LibraryTrackStatus } from './library-track-status.enum';
 import { StorageService } from './storage.service';
 import { ConfigService } from '@nestjs/config';
+import { AudioAnalysisStatus } from './audio-analysis-status.enum';
+import { AudioAnalysisQueueService } from './audio-analysis-queue.service';
 
 export interface LibraryTrackResponse {
   id: string;
@@ -25,6 +27,25 @@ export interface LibraryTrackResponse {
   status: LibraryTrackStatus;
   errorMessage: string | null;
   uploadedAt: Date | null;
+  analysisStatus: AudioAnalysisStatus;
+  analysisProgress: number;
+  analysisError: string | null;
+  analyzedAt: Date | null;
+  analysisVersion: string | null;
+  analysisMethod: string | null;
+  detectedFormat: string | null;
+  codec: string | null;
+  durationSeconds: number | null;
+  sampleRateHz: number | null;
+  channels: number | null;
+  bitrateBps: number | null;
+  estimatedBpm: number | null;
+  bpmConfidence: number | null;
+  estimatedKey: string | null;
+  keyConfidence: number | null;
+  genreTags: string[];
+  moodTags: string[];
+  instrumentTags: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +66,7 @@ export class LibraryService {
     @InjectRepository(LibraryTrackEntity)
     private readonly tracksRepository: Repository<LibraryTrackEntity>,
     private readonly storage: StorageService,
+    private readonly analysisQueue: AudioAnalysisQueueService,
     configService: ConfigService,
   ) {
     this.maxFileSizeBytes = configService.get<number>(
@@ -85,6 +107,25 @@ export class LibraryService {
       errorMessage: null,
       uploadExpiresAt: new Date(Date.now() + signed.expiresInSeconds * 1_000),
       uploadedAt: null,
+      analysisStatus: AudioAnalysisStatus.NONE,
+      analysisProgress: 0,
+      analysisError: null,
+      analyzedAt: null,
+      analysisVersion: null,
+      analysisMethod: null,
+      detectedFormat: null,
+      codec: null,
+      durationSeconds: null,
+      sampleRateHz: null,
+      channels: null,
+      bitrateBps: null,
+      estimatedBpm: null,
+      bpmConfidence: null,
+      estimatedKey: null,
+      keyConfidence: null,
+      genreTags: [],
+      moodTags: [],
+      instrumentTags: [],
     });
     const saved = await this.tracksRepository.save(entity);
     return {
@@ -131,11 +172,16 @@ export class LibraryService {
     await this.rejectDuplicate(ownerId, track, contentHash);
 
     track.status = LibraryTrackStatus.READY;
+    track.analysisStatus = AudioAnalysisStatus.QUEUED;
+    track.analysisProgress = 0;
+    track.analysisError = null;
     track.contentHash = contentHash;
     track.errorMessage = null;
     track.uploadedAt = new Date();
     try {
-      return this.toResponse(await this.tracksRepository.save(track));
+      const saved = await this.tracksRepository.save(track);
+      await this.analysisQueue.enqueue(saved.id);
+      return this.toResponse(saved);
     } catch (error) {
       if ((error as { code?: string }).code === '23505') {
         await this.removeDuplicateUpload(track);
@@ -168,6 +214,26 @@ export class LibraryService {
       track.originalFilename,
       track.contentType,
     );
+  }
+
+  async reprocess(
+    ownerId: string,
+    trackId: string,
+  ): Promise<LibraryTrackResponse> {
+    const track = await this.getOwned(ownerId, trackId);
+    if (track.status !== LibraryTrackStatus.READY) {
+      throw new BadRequestException(
+        'Somente uma faixa pronta pode ser reprocessada.',
+      );
+    }
+    if (track.analysisStatus === AudioAnalysisStatus.PROCESSING) {
+      throw new ConflictException('Esta faixa já está sendo analisada.');
+    }
+    this.clearAnalysis(track);
+    track.analysisStatus = AudioAnalysisStatus.QUEUED;
+    await this.tracksRepository.save(track);
+    await this.analysisQueue.enqueue(track.id);
+    return this.toResponse(track);
   }
 
   async remove(ownerId: string, trackId: string): Promise<void> {
@@ -209,6 +275,7 @@ export class LibraryService {
 
   private signatureMatches(contentType: string, bytes: Uint8Array): boolean {
     if (contentType === 'audio/mpeg') {
+      if (String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp') return false;
       for (let index = 0; index <= bytes.length - 3; index++) {
         const hasId3 =
           bytes[index] === 0x49 &&
@@ -341,8 +408,50 @@ export class LibraryService {
       status: track.status,
       errorMessage: track.errorMessage,
       uploadedAt: track.uploadedAt,
+      analysisStatus: track.analysisStatus,
+      analysisProgress: track.analysisProgress,
+      analysisError: track.analysisError,
+      analyzedAt: track.analyzedAt,
+      analysisVersion: track.analysisVersion,
+      analysisMethod: track.analysisMethod,
+      detectedFormat: track.detectedFormat,
+      codec: track.codec,
+      durationSeconds: track.durationSeconds,
+      sampleRateHz: track.sampleRateHz,
+      channels: track.channels,
+      bitrateBps: track.bitrateBps,
+      estimatedBpm: track.estimatedBpm,
+      bpmConfidence: track.bpmConfidence,
+      estimatedKey: track.estimatedKey,
+      keyConfidence: track.keyConfidence,
+      genreTags: track.genreTags ?? [],
+      moodTags: track.moodTags ?? [],
+      instrumentTags: track.instrumentTags ?? [],
       createdAt: track.createdAt,
       updatedAt: track.updatedAt,
     };
+  }
+
+  private clearAnalysis(track: LibraryTrackEntity): void {
+    Object.assign(track, {
+      analysisProgress: 0,
+      analysisError: null,
+      analyzedAt: null,
+      analysisVersion: null,
+      analysisMethod: null,
+      detectedFormat: null,
+      codec: null,
+      durationSeconds: null,
+      sampleRateHz: null,
+      channels: null,
+      bitrateBps: null,
+      estimatedBpm: null,
+      bpmConfidence: null,
+      estimatedKey: null,
+      keyConfidence: null,
+      genreTags: [],
+      moodTags: [],
+      instrumentTags: [],
+    });
   }
 }

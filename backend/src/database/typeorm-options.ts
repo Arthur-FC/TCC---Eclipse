@@ -21,6 +21,8 @@ import { SpotifyReferences1788134400000 } from './migrations/1788134400000-spoti
 import { LibraryTrackEntity } from '../library/library-track.entity';
 import { MusicLibrary1788220800000 } from './migrations/1788220800000-music-library';
 import { LibraryContentHash1788307200000 } from './migrations/1788307200000-library-content-hash';
+import { AudioAnalysisJobEntity } from '../library/audio-analysis-job.entity';
+import { AudioAnalysis1788393600000 } from './migrations/1788393600000-audio-analysis';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -53,6 +55,7 @@ export function createDataSourceOptions(
       YouTubeSearchCacheEntity,
       YouTubeQuotaUsageEntity,
       LibraryTrackEntity,
+      AudioAnalysisJobEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
@@ -64,6 +67,7 @@ export function createDataSourceOptions(
       SpotifyReferences1788134400000,
       MusicLibrary1788220800000,
       LibraryContentHash1788307200000,
+      AudioAnalysis1788393600000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

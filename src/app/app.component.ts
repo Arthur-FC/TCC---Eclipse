@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthRequest, AuthenticatedUser } from './models/auth.model';
 import { Chat } from './models/chat.model';
 import { AuthService } from './services/auth.service';
@@ -18,7 +18,7 @@ import { LibraryApiService } from './services/library-api.service';
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
     user: AuthenticatedUser | null = null;
     chats: Chat[] = [];
     selectedChat: Chat | null = null;
@@ -46,6 +46,7 @@ export class AppComponent implements OnInit {
     libraryPlaybackTrackId: string | null = null;
     libraryPlaybackUrl = '';
     private isDraftChat = false;
+    private libraryPollTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
         private readonly authService: AuthService,
@@ -66,6 +67,10 @@ export class AppComponent implements OnInit {
         } finally {
             this.isInitializing = false;
         }
+    }
+
+    ngOnDestroy(): void {
+        this.stopLibraryPolling();
     }
 
     async authenticate(request: AuthRequest): Promise<void> {
@@ -105,6 +110,7 @@ export class AppComponent implements OnInit {
             this.libraryTracks = [];
             this.libraryPlaybackTrackId = null;
             this.libraryPlaybackUrl = '';
+            this.stopLibraryPolling();
             this.isDraftChat = false;
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -426,6 +432,7 @@ export class AppComponent implements OnInit {
             this.libraryErrorMessage = this.describeError(error);
         } finally {
             this.isLibraryBusy = false;
+            this.scheduleLibraryPolling();
         }
     }
 
@@ -439,6 +446,7 @@ export class AppComponent implements OnInit {
                 track,
                 ...this.libraryTracks.filter(item => item.id !== track.id)
             ];
+            this.scheduleLibraryPolling();
         } catch (error) {
             this.libraryErrorMessage = this.describeError(error);
             await this.refreshLibraryAfterFailure();
@@ -467,6 +475,23 @@ export class AppComponent implements OnInit {
         this.libraryPlaybackUrl = '';
     }
 
+    async reprocessLibraryTrack(trackId: string): Promise<void> {
+        if (this.isLibraryBusy) return;
+        this.isLibraryBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            const updated = await this.libraryApi.reprocess(trackId);
+            this.libraryTracks = this.libraryTracks.map(track =>
+                track.id === updated.id ? updated : track
+            );
+            this.scheduleLibraryPolling();
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+        } finally {
+            this.isLibraryBusy = false;
+        }
+    }
+
     async deleteLibraryTrack(trackId: string): Promise<void> {
         if (this.isLibraryBusy) return;
         this.isLibraryBusy = true;
@@ -493,6 +518,32 @@ export class AppComponent implements OnInit {
         } catch {
             // Mantém a mensagem original do envio.
         }
+    }
+
+    private scheduleLibraryPolling(): void {
+        this.stopLibraryPolling();
+        const hasPendingAnalysis = this.libraryTracks.some(track =>
+            track.analysisStatus === 'queued' || track.analysisStatus === 'processing'
+        );
+        if (!this.user || !hasPendingAnalysis) return;
+        this.libraryPollTimer = setTimeout(() => {
+            void this.pollLibraryAnalysis();
+        }, 1_500);
+    }
+
+    private async pollLibraryAnalysis(): Promise<void> {
+        try {
+            this.libraryTracks = await this.libraryApi.list();
+        } catch {
+            // A próxima abertura manual da biblioteca tentará novamente.
+        } finally {
+            this.scheduleLibraryPolling();
+        }
+    }
+
+    private stopLibraryPolling(): void {
+        if (this.libraryPollTimer) clearTimeout(this.libraryPollTimer);
+        this.libraryPollTimer = null;
     }
 
     private async refreshChats(): Promise<void> {

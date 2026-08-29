@@ -91,6 +91,8 @@ export const environmentValidationSchema = Joi.object({
   STORAGE_FORCE_PATH_STYLE: Joi.boolean().default(true),
   STORAGE_SIGNED_URL_TTL_SECONDS: Joi.number().integer().min(60).max(3_600).default(900),
   AUDIO_MAX_FILE_SIZE_BYTES: Joi.number().integer().min(1_048_576).max(1_073_741_824).default(52_428_800),
+  AUDIO_ANALYSIS_WORKER_ENABLED: Joi.boolean().default(true),
+  AUDIO_ANALYSIS_POLL_INTERVAL_MS: Joi.number().integer().min(250).max(60_000).default(1_000),
 }).unknown(true);
 
 export function parseCorsOrigins(value: string): string[] {

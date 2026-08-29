@@ -55,6 +55,14 @@ export class LibraryController {
     return this.libraryService.playback(user.id, trackId);
   }
 
+  @Post(':trackId/analyze')
+  reprocess(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+  ): Promise<LibraryTrackResponse> {
+    return this.libraryService.reprocess(user.id, trackId);
+  }
+
   @Delete(':trackId')
   @HttpCode(204)
   remove(

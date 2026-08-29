@@ -21,6 +21,7 @@ export class LibraryPanelComponent {
     @Output() uploadRequested = new EventEmitter<TrackUploadRequest>();
     @Output() playbackRequested = new EventEmitter<string>();
     @Output() playbackStopped = new EventEmitter<void>();
+    @Output() reprocessRequested = new EventEmitter<string>();
     @Output() deleteRequested = new EventEmitter<string>();
 
     selectedFile: File | null = null;
@@ -29,6 +30,7 @@ export class LibraryPanelComponent {
     title = '';
     artist = '';
     notes = '';
+    readonly expandedAnalysisIds = new Set<string>();
 
     private dragDepth = 0;
     private readonly dateFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -133,6 +135,40 @@ export class LibraryPanelComponent {
         return Number.isNaN(date.getTime())
             ? 'Data não disponível'
             : `Adicionado em ${this.dateFormatter.format(date)}`;
+    }
+
+    formatDuration(seconds: number | null): string {
+        if (seconds === null || !Number.isFinite(seconds)) return '—';
+        const rounded = Math.max(0, Math.round(seconds));
+        const minutes = Math.floor(rounded / 60);
+        return `${minutes}:${String(rounded % 60).padStart(2, '0')}`;
+    }
+
+    formatBitrate(bitsPerSecond: number | null): string {
+        return bitsPerSecond ? `${Math.round(bitsPerSecond / 1000)} kbps` : '—';
+    }
+
+    analysisLabel(track: LibraryTrack): string {
+        if (track.analysisStatus === 'queued') return 'Na fila para análise';
+        if (track.analysisStatus === 'processing') {
+            return `Analisando · ${track.analysisProgress}%`;
+        }
+        if (track.analysisStatus === 'completed') return 'Análise concluída';
+        if (track.analysisStatus === 'failed') return 'Análise com falha';
+        return 'Aguardando análise';
+    }
+
+    isAnalysisExpanded(trackId: string): boolean {
+        return this.expandedAnalysisIds.has(trackId);
+    }
+
+    toggleAnalysis(trackId: string): void {
+        if (this.expandedAnalysisIds.has(trackId)) {
+            this.expandedAnalysisIds.delete(trackId);
+            return;
+        }
+
+        this.expandedAnalysisIds.add(trackId);
     }
 
     trackById(_index: number, track: LibraryTrack): string {

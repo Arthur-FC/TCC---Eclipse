@@ -1,4 +1,5 @@
 export type LibraryTrackStatus = 'pending' | 'ready' | 'failed';
+export type AudioAnalysisStatus = 'none' | 'queued' | 'processing' | 'completed' | 'failed';
 
 export interface LibraryTrack {
     id: string;
@@ -11,6 +12,25 @@ export interface LibraryTrack {
     status: LibraryTrackStatus;
     errorMessage: string | null;
     uploadedAt: string | null;
+    analysisStatus: AudioAnalysisStatus;
+    analysisProgress: number;
+    analysisError: string | null;
+    analyzedAt: string | null;
+    analysisVersion: string | null;
+    analysisMethod: string | null;
+    detectedFormat: string | null;
+    codec: string | null;
+    durationSeconds: number | null;
+    sampleRateHz: number | null;
+    channels: number | null;
+    bitrateBps: number | null;
+    estimatedBpm: number | null;
+    bpmConfidence: number | null;
+    estimatedKey: string | null;
+    keyConfidence: number | null;
+    genreTags: string[];
+    moodTags: string[];
+    instrumentTags: string[];
     createdAt: string;
     updatedAt: string;
 }

@@ -66,6 +66,16 @@ export class LibraryApiService {
         );
     }
 
+    reprocess(trackId: string): Promise<LibraryTrack> {
+        return firstValueFrom(
+            this.http.post<LibraryTrack>(
+                `${this.tracksUrl}/${trackId}/analyze`,
+                {},
+                { withCredentials: true }
+            )
+        );
+    }
+
     remove(trackId: string): Promise<void> {
         return firstValueFrom(
             this.http.delete<void>(`${this.tracksUrl}/${trackId}`, {

@@ -246,3 +246,24 @@ O painel **Biblioteca** aceita MP3 e WAV com até 50 MB. O backend cria um regis
 | `DELETE` | `/api/library/tracks/:trackId` | Apagar registro e objeto privado |
 
 Extensão, tipo MIME, limite, tamanho recebido e assinatura MP3/WAV são validados. A leitura ampliada reconhece MP3 com metadados ou bytes auxiliares antes do primeiro quadro MPEG. O SHA-256 impede que o mesmo conteúdo seja salvo duas vezes no acervo do mesmo usuário, mesmo que a cópia tenha outro nome; nesse caso, a API remove a nova cópia e responde `409 Conflict`. Arquivos incompatíveis são removidos do MinIO e registrados como falha; uma nova tentativa equivalente substitui o registro de falha anterior. Reservas expiradas são limpas nas consultas seguintes. O identificador interno do objeto nunca é devolvido ao Angular e outro usuário recebe `404` ao tentar acessar a faixa.
+
+## Análise básica de áudio
+
+Depois que um MP3 ou WAV válido fica pronto, a API responde imediatamente com a análise em `queued`. Um trabalho persistente em `audio_analysis_jobs` é consumido pelo worker em segundo plano, que lê o objeto privado do MinIO e processa tudo localmente, sem enviar o áudio à Groq ou a outro serviço externo.
+
+São extraídos formato, codec, duração, taxa de amostragem, canais e bitrate. BPM, tonalidade, emoção e características de instrumentação são apresentados como estimativas, junto com confiança, versão e método do analisador. Gêneros e instrumentos incorporados ao arquivo são preservados quando existem. O frontend consulta o estado enquanto houver trabalho pendente e mostra fila, progresso, resultado ou falha.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/library/tracks/:trackId/analyze` | Enfileirar novamente uma faixa pronta para análise |
+
+Estados possíveis: `none`, `queued`, `processing`, `completed` e `failed`. O reprocessamento é recusado enquanto o mesmo item já estiver em processamento. Trabalhos interrompidos voltam à fila na inicialização seguinte. Arquivos corrompidos terminam com erro rastreável sem interromper a API. Um conteúdo MP4/AAC renomeado para `.mp3` é rejeitado com orientação para conversão.
+
+Configuração do worker:
+
+```env
+AUDIO_ANALYSIS_WORKER_ENABLED=true
+AUDIO_ANALYSIS_POLL_INTERVAL_MS=1000
+```
+
+O analisador usa `music-metadata` para metadados e `audio-decode` para decodificação MP3/WAV em JavaScript/WASM. BPM é estimado por autocorrelação do envelope de onsets; tonalidade usa energia por classe de altura e perfis maior/menor. Essas estimativas são auxiliares e não devem ser tratadas como medição musical absoluta.

@@ -575,6 +575,8 @@ Referências oficiais consultadas:
 
 ## Etapa 12 - Implementar análise básica de áudio
 
+**Status atual:** concluída em 29 de agosto de 2026.
+
 ### Objetivo
 
 Extrair informações técnicas sem depender do modelo de linguagem.
@@ -599,6 +601,33 @@ Faixas do acervo enriquecidas com metadados técnicos e descritivos.
 ### Critério de conclusão
 
 Um arquivo válido conclui o processamento em segundo plano sem bloquear o chat; um inválido termina com erro rastreável.
+
+### Implementação e verificação realizadas
+
+- fila persistente `audio_analysis_jobs` criada no PostgreSQL, com consumo exclusivo por `FOR UPDATE SKIP LOCKED`;
+- worker executado em segundo plano, com retomada de trabalhos interrompidos e sem bloquear upload, chat ou reprodução;
+- leitura privada do objeto diretamente do MinIO, sem envio de áudio para IA ou serviço externo;
+- formato, codec, tamanho, duração, taxa de amostragem, canais e bitrate extraídos localmente;
+- MP3 e WAV decodificados em JavaScript/WASM com limite de 180 segundos de amostras para a análise musical;
+- BPM estimado por autocorrelação do envelope de onsets, com confiança registrada;
+- tonalidade estimada por energia das classes de altura e comparação com perfis maior/menor, com confiança registrada;
+- gênero incorporado ao arquivo preservado; emoção e características de instrumentação geradas como tags explicitamente estimadas;
+- versão `eclipse-audio-v1` e método do analisador persistidos junto do resultado;
+- estados `none`, `queued`, `processing`, `completed` e `failed`, percentual, data e erro rastreável expostos pela API;
+- endpoint autenticado `POST /api/library/tracks/:trackId/analyze` para reprocessamento controlado;
+- frontend com atualização automática, barra de progresso, metadados técnicos, tags, aviso de estimativa, falha e botão de nova tentativa;
+- detecção de conteúdo MP4/AAC renomeado para `.mp3`, com mensagem para conversão em MP3 ou WAV;
+- migração `AudioAnalysis1788393600000` aplicada ao PostgreSQL de desenvolvimento;
+- teste real aprovado com WAV de 8 segundos: estado final `completed`, duração `8`, BPM estimado `117,5` e tonalidade estimada `Fá menor`;
+- reprocessamento real aprovado, elevando a tentativa persistida de 1 para 2 e concluindo novamente;
+- teste real de corrupção aprovado: WAV incompleto terminou em `failed` com erro persistido, sem derrubar a API;
+- 43 testes unitários e 19 testes integrados aprovados;
+- builds de produção do NestJS e do Angular aprovados.
+
+Referências técnicas:
+
+- [music-metadata](https://www.npmjs.com/package/music-metadata);
+- [audio-decode](https://github.com/audiojs/decode).
 
 ## Etapa 13 - Integrar embeddings pela Cloudflare
 

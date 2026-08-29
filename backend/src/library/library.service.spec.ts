@@ -4,6 +4,8 @@ import { LibraryService } from './library.service';
 import { LibraryTrackEntity } from './library-track.entity';
 import { LibraryTrackStatus } from './library-track-status.enum';
 import { StorageService } from './storage.service';
+import { AudioAnalysisQueueService } from './audio-analysis-queue.service';
+import { AudioAnalysisStatus } from './audio-analysis-status.enum';
 
 function setup(existing: LibraryTrackEntity | null = null) {
   const now = new Date();
@@ -39,10 +41,14 @@ function setup(existing: LibraryTrackEntity | null = null) {
   const config = {
     get: jest.fn((_key: string, fallback: unknown) => fallback),
   } as unknown as ConfigService;
+  const analysisQueue = {
+    enqueue: jest.fn().mockResolvedValue(undefined),
+  } as unknown as jest.Mocked<AudioAnalysisQueueService>;
   return {
     repository,
     storage,
-    service: new LibraryService(repository, storage, config),
+    analysisQueue,
+    service: new LibraryService(repository, storage, analysisQueue, config),
   };
 }
 
@@ -63,9 +69,28 @@ function pendingTrack(): LibraryTrackEntity {
     errorMessage: null,
     uploadExpiresAt: new Date(Date.now() + 60_000),
     uploadedAt: null,
+    analysisStatus: AudioAnalysisStatus.NONE,
+    analysisProgress: 0,
+    analysisError: null,
+    analyzedAt: null,
+    analysisVersion: null,
+    analysisMethod: null,
+    detectedFormat: null,
+    codec: null,
+    durationSeconds: null,
+    sampleRateHz: null,
+    channels: null,
+    bitrateBps: null,
+    estimatedBpm: null,
+    bpmConfidence: null,
+    estimatedKey: null,
+    keyConfidence: null,
+    genreTags: [],
+    moodTags: [],
+    instrumentTags: [],
     createdAt: now,
     updatedAt: now,
-  } as LibraryTrackEntity;
+  } as unknown as LibraryTrackEntity;
 }
 
 describe('LibraryService', () => {
@@ -102,6 +127,7 @@ describe('LibraryService', () => {
     const result = await service.completeUpload(track.ownerId, track.id);
 
     expect(result.status).toBe('ready');
+    expect(result.analysisStatus).toBe('queued');
     expect(result.uploadedAt).toBeInstanceOf(Date);
   });
 
