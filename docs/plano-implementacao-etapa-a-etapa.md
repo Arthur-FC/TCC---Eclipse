@@ -517,6 +517,8 @@ Referências oficiais consultadas:
 
 ## Etapa 11 - Criar a biblioteca musical e o armazenamento
 
+**Status atual:** concluída em 29 de agosto de 2026.
+
 ### Objetivo
 
 Permitir que o usuário mantenha um acervo próprio, privado e pesquisável.
@@ -534,6 +536,7 @@ Permitir que o usuário mantenha um acervo próprio, privado e pesquisável.
 9. Disponibilizar reprodução por URL temporária.
 10. Permitir exclusão pelo proprietário.
 11. Remover arquivos órfãos quando uma operação falhar.
+12. Impedir que o mesmo conteúdo seja salvo mais de uma vez no acervo do usuário.
 
 ### Entregável
 
@@ -542,6 +545,33 @@ Biblioteca privada com upload, listagem, reprodução e exclusão.
 ### Critério de conclusão
 
 O usuário envia e reproduz um arquivo próprio, enquanto outro usuário não consegue acessar sua URL.
+
+### Implementação e verificação realizadas
+
+- MinIO local adicionado ao Docker Compose com volume persistente e API S3 compatível;
+- configuração desacoplada por endpoint, região, bucket, credenciais e estilo de caminho, permitindo trocar o MinIO por outro S3 compatível;
+- entidade privada de faixa criada com proprietário, metadados, arquivo, tamanho, estado, falha e prazos;
+- upload direto pelo Angular por URL `PUT` pré-assinada de 15 minutos;
+- MP3 e WAV limitados a 50 MB, com validação de extensão e tipo antes do envio;
+- tamanho real e assinatura binária `ID3`/quadro MPEG ou `RIFF/WAVE` conferidos no armazenamento antes da liberação; para MP3, a busca percorre até os primeiros 64 KiB e tolera metadados ou bytes auxiliares antes do primeiro quadro;
+- conteúdo identificado por SHA-256 e protegido por índice único por proprietário, impedindo cópias com o mesmo ou com outro nome;
+- uma cópia repetida é removida do MinIO e do banco e devolve `409 Conflict`; uma nova tentativa de um envio que falhou remove o registro de falha equivalente anterior;
+- arquivos inválidos removidos do armazenamento e marcados como falha;
+- reservas expiradas limpas de forma controlada para evitar objetos órfãos;
+- listagem, reprodução por URL temporária e exclusão de registro e arquivo implementadas;
+- chaves internas dos objetos omitidas das respostas da API;
+- todas as consultas filtradas pelo usuário autenticado, devolvendo `404` para outro proprietário;
+- painel **Biblioteca** criado com arquivo, título, artista, observações, estados, player e exclusão confirmada;
+- migrações `MusicLibrary1788220800000` e `LibraryContentHash1788307200000` aplicadas ao PostgreSQL de desenvolvimento;
+- 5 testes unitários específicos e 19 testes integrados aprovados;
+- builds de produção do NestJS e do Angular aprovados;
+- upload real validado no MinIO: arquivo com assinatura MP3 enviado e confirmado como `ready`; uma segunda cópia foi recusada com `409`, mantendo somente uma faixa, e o arquivo de teste foi apagado ao final.
+
+Referências oficiais consultadas:
+
+- [URLs pré-assinadas com AWS SDK para JavaScript v3](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html);
+- [`@aws-sdk/s3-request-presigner`](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-s3-request-presigner/);
+- [MinIO em contêiner e API compatível com S3](https://min.io/docs/minio/container/index.html).
 
 ## Etapa 12 - Implementar análise básica de áudio
 

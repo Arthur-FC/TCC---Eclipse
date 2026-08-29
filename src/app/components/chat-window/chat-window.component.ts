@@ -12,6 +12,7 @@ import {
 import { Chat } from '../../models/chat.model';
 import { Briefing, BriefingData } from '../../models/briefing.model';
 import { MusicReference, ReferenceStatus } from '../../models/reference.model';
+import { LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
 
 @Component({
     selector: 'app-chat-window',
@@ -32,6 +33,11 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() referencesError = '';
     @Input() referenceSearchQuery = '';
     @Input() referencesFromCache = false;
+    @Input() libraryTracks: LibraryTrack[] = [];
+    @Input() libraryBusy = false;
+    @Input() libraryError = '';
+    @Input() libraryPlaybackTrackId: string | null = null;
+    @Input() libraryPlaybackUrl = '';
     @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
     @Output() retryRequested = new EventEmitter<void>();
@@ -46,6 +52,11 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         referenceId: string;
         status: ReferenceStatus;
     }>();
+    @Output() libraryRequested = new EventEmitter<void>();
+    @Output() libraryUploadRequested = new EventEmitter<TrackUploadRequest>();
+    @Output() libraryPlaybackRequested = new EventEmitter<string>();
+    @Output() libraryPlaybackStopped = new EventEmitter<void>();
+    @Output() libraryDeleteRequested = new EventEmitter<string>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 
@@ -56,6 +67,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     private scrollToBottomWhenChatReturns = false;
     briefingOpen = false;
     referencesOpen = false;
+    libraryOpen = false;
 
     get showTypingIndicator(): boolean {
         return !!this.chat &&
@@ -66,6 +78,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     toggleBriefing(): void {
         this.briefingOpen = !this.briefingOpen;
         this.referencesOpen = false;
+        this.libraryOpen = false;
         if (this.briefingOpen) {
             this.briefingRequested.emit();
         } else {
@@ -76,8 +89,20 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     toggleReferences(): void {
         this.referencesOpen = !this.referencesOpen;
         this.briefingOpen = false;
+        this.libraryOpen = false;
         if (this.referencesOpen) {
             this.referencesRequested.emit();
+        } else {
+            this.scrollToBottomWhenChatReturns = true;
+        }
+    }
+
+    toggleLibrary(): void {
+        this.libraryOpen = !this.libraryOpen;
+        this.briefingOpen = false;
+        this.referencesOpen = false;
+        if (this.libraryOpen) {
+            this.libraryRequested.emit();
         } else {
             this.scrollToBottomWhenChatReturns = true;
         }
@@ -87,6 +112,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         if (changes['chat'] && !changes['chat'].firstChange) {
             this.briefingOpen = false;
             this.referencesOpen = false;
+            this.libraryOpen = false;
         }
     }
 

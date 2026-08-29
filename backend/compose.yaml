@@ -18,5 +18,21 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: eclipse-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: eclipse_minio
+      MINIO_ROOT_PASSWORD: eclipse_minio_dev
+      MINIO_API_CORS_ALLOW_ORIGIN: "http://localhost:4200,http://127.0.0.1:4200"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - eclipse_minio_data:/data
+
 volumes:
   eclipse_postgres_data:
+  eclipse_minio_data:

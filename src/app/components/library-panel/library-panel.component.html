@@ -1,0 +1,126 @@
+<section class="library" aria-labelledby="library-title">
+    <header>
+        <div>
+            <p class="eyebrow">Acervo privado</p>
+            <h2 id="library-title">Biblioteca musical</h2>
+        </div>
+        <span>MP3 ou WAV · até 50 MB</span>
+    </header>
+
+    <form class="upload-form" (ngSubmit)="upload()">
+        <label
+            class="file-picker"
+            [class.dragging]="draggingFile"
+            [class.has-file]="selectedFile"
+            (dragenter)="dragEnter($event)"
+            (dragover)="dragOver($event)"
+            (dragleave)="dragLeave($event)"
+            (drop)="dropFile($event)"
+        >
+            <span class="file-icon" aria-hidden="true">
+                <i></i><i></i><i></i>
+            </span>
+            <span class="file-copy">
+                <strong>{{ draggingFile ? 'Solte o áudio aqui' : (selectedFile?.name || 'Arraste seu áudio para cá') }}</strong>
+                <small *ngIf="!selectedFile">ou clique para escolher um arquivo MP3 ou WAV</small>
+                <small *ngIf="selectedFile">{{ formatSize(selectedFile.size) }} · clique para trocar</small>
+            </span>
+            <button
+                *ngIf="selectedFile"
+                type="button"
+                class="clear-file"
+                aria-label="Remover arquivo selecionado"
+                title="Remover arquivo selecionado"
+                (click)="clearFile($event)"
+            >&times;</button>
+            <input
+                type="file"
+                accept=".mp3,.wav,audio/mpeg,audio/wav,audio/x-wav"
+                [disabled]="busy"
+                (change)="selectFile($event)"
+            />
+        </label>
+        <div class="metadata">
+            <label>
+                Título
+                <input name="trackTitle" [(ngModel)]="title" maxlength="200" required [disabled]="busy" />
+            </label>
+            <label>
+                Artista
+                <input name="trackArtist" [(ngModel)]="artist" maxlength="200" [disabled]="busy" />
+            </label>
+        </div>
+        <label>
+            Observações
+            <textarea name="trackNotes" [(ngModel)]="notes" maxlength="2000" rows="2" [disabled]="busy"></textarea>
+        </label>
+        <button class="primary-action" type="submit" [disabled]="busy || !selectedFile || !title.trim()">
+            {{ busy ? 'Enviando e verificando...' : 'Adicionar ao acervo' }}
+        </button>
+    </form>
+
+    <p *ngIf="errorMessage" class="panel-error" role="alert">{{ errorMessage }}</p>
+
+    <div *ngIf="tracks.length" class="library-content">
+        <div class="sort-toolbar">
+            <span>{{ tracks.length }} {{ tracks.length === 1 ? 'áudio' : 'áudios' }}</span>
+            <label class="sort-control">
+                <span>Ordenar por</span>
+                <select [(ngModel)]="sortMode" aria-label="Ordenar áudios">
+                    <option value="date-desc">Mais recentes</option>
+                    <option value="date-asc">Mais antigos</option>
+                    <option value="name-asc">Nome: A–Z</option>
+                    <option value="name-desc">Nome: Z–A</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="track-list">
+        <article *ngFor="let track of sortedTracks; trackBy: trackById" [class.failed]="track.status === 'failed'">
+            <div class="track-info">
+                <strong>{{ track.title }}</strong>
+                <span>{{ track.artist || 'Artista não informado' }}</span>
+                <small>{{ track.originalFilename }} · {{ formatSize(track.sizeBytes) }}</small>
+                <time [attr.datetime]="track.createdAt">{{ formatAddedDate(track.createdAt) }}</time>
+                <small *ngIf="track.notes">{{ track.notes }}</small>
+                <small *ngIf="track.status === 'failed'" class="track-error">{{ track.errorMessage }}</small>
+            </div>
+            <div class="actions">
+                <button
+                    *ngIf="track.status === 'ready'"
+                    type="button"
+                    [class.playing]="playbackTrackId === track.id"
+                    [disabled]="busy"
+                    (click)="playbackRequested.emit(track.id)"
+                >
+                    {{ playbackTrackId === track.id ? 'Reiniciar' : 'Reproduzir' }}
+                </button>
+                <button
+                    *ngIf="track.status === 'ready' && playbackTrackId === track.id"
+                    type="button"
+                    class="stop"
+                    [disabled]="busy"
+                    (click)="playbackStopped.emit()"
+                >
+                    Parar
+                </button>
+                <span *ngIf="track.status === 'pending'">Envio pendente</span>
+                <button type="button" class="delete" [disabled]="busy" (click)="confirmDelete(track)">
+                    Excluir
+                </button>
+            </div>
+            <audio
+                *ngIf="playbackTrackId === track.id && playbackUrl"
+                [src]="playbackUrl"
+                controls
+                autoplay
+            ></audio>
+        </article>
+        </div>
+    </div>
+
+    <div *ngIf="!busy && !tracks.length" class="empty-state">
+        <h3>Seu acervo ainda está vazio</h3>
+        <p>Envie uma faixa própria para armazená-la e reproduzi-la com acesso privado.</p>
+    </div>
+</section>

@@ -16,6 +16,15 @@
         <button
             *ngIf="chat.conversationId"
             type="button"
+            class="panel-button"
+            [class.active]="libraryOpen"
+            (click)="toggleLibrary()"
+        >
+            {{ libraryOpen ? 'Voltar ao chat' : 'Biblioteca' }}
+        </button>
+        <button
+            *ngIf="chat.conversationId"
+            type="button"
             class="panel-button references-button"
             [class.active]="referencesOpen"
             (click)="toggleReferences()"
@@ -56,7 +65,20 @@
         (statusChanged)="referenceStatusChanged.emit($event)"
     ></app-references-panel>
 
-    <div *ngIf="!briefingOpen && !referencesOpen" #messages class="messages">
+    <app-library-panel
+        *ngIf="libraryOpen"
+        [tracks]="libraryTracks"
+        [busy]="libraryBusy"
+        [errorMessage]="libraryError"
+        [playbackTrackId]="libraryPlaybackTrackId"
+        [playbackUrl]="libraryPlaybackUrl"
+        (uploadRequested)="libraryUploadRequested.emit($event)"
+        (playbackRequested)="libraryPlaybackRequested.emit($event)"
+        (playbackStopped)="libraryPlaybackStopped.emit()"
+        (deleteRequested)="libraryDeleteRequested.emit($event)"
+    ></app-library-panel>
+
+    <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen" #messages class="messages">
         <app-message
             *ngFor="let message of chat.messages"
             [message]="message"
@@ -78,7 +100,7 @@
         </p>
     </div>
 
-    <div *ngIf="!briefingOpen && !referencesOpen" class="composer-area">
+    <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen" class="composer-area">
         <button
             *ngIf="retryAvailable"
             type="button"

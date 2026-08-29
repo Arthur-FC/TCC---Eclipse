@@ -75,6 +75,22 @@ export const environmentValidationSchema = Joi.object({
   }),
   SPOTIFY_MARKET: Joi.string().pattern(/^[A-Z]{2}$/).default('BR'),
   SPOTIFY_TIMEOUT_MS: Joi.number().integer().min(3_000).max(60_000).default(15_000),
+  STORAGE_ENDPOINT: Joi.string().uri({ scheme: ['http', 'https'] }).default('http://127.0.0.1:9000'),
+  STORAGE_REGION: Joi.string().min(1).max(100).default('us-east-1'),
+  STORAGE_BUCKET: Joi.string().pattern(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/).default('eclipse-audio'),
+  STORAGE_ACCESS_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(8).required(),
+    otherwise: Joi.string().min(3).default('eclipse_minio'),
+  }),
+  STORAGE_SECRET_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(16).required(),
+    otherwise: Joi.string().min(8).default('eclipse_minio_dev'),
+  }),
+  STORAGE_FORCE_PATH_STYLE: Joi.boolean().default(true),
+  STORAGE_SIGNED_URL_TTL_SECONDS: Joi.number().integer().min(60).max(3_600).default(900),
+  AUDIO_MAX_FILE_SIZE_BYTES: Joi.number().integer().min(1_048_576).max(1_073_741_824).default(52_428_800),
 }).unknown(true);
 
 export function parseCorsOrigins(value: string): string[] {

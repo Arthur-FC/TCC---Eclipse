@@ -9,6 +9,8 @@ import { Briefing, BriefingData } from './models/briefing.model';
 import { BriefingsApiService } from './services/briefings-api.service';
 import { MusicReference, ReferenceStatus } from './models/reference.model';
 import { ReferencesApiService } from './services/references-api.service';
+import { LibraryTrack, TrackUploadRequest } from './models/library-track.model';
+import { LibraryApiService } from './services/library-api.service';
 
 @Component({
     selector: 'app-root',
@@ -38,13 +40,19 @@ export class AppComponent implements OnInit {
     referencesErrorMessage = '';
     referenceSearchQuery = '';
     referencesFromCache = false;
+    libraryTracks: LibraryTrack[] = [];
+    isLibraryBusy = false;
+    libraryErrorMessage = '';
+    libraryPlaybackTrackId: string | null = null;
+    libraryPlaybackUrl = '';
     private isDraftChat = false;
 
     constructor(
         private readonly authService: AuthService,
         private readonly chatService: ChatService,
         private readonly briefingsApi: BriefingsApiService,
-        private readonly referencesApi: ReferencesApiService
+        private readonly referencesApi: ReferencesApiService,
+        private readonly libraryApi: LibraryApiService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -94,6 +102,9 @@ export class AppComponent implements OnInit {
             this.briefing = null;
             this.references = [];
             this.referencesFromCache = false;
+            this.libraryTracks = [];
+            this.libraryPlaybackTrackId = null;
+            this.libraryPlaybackUrl = '';
             this.isDraftChat = false;
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -402,6 +413,85 @@ export class AppComponent implements OnInit {
             this.referencesErrorMessage = this.describeError(error);
         } finally {
             this.isReferencesBusy = false;
+        }
+    }
+
+    async loadLibrary(): Promise<void> {
+        if (this.isLibraryBusy) return;
+        this.isLibraryBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            this.libraryTracks = await this.libraryApi.list();
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+        } finally {
+            this.isLibraryBusy = false;
+        }
+    }
+
+    async uploadLibraryTrack(request: TrackUploadRequest): Promise<void> {
+        if (this.isLibraryBusy) return;
+        this.isLibraryBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            const track = await this.libraryApi.upload(request);
+            this.libraryTracks = [
+                track,
+                ...this.libraryTracks.filter(item => item.id !== track.id)
+            ];
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+            await this.refreshLibraryAfterFailure();
+        } finally {
+            this.isLibraryBusy = false;
+        }
+    }
+
+    async playLibraryTrack(trackId: string): Promise<void> {
+        if (this.isLibraryBusy) return;
+        this.isLibraryBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            const playback = await this.libraryApi.playback(trackId);
+            this.libraryPlaybackTrackId = trackId;
+            this.libraryPlaybackUrl = playback.url;
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+        } finally {
+            this.isLibraryBusy = false;
+        }
+    }
+
+    stopLibraryPlayback(): void {
+        this.libraryPlaybackTrackId = null;
+        this.libraryPlaybackUrl = '';
+    }
+
+    async deleteLibraryTrack(trackId: string): Promise<void> {
+        if (this.isLibraryBusy) return;
+        this.isLibraryBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            await this.libraryApi.remove(trackId);
+            this.libraryTracks = this.libraryTracks.filter(
+                track => track.id !== trackId
+            );
+            if (this.libraryPlaybackTrackId === trackId) {
+                this.libraryPlaybackTrackId = null;
+                this.libraryPlaybackUrl = '';
+            }
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+        } finally {
+            this.isLibraryBusy = false;
+        }
+    }
+
+    private async refreshLibraryAfterFailure(): Promise<void> {
+        try {
+            this.libraryTracks = await this.libraryApi.list();
+        } catch {
+            // Mantém a mensagem original do envio.
         }
     }
 

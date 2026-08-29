@@ -27,6 +27,8 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Pesquisa de referências reais pela YouTube Data API.
 - Inclusão de referências do Spotify por link de faixa.
 - Cards de referências com aprovação e rejeição persistidas.
+- Biblioteca musical privada com upload, reprodução e exclusão de MP3/WAV.
+- Armazenamento S3 compatível pelo MinIO com URLs temporárias.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.
 
@@ -44,6 +46,7 @@ A interface está conectada ao backend para autenticação, projetos, histórico
 - Groq API
 - YouTube Data API v3
 - Spotify Web API
+- MinIO / Amazon S3 SDK
 
 ## Como executar
 
@@ -81,7 +84,7 @@ Na pasta `backend`:
 
 ```bash
 corepack pnpm install
-docker compose up -d postgres
+docker compose up -d postgres minio
 corepack pnpm db:migration:run
 corepack pnpm start:dev
 ```
@@ -127,4 +130,4 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 
 ## Próximos passos
 
-- Implementar biblioteca e busca semântica.
+- Implementar análise básica de áudio e busca semântica.

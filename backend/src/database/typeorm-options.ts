@@ -18,6 +18,9 @@ import { YouTubeSearchCacheEntity } from '../references/youtube-search-cache.ent
 import { YouTubeQuotaUsageEntity } from '../references/youtube-quota-usage.entity';
 import { YoutubeReferences1788048000000 } from './migrations/1788048000000-youtube-references';
 import { SpotifyReferences1788134400000 } from './migrations/1788134400000-spotify-references';
+import { LibraryTrackEntity } from '../library/library-track.entity';
+import { MusicLibrary1788220800000 } from './migrations/1788220800000-music-library';
+import { LibraryContentHash1788307200000 } from './migrations/1788307200000-library-content-hash';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -49,6 +52,7 @@ export function createDataSourceOptions(
       MusicReferenceEntity,
       YouTubeSearchCacheEntity,
       YouTubeQuotaUsageEntity,
+      LibraryTrackEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
@@ -58,6 +62,8 @@ export function createDataSourceOptions(
       AiToolExecutions1787961600000,
       YoutubeReferences1788048000000,
       SpotifyReferences1788134400000,
+      MusicLibrary1788220800000,
+      LibraryContentHash1788307200000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

@@ -46,6 +46,14 @@ Variáveis disponíveis nesta etapa:
 | `SPOTIFY_CLIENT_SECRET` | vazio | Segredo do aplicativo Spotify; obrigatório em produção |
 | `SPOTIFY_MARKET` | `BR` | Mercado usado para verificar disponibilidade das faixas |
 | `SPOTIFY_TIMEOUT_MS` | `15000` | Tempo máximo de cada chamada ao Spotify |
+| `STORAGE_ENDPOINT` | `http://127.0.0.1:9000` | Endpoint do armazenamento S3 compatível |
+| `STORAGE_REGION` | `us-east-1` | Região usada na assinatura S3 |
+| `STORAGE_BUCKET` | `eclipse-audio` | Bucket privado dos arquivos de áudio |
+| `STORAGE_ACCESS_KEY` | `eclipse_minio` | Chave local do MinIO; deve ser secreta em produção |
+| `STORAGE_SECRET_KEY` | `eclipse_minio_dev` | Segredo local do MinIO; deve ser forte em produção |
+| `STORAGE_FORCE_PATH_STYLE` | `true` | Compatibilidade de endereçamento com MinIO |
+| `STORAGE_SIGNED_URL_TTL_SECONDS` | `900` | Validade das URLs temporárias |
+| `AUDIO_MAX_FILE_SIZE_BYTES` | `52428800` | Limite de 50 MB por arquivo |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -54,11 +62,11 @@ Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 Com o Docker Desktop iniciado:
 
 ```powershell
-docker compose up -d postgres
+docker compose up -d postgres minio
 corepack pnpm db:migration:run
 ```
 
-O volume `eclipse_postgres_data` preserva os dados quando o contêiner é reiniciado. O Compose também cria `eclipse_test`, utilizado exclusivamente pelos testes de integração.
+Os volumes `eclipse_postgres_data` e `eclipse_minio_data` preservam banco e arquivos quando os contêineres são reiniciados. O Compose também cria `eclipse_test`, utilizado exclusivamente pelos testes de integração. O console local do MinIO fica em `http://127.0.0.1:9001`.
 
 Comandos úteis:
 
@@ -224,3 +232,17 @@ São aceitos links HTTPS de faixa em `open.spotify.com/track/...`, inclusive lin
 ## Limites atuais
 
 A busca no acervo ainda pertence às próximas etapas. A integração do Spotify adiciona apenas os metadados verificados da faixa e não fornece o áudio à IA.
+
+## Biblioteca musical privada
+
+O painel **Biblioteca** aceita MP3 e WAV com até 50 MB. O backend cria um registro pendente e uma URL `PUT` curta; o navegador envia o arquivo diretamente ao armazenamento, sem usar a memória da API como intermediária. Na conclusão, o backend confere o tamanho real, analisa até os primeiros 64 KiB e calcula o SHA-256 do conteúdo antes de marcá-lo como pronto.
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `POST` | `/api/library/tracks/uploads` | Reservar o envio e obter uma URL temporária |
+| `POST` | `/api/library/tracks/:trackId/complete` | Conferir o arquivo e concluir o envio |
+| `GET` | `/api/library/tracks` | Listar somente o acervo do usuário autenticado |
+| `GET` | `/api/library/tracks/:trackId/playback` | Obter uma URL temporária de reprodução |
+| `DELETE` | `/api/library/tracks/:trackId` | Apagar registro e objeto privado |
+
+Extensão, tipo MIME, limite, tamanho recebido e assinatura MP3/WAV são validados. A leitura ampliada reconhece MP3 com metadados ou bytes auxiliares antes do primeiro quadro MPEG. O SHA-256 impede que o mesmo conteúdo seja salvo duas vezes no acervo do mesmo usuário, mesmo que a cópia tenha outro nome; nesse caso, a API remove a nova cópia e responde `409 Conflict`. Arquivos incompatíveis são removidos do MinIO e registrados como falha; uma nova tentativa equivalente substitui o registro de falha anterior. Reservas expiradas são limpas nas consultas seguintes. O identificador interno do objeto nunca é devolvido ao Angular e outro usuário recebe `404` ao tentar acessar a faixa.

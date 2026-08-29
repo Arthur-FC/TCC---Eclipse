@@ -48,6 +48,11 @@
             [referencesError]="referencesErrorMessage"
             [referenceSearchQuery]="referenceSearchQuery"
             [referencesFromCache]="referencesFromCache"
+            [libraryTracks]="libraryTracks"
+            [libraryBusy]="isLibraryBusy"
+            [libraryError]="libraryErrorMessage"
+            [libraryPlaybackTrackId]="libraryPlaybackTrackId"
+            [libraryPlaybackUrl]="libraryPlaybackUrl"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
             (retryRequested)="retryAssistant()"
@@ -59,6 +64,11 @@
             (referencesSearchRequested)="searchYouTubeReferences($event)"
             (spotifyReferenceAddRequested)="addSpotifyReference($event)"
             (referenceStatusChanged)="updateReferenceStatus($event)"
+            (libraryRequested)="loadLibrary()"
+            (libraryUploadRequested)="uploadLibraryTrack($event)"
+            (libraryPlaybackRequested)="playLibraryTrack($event)"
+            (libraryPlaybackStopped)="stopLibraryPlayback()"
+            (libraryDeleteRequested)="deleteLibraryTrack($event)"
         ></app-chat-window>
     </main>
 </ion-app>

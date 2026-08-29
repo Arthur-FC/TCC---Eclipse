@@ -9,6 +9,7 @@ import { AI_PROVIDER, AiProvider } from '../src/ai/ai-provider.interface';
 import { AiProviderError } from '../src/ai/ai-provider.error';
 import { YouTubeClient } from '../src/references/youtube.client';
 import { SpotifyClient } from '../src/references/spotify.client';
+import { StorageService } from '../src/library/storage.service';
 
 describe('Eclipse API (e2e)', () => {
   let app: NestExpressApplication;
@@ -121,6 +122,23 @@ describe('Eclipse API (e2e)', () => {
       embeddable: false as const,
     })),
   };
+  const fakeStorageService = {
+    createUploadUrl: jest.fn(async () => ({
+      url: 'http://storage.test/upload',
+      expiresInSeconds: 900,
+    })),
+    inspectObject: jest.fn(async () => ({
+      sizeBytes: 3,
+      contentType: 'audio/mpeg',
+      signature: Uint8Array.from([0x49, 0x44, 0x33]),
+    })),
+    computeSha256: jest.fn(async () => 'c'.repeat(64)),
+    createPlaybackUrl: jest.fn(async () => ({
+      url: 'http://storage.test/playback',
+      expiresInSeconds: 900,
+    })),
+    deleteObject: jest.fn(async () => undefined),
+  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -132,6 +150,8 @@ describe('Eclipse API (e2e)', () => {
       .useValue(fakeYouTubeClient)
       .overrideProvider(SpotifyClient)
       .useValue(fakeSpotifyClient)
+      .overrideProvider(StorageService)
+      .useValue(fakeStorageService)
       .compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
@@ -147,6 +167,11 @@ describe('Eclipse API (e2e)', () => {
     jsonGenerationCalls = 0;
     fakeYouTubeClient.search.mockClear();
     fakeSpotifyClient.getTrack.mockClear();
+    fakeStorageService.createUploadUrl.mockClear();
+    fakeStorageService.inspectObject.mockClear();
+    fakeStorageService.computeSha256.mockClear();
+    fakeStorageService.createPlaybackUrl.mockClear();
+    fakeStorageService.deleteObject.mockClear();
     await dataSource.query(
       'TRUNCATE TABLE "sessions", "users" RESTART IDENTITY CASCADE',
     );
@@ -729,6 +754,69 @@ describe('Eclipse API (e2e)', () => {
       .send({ url: `https://open.spotify.com/track/${trackId}` })
       .expect(404);
     expect(fakeSpotifyClient.getTrack).toHaveBeenCalledTimes(2);
+  });
+
+  it('uploads, lists, plays and deletes only the owners library track', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const intruder = request.agent(app.getHttpServer());
+    await owner
+      .post('/api/auth/register')
+      .send({
+        name: 'Biblioteca',
+        email: 'biblioteca@example.com',
+        password: 'senha-segura-biblioteca',
+      })
+      .expect(201);
+    await intruder
+      .post('/api/auth/register')
+      .send({
+        name: 'Outra biblioteca',
+        email: 'outra-biblioteca@example.com',
+        password: 'senha-segura-outra-biblioteca',
+      })
+      .expect(201);
+
+    const upload = await owner
+      .post('/api/library/tracks/uploads')
+      .send({
+        filename: 'demo.mp3',
+        contentType: 'audio/mpeg',
+        sizeBytes: 3,
+        title: 'Demo privada',
+        artist: 'Artista Eclipse',
+        notes: 'Somente para o meu acervo.',
+      })
+      .expect(201);
+    expect(upload.body).toMatchObject({
+      uploadMethod: 'PUT',
+      requiredHeaders: { 'Content-Type': 'audio/mpeg' },
+      track: { status: 'pending', title: 'Demo privada' },
+    });
+    expect(upload.body.track).not.toHaveProperty('objectKey');
+
+    const trackId = upload.body.track.id as string;
+    const completed = await owner
+      .post(`/api/library/tracks/${trackId}/complete`)
+      .send({})
+      .expect(201);
+    expect(completed.body.status).toBe('ready');
+
+    const list = await owner.get('/api/library/tracks').expect(200);
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].id).toBe(trackId);
+    await intruder.get('/api/library/tracks').expect(200, []);
+    await intruder
+      .get(`/api/library/tracks/${trackId}/playback`)
+      .expect(404);
+
+    const playback = await owner
+      .get(`/api/library/tracks/${trackId}/playback`)
+      .expect(200);
+    expect(playback.body.url).toBe('http://storage.test/playback');
+
+    await owner.delete(`/api/library/tracks/${trackId}`).expect(204);
+    await owner.get(`/api/library/tracks/${trackId}/playback`).expect(404);
+    expect(fakeStorageService.deleteObject).toHaveBeenCalled();
   });
 
   it('paginates projects and validates pagination parameters', async () => {
