@@ -23,6 +23,7 @@ import { MusicLibrary1788220800000 } from './migrations/1788220800000-music-libr
 import { LibraryContentHash1788307200000 } from './migrations/1788307200000-library-content-hash';
 import { AudioAnalysisJobEntity } from '../library/audio-analysis-job.entity';
 import { AudioAnalysis1788393600000 } from './migrations/1788393600000-audio-analysis';
+import { SemanticLibrarySearch1788480000000 } from './migrations/1788480000000-semantic-library-search';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -68,6 +69,7 @@ export function createDataSourceOptions(
       MusicLibrary1788220800000,
       LibraryContentHash1788307200000,
       AudioAnalysis1788393600000,
+      SemanticLibrarySearch1788480000000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

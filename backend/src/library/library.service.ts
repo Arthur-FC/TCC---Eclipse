@@ -396,7 +396,7 @@ export class LibraryService {
     }
   }
 
-  private toResponse(track: LibraryTrackEntity): LibraryTrackResponse {
+  toResponse(track: LibraryTrackEntity): LibraryTrackResponse {
     return {
       id: track.id,
       title: track.title,

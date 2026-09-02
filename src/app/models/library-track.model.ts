@@ -49,3 +49,22 @@ export interface TrackUploadReservation {
     requiredHeaders: { 'Content-Type': string };
     expiresInSeconds: number;
 }
+
+export interface LibrarySearchQuery {
+    q: string;
+    bpmMin?: number;
+    bpmMax?: number;
+    genre?: string;
+    instrument?: string;
+}
+
+export interface LibrarySearchResult extends LibraryTrack {
+    matchScore: number;
+}
+
+export interface LibrarySearchResponse {
+    query: string;
+    mode: 'semantic' | 'metadata';
+    notice: string | null;
+    results: LibrarySearchResult[];
+}

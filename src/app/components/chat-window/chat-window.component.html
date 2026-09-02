@@ -72,11 +72,15 @@
         [errorMessage]="libraryError"
         [playbackTrackId]="libraryPlaybackTrackId"
         [playbackUrl]="libraryPlaybackUrl"
+        [searchResponse]="librarySearchResponse"
+        [searchBusy]="librarySearchBusy"
         (uploadRequested)="libraryUploadRequested.emit($event)"
         (playbackRequested)="libraryPlaybackRequested.emit($event)"
         (playbackStopped)="libraryPlaybackStopped.emit()"
         (reprocessRequested)="libraryReprocessRequested.emit($event)"
         (deleteRequested)="libraryDeleteRequested.emit($event)"
+        (searchRequested)="librarySearchRequested.emit($event)"
+        (searchCleared)="librarySearchCleared.emit()"
     ></app-library-panel>
 
     <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen" #messages class="messages">

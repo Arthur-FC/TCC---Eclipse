@@ -247,6 +247,41 @@ O painel **Biblioteca** aceita MP3 e WAV com até 50 MB. O backend cria um regis
 
 Extensão, tipo MIME, limite, tamanho recebido e assinatura MP3/WAV são validados. A leitura ampliada reconhece MP3 com metadados ou bytes auxiliares antes do primeiro quadro MPEG. O SHA-256 impede que o mesmo conteúdo seja salvo duas vezes no acervo do mesmo usuário, mesmo que a cópia tenha outro nome; nesse caso, a API remove a nova cópia e responde `409 Conflict`. Arquivos incompatíveis são removidos do MinIO e registrados como falha; uma nova tentativa equivalente substitui o registro de falha anterior. Reservas expiradas são limpas nas consultas seguintes. O identificador interno do objeto nunca é devolvido ao Angular e outro usuário recebe `404` ao tentar acessar a faixa.
 
+## Busca semântica do acervo
+
+A rota autenticada `GET /api/library/tracks/search` recebe `q` e, opcionalmente,
+`bpmMin`, `bpmMax`, `genre` e `instrument`. O backend gera embeddings somente do
+texto formado por título, artista, observações e resultados da análise local. O
+arquivo de áudio nunca é enviado à Cloudflare.
+
+Configuração no `.env` do backend:
+
+```ini
+CLOUDFLARE_ACCOUNT_ID=seu-account-id
+CLOUDFLARE_API_TOKEN=seu-token
+CLOUDFLARE_EMBEDDING_MODEL=@cf/qwen/qwen3-embedding-0.6b
+CLOUDFLARE_EMBEDDING_DIMENSIONS=1024
+CLOUDFLARE_TIMEOUT_MS=15000
+CLOUDFLARE_DAILY_REQUEST_LIMIT=1000
+```
+
+Crie um token de API limitado à conta e à permissão `Workers AI Read`. Não
+coloque o token no Angular. Sem as duas credenciais, com quota esgotada ou durante
+uma indisponibilidade, a mesma busca funciona em modo de metadados. Os vetores são
+armazenados no pgvector e só são gerados novamente quando o texto ou o modelo muda.
+
+As consultas também reutilizam seus vetores em um cache em memória de até 256
+entradas, com validade de 24 horas. A chave inclui usuário, modelo, dimensão e texto
+da consulta (com espaços normalizados). Alterar filtros não gera outro vetor da
+mesma consulta. Reiniciar o backend limpa esse cache; os vetores das faixas continuam
+persistidos no PostgreSQL. Chamadas simultâneas iguais compartilham a geração, e
+falhas não entram no cache. A lista de resultados é sempre consultada novamente.
+
+Os logs `semantic-search` mostram `queryCache` (`hit`, `miss` ou `shared`),
+`tracksMs`, `indexingMs`, `queryEmbeddingMs`, `rankingMs` e `totalMs`. O log
+`cloudflare-embedding` mede `cloudflareMs` de cada chamada externa real. Nenhum
+desses logs de tempo inclui chave de API ou conteúdo da pesquisa.
+
 ## Análise básica de áudio
 
 Depois que um MP3 ou WAV válido fica pronto, a API responde imediatamente com a análise em `queued`. Um trabalho persistente em `audio_analysis_jobs` é consumido pelo worker em segundo plano, que lê o objeto privado do MinIO e processa tudo localmente, sem enviar o áudio à Groq ou a outro serviço externo.

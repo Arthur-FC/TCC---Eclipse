@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import {
     LibraryTrack,
+    LibrarySearchQuery,
+    LibrarySearchResponse,
     TrackUploadRequest
 } from '../../models/library-track.model';
 
@@ -18,11 +20,15 @@ export class LibraryPanelComponent {
     @Input() errorMessage = '';
     @Input() playbackTrackId: string | null = null;
     @Input() playbackUrl = '';
+    @Input() searchResponse: LibrarySearchResponse | null = null;
+    @Input() searchBusy = false;
     @Output() uploadRequested = new EventEmitter<TrackUploadRequest>();
     @Output() playbackRequested = new EventEmitter<string>();
     @Output() playbackStopped = new EventEmitter<void>();
     @Output() reprocessRequested = new EventEmitter<string>();
     @Output() deleteRequested = new EventEmitter<string>();
+    @Output() searchRequested = new EventEmitter<LibrarySearchQuery>();
+    @Output() searchCleared = new EventEmitter<void>();
 
     selectedFile: File | null = null;
     draggingFile = false;
@@ -30,6 +36,12 @@ export class LibraryPanelComponent {
     title = '';
     artist = '';
     notes = '';
+    searchQuery = '';
+    searchBpmMin: number | null = null;
+    searchBpmMax: number | null = null;
+    searchGenre = '';
+    searchInstrument = '';
+    searchFiltersOpen = false;
     readonly expandedAnalysisIds = new Set<string>();
 
     private dragDepth = 0;
@@ -44,7 +56,7 @@ export class LibraryPanelComponent {
     });
 
     get sortedTracks(): LibraryTrack[] {
-        const tracks = [...this.tracks];
+        const tracks = [...(this.searchResponse?.results ?? this.tracks)];
         if (this.sortMode === 'name-asc' || this.sortMode === 'name-desc') {
             const direction = this.sortMode === 'name-asc' ? 1 : -1;
             return tracks.sort((first, second) =>
@@ -56,6 +68,32 @@ export class LibraryPanelComponent {
         return tracks.sort((first, second) =>
             (this.timestamp(first.createdAt) - this.timestamp(second.createdAt)) * direction
         );
+    }
+
+    search(): void {
+        const q = this.searchQuery.trim();
+        if (q.length < 2 || this.searchBusy) return;
+        this.searchRequested.emit({
+            q,
+            bpmMin: this.searchBpmMin ?? undefined,
+            bpmMax: this.searchBpmMax ?? undefined,
+            genre: this.searchGenre.trim() || undefined,
+            instrument: this.searchInstrument.trim() || undefined
+        });
+    }
+
+    clearSearch(): void {
+        this.searchQuery = '';
+        this.searchBpmMin = null;
+        this.searchBpmMax = null;
+        this.searchGenre = '';
+        this.searchInstrument = '';
+        this.searchCleared.emit();
+    }
+
+    matchPercentage(track: LibraryTrack): number | null {
+        const score = (track as LibraryTrack & { matchScore?: number }).matchScore;
+        return typeof score === 'number' ? Math.round(score * 100) : null;
     }
 
     selectFile(event: Event): void {

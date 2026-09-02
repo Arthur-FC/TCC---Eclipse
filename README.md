@@ -29,6 +29,7 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Cards de referências com aprovação e rejeição persistidas.
 - Biblioteca musical privada com upload, reprodução e exclusão de MP3/WAV.
 - Análise local assíncrona de formato, duração, BPM, tonalidade e tags estimadas.
+- Busca do acervo em linguagem natural com Cloudflare Workers AI, pgvector e fallback por metadados.
 - Armazenamento S3 compatível pelo MinIO com URLs temporárias.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.
@@ -91,7 +92,7 @@ corepack pnpm start:dev
 ```
 ou
 ```bash
-cd "\backend"
+cd backend
 docker compose up -d postgres
 & ".\node_modules\.bin\nest.cmd" start --watch
 ```

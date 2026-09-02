@@ -12,7 +12,7 @@ import {
 import { Chat } from '../../models/chat.model';
 import { Briefing, BriefingData } from '../../models/briefing.model';
 import { MusicReference, ReferenceStatus } from '../../models/reference.model';
-import { LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
+import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
 
 @Component({
     selector: 'app-chat-window',
@@ -38,6 +38,8 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() libraryError = '';
     @Input() libraryPlaybackTrackId: string | null = null;
     @Input() libraryPlaybackUrl = '';
+    @Input() librarySearchResponse: LibrarySearchResponse | null = null;
+    @Input() librarySearchBusy = false;
     @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
     @Output() retryRequested = new EventEmitter<void>();
@@ -58,6 +60,8 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() libraryPlaybackStopped = new EventEmitter<void>();
     @Output() libraryReprocessRequested = new EventEmitter<string>();
     @Output() libraryDeleteRequested = new EventEmitter<string>();
+    @Output() librarySearchRequested = new EventEmitter<LibrarySearchQuery>();
+    @Output() librarySearchCleared = new EventEmitter<void>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 

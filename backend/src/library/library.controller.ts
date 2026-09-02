@@ -7,12 +7,15 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { CreateTrackUploadDto } from './dto/create-track-upload.dto';
+import { SearchLibraryDto } from './dto/search-library.dto';
+import { LibrarySearchResponse, SemanticLibrarySearchService } from './semantic-library-search.service';
 import {
   LibraryService,
   LibraryTrackResponse,
@@ -22,7 +25,10 @@ import {
 @Controller('library/tracks')
 @UseGuards(SessionAuthGuard)
 export class LibraryController {
-  constructor(private readonly libraryService: LibraryService) {}
+  constructor(
+    private readonly libraryService: LibraryService,
+    private readonly semanticSearch: SemanticLibrarySearchService,
+  ) {}
 
   @Post('uploads')
   createUpload(
@@ -45,6 +51,14 @@ export class LibraryController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<LibraryTrackResponse[]> {
     return this.libraryService.list(user.id);
+  }
+
+  @Get('search')
+  search(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() dto: SearchLibraryDto,
+  ): Promise<LibrarySearchResponse> {
+    return this.semanticSearch.search(user.id, dto);
   }
 
   @Get(':trackId/playback')

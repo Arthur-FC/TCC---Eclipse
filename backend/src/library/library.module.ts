@@ -9,6 +9,9 @@ import { AudioAnalysisJobEntity } from './audio-analysis-job.entity';
 import { AudioAnalysisQueueService } from './audio-analysis-queue.service';
 import { AudioAnalysisWorker } from './audio-analysis.worker';
 import { AudioAnalyzerService } from './audio-analyzer.service';
+import { CloudflareEmbeddingsService } from './cloudflare-embeddings.service';
+import { SemanticLibrarySearchService } from './semantic-library-search.service';
+import { QueryEmbeddingCacheService } from './query-embedding-cache.service';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { AudioAnalyzerService } from './audio-analyzer.service';
     AudioAnalyzerService,
     AudioAnalysisQueueService,
     AudioAnalysisWorker,
+    CloudflareEmbeddingsService,
+    QueryEmbeddingCacheService,
+    SemanticLibrarySearchService,
   ],
   exports: [LibraryService],
 })

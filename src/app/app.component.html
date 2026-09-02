@@ -53,6 +53,8 @@
             [libraryError]="libraryErrorMessage"
             [libraryPlaybackTrackId]="libraryPlaybackTrackId"
             [libraryPlaybackUrl]="libraryPlaybackUrl"
+            [librarySearchResponse]="librarySearchResponse"
+            [librarySearchBusy]="isLibrarySearchBusy"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
             (retryRequested)="retryAssistant()"
@@ -70,6 +72,8 @@
             (libraryPlaybackStopped)="stopLibraryPlayback()"
             (libraryReprocessRequested)="reprocessLibraryTrack($event)"
             (libraryDeleteRequested)="deleteLibraryTrack($event)"
+            (librarySearchRequested)="searchLibrary($event)"
+            (librarySearchCleared)="clearLibrarySearch()"
         ></app-chat-window>
     </main>
 </ion-app>

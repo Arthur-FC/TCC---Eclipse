@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
     LibraryTrack,
+    LibrarySearchQuery,
+    LibrarySearchResponse,
     TrackUploadRequest,
     TrackUploadReservation
 } from '../models/library-track.model';
@@ -20,6 +22,17 @@ export class LibraryApiService {
                 withCredentials: true
             })
         );
+    }
+
+    search(query: LibrarySearchQuery): Promise<LibrarySearchResponse> {
+        const params: Record<string, string> = { q: query.q };
+        if (query.bpmMin !== undefined) params['bpmMin'] = String(query.bpmMin);
+        if (query.bpmMax !== undefined) params['bpmMax'] = String(query.bpmMax);
+        if (query.genre) params['genre'] = query.genre;
+        if (query.instrument) params['instrument'] = query.instrument;
+        return firstValueFrom(this.http.get<LibrarySearchResponse>(
+            `${this.tracksUrl}/search`, { params, withCredentials: true }
+        ));
     }
 
     async upload(request: TrackUploadRequest): Promise<LibraryTrack> {

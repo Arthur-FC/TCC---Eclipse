@@ -93,6 +93,12 @@ export const environmentValidationSchema = Joi.object({
   AUDIO_MAX_FILE_SIZE_BYTES: Joi.number().integer().min(1_048_576).max(1_073_741_824).default(52_428_800),
   AUDIO_ANALYSIS_WORKER_ENABLED: Joi.boolean().default(true),
   AUDIO_ANALYSIS_POLL_INTERVAL_MS: Joi.number().integer().min(250).max(60_000).default(1_000),
+  CLOUDFLARE_ACCOUNT_ID: Joi.string().allow('').max(100).default(''),
+  CLOUDFLARE_API_TOKEN: Joi.string().allow('').max(500).default(''),
+  CLOUDFLARE_EMBEDDING_MODEL: Joi.string().valid('@cf/qwen/qwen3-embedding-0.6b').default('@cf/qwen/qwen3-embedding-0.6b'),
+  CLOUDFLARE_EMBEDDING_DIMENSIONS: Joi.number().integer().valid(1_024).default(1_024),
+  CLOUDFLARE_TIMEOUT_MS: Joi.number().integer().min(3_000).max(60_000).default(15_000),
+  CLOUDFLARE_DAILY_REQUEST_LIMIT: Joi.number().integer().min(1).max(100_000).default(1_000),
 }).unknown(true);
 
 export function parseCorsOrigins(value: string): string[] {

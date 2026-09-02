@@ -61,9 +61,41 @@
 
     <p *ngIf="errorMessage" class="panel-error" role="alert">{{ errorMessage }}</p>
 
+    <form *ngIf="tracks.length" class="library-search" (ngSubmit)="search()">
+        <div class="search-main">
+            <input
+                name="semanticSearch"
+                [(ngModel)]="searchQuery"
+                minlength="2"
+                maxlength="300"
+                placeholder="Ex.: faixa calma, acústica e noturna"
+                aria-label="Buscar no acervo por descrição"
+                [disabled]="searchBusy"
+            />
+            <button type="submit" [disabled]="searchBusy || searchQuery.trim().length < 2">
+                {{ searchBusy ? 'Buscando...' : 'Buscar' }}
+            </button>
+            <button type="button" class="filter-toggle" (click)="searchFiltersOpen = !searchFiltersOpen">
+                {{ searchFiltersOpen ? 'Ocultar filtros' : 'Filtros' }}
+            </button>
+            <button *ngIf="searchResponse" type="button" class="clear-search" (click)="clearSearch()">Limpar</button>
+        </div>
+        <div *ngIf="searchFiltersOpen" class="search-filters">
+            <label>BPM mínimo<input name="bpmMin" type="number" min="20" max="300" [(ngModel)]="searchBpmMin" /></label>
+            <label>BPM máximo<input name="bpmMax" type="number" min="20" max="300" [(ngModel)]="searchBpmMax" /></label>
+            <label>Gênero<input name="genre" maxlength="80" [(ngModel)]="searchGenre" placeholder="Ex.: MPB" /></label>
+            <label>Instrumento<input name="instrument" maxlength="80" [(ngModel)]="searchInstrument" placeholder="Ex.: violão" /></label>
+        </div>
+        <div *ngIf="searchResponse" class="search-summary" role="status">
+            <strong>{{ searchResponse.results.length }} resultado(s)</strong>
+            <span>{{ searchResponse.mode === 'semantic' ? 'Busca semântica' : 'Busca por metadados' }}</span>
+            <small *ngIf="searchResponse.notice">{{ searchResponse.notice }}</small>
+        </div>
+    </form>
+
     <div *ngIf="tracks.length" class="library-content">
         <div class="sort-toolbar">
-            <span>{{ tracks.length }} {{ tracks.length === 1 ? 'áudio' : 'áudios' }}</span>
+            <span>{{ sortedTracks.length }} {{ sortedTracks.length === 1 ? 'áudio' : 'áudios' }}</span>
             <label class="sort-control">
                 <span>Ordenar por</span>
                 <select [(ngModel)]="sortMode" aria-label="Ordenar áudios">
@@ -79,6 +111,7 @@
         <article *ngFor="let track of sortedTracks; trackBy: trackById" [class.failed]="track.status === 'failed'">
             <div class="track-info">
                 <strong>{{ track.title }}</strong>
+                <span *ngIf="matchPercentage(track) !== null" class="match-score">{{ matchPercentage(track) }}% compatível</span>
                 <span>{{ track.artist || 'Artista não informado' }}</span>
                 <small>{{ track.originalFilename }} · {{ formatSize(track.sizeBytes) }}</small>
                 <time [attr.datetime]="track.createdAt">{{ formatAddedDate(track.createdAt) }}</time>

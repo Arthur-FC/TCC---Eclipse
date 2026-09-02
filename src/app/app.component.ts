@@ -9,7 +9,7 @@ import { Briefing, BriefingData } from './models/briefing.model';
 import { BriefingsApiService } from './services/briefings-api.service';
 import { MusicReference, ReferenceStatus } from './models/reference.model';
 import { ReferencesApiService } from './services/references-api.service';
-import { LibraryTrack, TrackUploadRequest } from './models/library-track.model';
+import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from './models/library-track.model';
 import { LibraryApiService } from './services/library-api.service';
 
 @Component({
@@ -45,6 +45,8 @@ export class AppComponent implements OnInit, OnDestroy {
     libraryErrorMessage = '';
     libraryPlaybackTrackId: string | null = null;
     libraryPlaybackUrl = '';
+    librarySearchResponse: LibrarySearchResponse | null = null;
+    isLibrarySearchBusy = false;
     private isDraftChat = false;
     private libraryPollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -110,6 +112,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.libraryTracks = [];
             this.libraryPlaybackTrackId = null;
             this.libraryPlaybackUrl = '';
+            this.librarySearchResponse = null;
             this.stopLibraryPolling();
             this.isDraftChat = false;
         } catch (error) {
@@ -434,6 +437,23 @@ export class AppComponent implements OnInit, OnDestroy {
             this.isLibraryBusy = false;
             this.scheduleLibraryPolling();
         }
+    }
+
+    async searchLibrary(query: LibrarySearchQuery): Promise<void> {
+        if (this.isLibrarySearchBusy) return;
+        this.isLibrarySearchBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            this.librarySearchResponse = await this.libraryApi.search(query);
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+        } finally {
+            this.isLibrarySearchBusy = false;
+        }
+    }
+
+    clearLibrarySearch(): void {
+        this.librarySearchResponse = null;
     }
 
     async uploadLibraryTrack(request: TrackUploadRequest): Promise<void> {

@@ -631,6 +631,10 @@ Referências técnicas:
 
 ## Etapa 13 - Integrar embeddings pela Cloudflare
 
+**Status em 29 de agosto de 2026:** implementação técnica concluída; ativação
+semântica aguardando o usuário informar `CLOUDFLARE_ACCOUNT_ID` e
+`CLOUDFLARE_API_TOKEN` no `.env` local do backend.
+
 ### Objetivo
 
 Criar busca semântica sem instalar ou executar modelos localmente.
@@ -661,6 +665,26 @@ Busca no acervo por linguagem natural usando vetores armazenados no pgvector.
 ### Critério de conclusão
 
 Consultas descritivas encontram faixas coerentes, e a aplicação continua utilizável quando a Cloudflare estiver indisponível.
+
+### Implementação realizada
+
+- PostgreSQL local trocado pela imagem oficial `pgvector/pgvector:0.8.6-pg17-bookworm`, preservando o volume existente;
+- extensão pgvector 0.8.6 habilitada por migração e vetores fixados em 1.024 dimensões;
+- integração REST com `@cf/qwen/qwen3-embedding-0.6b`, timeout e limite diário configuráveis;
+- texto indexado composto por título, artista, observações, BPM, tonalidade, gênero, clima e instrumentos;
+- hash SHA-256, modelo e dimensão persistidos para evitar a regeneração de vetores sem alterações;
+- similaridade por cosseno calculada pelo PostgreSQL;
+- filtros de BPM, gênero e instrumento combinados com o ranqueamento;
+- rota `GET /api/library/tracks/search` protegida pela sessão do usuário;
+- interface de busca em linguagem natural, percentual de compatibilidade e filtros opcionais;
+- fallback automático por metadados quando não há credenciais, ocorre timeout, quota ou indisponibilidade;
+- nenhum byte do MP3/WAV é enviado para a Cloudflare;
+- 46 testes unitários e 19 testes integrados aprovados;
+- builds de produção do NestJS e Angular aprovados.
+
+Para concluir a validação semântica externa, criar a conta gratuita, habilitar
+Workers AI, gerar um token restrito a `Workers AI Read` e preencher as duas
+credenciais no `.env`. A busca por metadados já pode ser testada sem essa etapa.
 
 ## Etapa 14 - Curar e ranquear referências
 

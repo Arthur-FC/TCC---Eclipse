@@ -203,6 +203,37 @@ input:focus, textarea:focus {
     font-size: 12px;
 }
 
+.library-search {
+    display: grid;
+    gap: 10px;
+    margin-top: 15px;
+    padding: 13px;
+    border: 1px solid #c466ff2e;
+    border-radius: 14px;
+    background: #242225;
+}
+.search-main { display: flex; gap: 8px; }
+.search-main input { flex: 1; min-width: 120px; }
+.search-main button {
+    min-height: 36px;
+    border: 1px solid #c466ff55;
+    border-radius: 18px;
+    padding: 0 13px;
+    background: #443249;
+    color: #efd9fb;
+    cursor: pointer;
+    font: 600 10px Inter;
+}
+.search-main button:hover { background: #523c59; }
+.search-main .filter-toggle, .search-main .clear-search { background: #343434; border-color: #ffffff20; color: #ccc; }
+.search-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.search-filters input { min-height: 36px; padding: 8px 9px; }
+.search-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; color: #aaa; font-size: 10px; }
+.search-summary strong { color: #f0ddfa; }
+.search-summary span { padding: 3px 7px; border-radius: 10px; background: #3c3041; color: #dcb9ee; }
+.search-summary small { flex-basis: 100%; color: #b7a7be; line-height: 1.4; }
+.match-score { justify-self: start; color: #9ee7c2 !important; font-size: 9px !important; font-weight: 700; }
+
 .library-content { display: grid; gap: 10px; margin-top: 15px; }
 
 .sort-toolbar {
@@ -484,6 +515,9 @@ button:disabled { cursor: wait; opacity: .55; }
     .file-picker { justify-content: flex-start; min-height: 96px; }
     .technical-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .analysis-footer { align-items: flex-start; flex-direction: column; }
+    .search-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .search-main { flex-wrap: wrap; }
+    .search-main input { flex-basis: 100%; }
 }
 
 @media (max-width: 480px) {
@@ -494,4 +528,5 @@ button:disabled { cursor: wait; opacity: .55; }
     .sort-toolbar { align-items: flex-start; flex-direction: column; }
     .sort-control { width: 100%; justify-content: space-between; }
     .technical-grid { grid-template-columns: 1fr; }
+    .search-filters { grid-template-columns: 1fr; }
 }
