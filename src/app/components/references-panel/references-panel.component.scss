@@ -165,6 +165,37 @@ article.spotify .source { color: #1ed760; }
 .reject.selected { border-color: #ef7180; background: #623039; color: #ffd1d6; }
 button:disabled { cursor: wait; opacity: .55; }
 
+.header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+header .secondary { background: #403747; border: 1px solid #85629e; }
+.add-options, .selection-panel { margin-top: 16px; padding: 16px; border: 1px solid #ffffff24; border-radius: 12px; background: #252525; }
+.add-options summary { cursor: pointer; color: #e4bfff; font-size: 13px; }
+.manual-form, .replacement-form { display: grid; gap: 10px; margin-top: 14px; }
+.manual-form + .manual-form { padding-top: 16px; border-top: 1px solid #ffffff20; }
+.manual-form label, .replacement-form label { display: grid; gap: 6px; font-size: 12px; color: #ddd; }
+.manual-form input, .manual-form textarea, select { box-sizing: border-box; width: 100%; min-width: 0; padding: 10px; border: 1px solid #67606d; border-radius: 8px; background: #1d1d1d; color: #fff; font: 12px Inter; }
+.manual-form textarea { resize: vertical; }
+.manual-form p, .manual-form small, .selection-panel p, .score-note { margin: 8px 0; color: #bdb5c3; font-size: 12px; line-height: 1.6; }
+.manual-form button, .selection-panel button, .replace-button, .replacement-form button, .local-playback button { min-height: 36px; padding: 8px 12px; border: 1px solid #88639e; border-radius: 8px; background: #463450; color: #f3e4ff; cursor: pointer; font: 600 12px Inter; }
+.selection-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.selection-heading > span { font-size: 12px; color: #eac694; }
+.selection-heading > .confirmed { color: #95e5b3; }
+.selection-panel ol { padding-left: 24px; }
+.selection-panel li { padding: 8px 0; color: #ddd; font-size: 13px; }
+.selection-panel li > span { display: inline-block; width: calc(100% - 96px); vertical-align: middle; overflow-wrap: anywhere; }
+.selection-panel li small { display: block; margin-top: 4px; color: #bd99d3; }
+.selection-panel li button { margin-left: 4px; }
+.curation-notice { padding: 10px 12px; border-radius: 8px; background: #4d4030; color: #f3dbb4 !important; font-size: 12px; line-height: 1.6; }
+.duplicates-toggle { display: flex; align-items: center; gap: 8px; margin-top: 16px; font-size: 12px; color: #dcc2ec; }
+.ranking { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; padding-top: 12px; border-top: 1px solid #ffffff20; }
+.ranking strong { color: #dfb3ff; font-size: 18px; }
+.ranking span { color: #bbb; font-size: 11px; }
+.card-body .justification { color: #e0dbe4; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.evidence-label { color: #b7a9bf; font-size: 11px; line-height: 1.5; }
+.local-playback { display: grid; gap: 8px; }
+.local-playback audio { width: 100%; }
+.local-playback span { color: #eac694; font-size: 12px; }
+button:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid #cf98ff; outline-offset: 3px; }
+
 @media (max-width: 720px) {
     .cards { grid-template-columns: 1fr; }
     .references > header { flex-direction: column; }

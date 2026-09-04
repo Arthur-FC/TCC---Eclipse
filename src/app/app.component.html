@@ -48,6 +48,8 @@
             [referencesError]="referencesErrorMessage"
             [referenceSearchQuery]="referenceSearchQuery"
             [referencesFromCache]="referencesFromCache"
+            [curationState]="curationState"
+            (curationRequested)="handleCuration($event)"
             [libraryTracks]="libraryTracks"
             [libraryBusy]="isLibraryBusy"
             [libraryError]="libraryErrorMessage"

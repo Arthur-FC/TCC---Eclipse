@@ -4,13 +4,16 @@
             <p class="eyebrow">Pesquisa musical</p>
             <h2 id="references-title">Referências musicais</h2>
         </div>
-        <button type="button" [disabled]="busy" (click)="requestSearch()">
+        <div class="header-actions">
+        <button type="button" [disabled]="busy" (click)="requestCuration()">Gerar curadoria</button>
+        <button type="button" class="secondary" [disabled]="busy" (click)="requestSearch()">
             {{ searchQuery ? 'Tentar novamente no YouTube' : 'Pesquisar no YouTube' }}
         </button>
+        </div>
     </header>
 
     <p class="requirement">
-        Pesquise pelo briefing no YouTube ou adicione uma faixa do Spotify pelo link.
+        Pesquise no YouTube, adicione links do Spotify ou referências próprias. Gere a curadoria com o briefing confirmado para comparar as fontes.
     </p>
     <form class="spotify-form" (ngSubmit)="addSpotify()">
         <label for="spotify-url">Link da faixa no Spotify</label>
@@ -30,31 +33,88 @@
         </div>
         <small>Somente os metadados públicos da faixa serão salvos.</small>
     </form>
+    <details class="add-options">
+        <summary>Adicionar link manual ou faixa do acervo</summary>
+        <form class="manual-form" (ngSubmit)="addManual()">
+            <h3>Link manual</h3>
+            <p>Os dados abaixo são informados por você, sem verificação automática.</p>
+            <label>Título<input name="manualTitle" [(ngModel)]="manualTitle" maxlength="300" required [disabled]="busy" /></label>
+            <label>Artista ou criador<input name="manualCreator" [(ngModel)]="manualCreator" maxlength="200" [disabled]="busy" /></label>
+            <label>Link<input name="manualUrl" [(ngModel)]="manualUrl" type="url" maxlength="1000" required [disabled]="busy" /></label>
+            <label>Descrição<textarea name="manualDescription" [(ngModel)]="manualDescription" maxlength="2000" rows="2" [disabled]="busy"></textarea></label>
+            <button type="submit" [disabled]="busy || !manualTitle.trim() || !manualUrl.trim()">Adicionar link</button>
+        </form>
+        <form class="manual-form" (ngSubmit)="addLibrary()">
+            <label>Áudio do seu acervo
+                <select name="libraryTrack" [(ngModel)]="libraryTrackId" [disabled]="busy" required>
+                    <option value="">Selecione uma faixa</option>
+                    <option *ngFor="let track of readyTracks" [value]="track.id">{{ track.title }}</option>
+                </select>
+            </label>
+            <small>A curadoria também considera automaticamente até 50 áudios recentes do acervo.</small>
+            <button type="submit" [disabled]="busy || !libraryTrackId">Adicionar faixa</button>
+        </form>
+    </details>
+    <p *ngFor="let notice of curationState?.notices" class="curation-notice" role="status">{{ notice }}</p>
+    <section *ngIf="orderedApproved.length || curationState?.selection" class="selection-panel" aria-label="Seleção final de referências">
+        <div class="selection-heading">
+            <h3>Seleção final · {{ orderedApproved.length }}/20</h3>
+            <span [class.confirmed]="curationState?.selection?.valid">{{ curationState?.selection?.valid ? 'Seleção confirmada' : 'Revisão pendente' }}</span>
+        </div>
+        <p>A ordem fica salva no projeto. Após alterar as escolhas, a ordem ou o briefing, confirme novamente.</p>
+        <ol>
+            <li *ngFor="let ref of orderedApproved; let i = index">
+                <span>{{ ref.title }} <small>{{ sourceLabel(ref) }}</small></span>
+                <button type="button" [disabled]="busy || i === 0" (click)="moveSelection(i, -1)" [attr.aria-label]="'Mover ' + ref.title + ' para cima'">↑</button>
+                <button type="button" [disabled]="busy || i === orderedApproved.length - 1" (click)="moveSelection(i, 1)" [attr.aria-label]="'Mover ' + ref.title + ' para baixo'">↓</button>
+            </li>
+        </ol>
+        <button type="button" [disabled]="busy || !orderedApproved.length || orderedApproved.length > 20" (click)="saveSelection(true)">Confirmar seleção final</button>
+    </section>
     <p *ngIf="searchQuery" class="query">
         Busca utilizada: <strong>{{ searchQuery }}</strong>
         <span *ngIf="fromCache"> · resultado do cache</span>
     </p>
     <p *ngIf="errorMessage" class="panel-error" role="alert">{{ errorMessage }}</p>
     <div *ngIf="busy" class="loading" aria-live="polite">Consultando referências...</div>
+    <label *ngIf="duplicateCount" class="duplicates-toggle"><input type="checkbox" [(ngModel)]="showDuplicates" /> Mostrar {{ duplicateCount }} alternativa(s) agrupada(s)</label>
+    <p *ngIf="references.length" class="score-note">A pontuação indica correspondência textual, não uma probabilidade de acerto nem uma análise do áudio externo.</p>
 
     <div *ngIf="!busy && references.length" class="cards">
         <article
-            *ngFor="let reference of references; trackBy: trackReference"
+            *ngFor="let reference of visibleReferences; trackBy: trackReference"
             [class.spotify]="reference.source === 'spotify'"
             [class.approved]="reference.status === 'approved'"
             [class.rejected]="reference.status === 'rejected'"
         >
-            <a [href]="reference.url" target="_blank" rel="noopener noreferrer" class="thumbnail">
+            <a *ngIf="reference.thumbnailUrl" [href]="reference.url" target="_blank" rel="noopener noreferrer" class="thumbnail">
                 <img [src]="reference.thumbnailUrl" [alt]="'Miniatura de ' + reference.title" loading="lazy" />
                 <span>{{ formatDuration(reference.durationSeconds) }}</span>
             </a>
             <div class="card-body">
                 <span class="source">{{ sourceLabel(reference) }}</span>
-                <a [href]="reference.url" target="_blank" rel="noopener noreferrer" class="title">
+                <a *ngIf="reference.url; else localTitle" [href]="reference.url" target="_blank" rel="noopener noreferrer" class="title">
                     {{ reference.title }}
                 </a>
+                <ng-template #localTitle><strong class="title">{{ reference.title }}</strong></ng-template>
                 <p>{{ reference.creator }}</p>
                 <p *ngIf="reference.album" class="album">{{ reference.album }}</p>
+                <p *ngIf="reference.duplicateOfId" class="curation-notice">Alternativa agrupada de outra referência. Use Substituir para trocar a escolha.</p>
+                <div *ngIf="reference.score !== null" class="ranking">
+                    <strong>{{ reference.score * 100 | number:'1.0-0' }} / 100</strong>
+                    <span>{{ reference.rankingMethod === 'semantic+metadata' ? 'Semântica + metadados' : 'Metadados' }} · briefing v{{ reference.curatedBriefingVersion }}</span>
+                </div>
+                <p *ngIf="reference.justification" class="justification">{{ reference.justification }}</p>
+                <small *ngIf="reference.justificationModel" class="evidence-label">IA selecionou evidências textuais validadas pelo sistema, sem texto livre.</small>
+                <small *ngIf="reference.source === 'manual'" class="evidence-label">Dados informados pelo usuário.</small>
+                <div *ngIf="reference.source === 'library'" class="local-playback">
+                    <button *ngIf="reference.libraryTrackId" type="button" [disabled]="busy" (click)="playbackRequested.emit(reference.libraryTrackId)">Reproduzir faixa</button>
+                    <span *ngIf="!reference.libraryTrackId">Faixa removida do acervo</span>
+                    <ng-container *ngIf="playbackTrackId === reference.libraryTrackId && playbackUrl">
+                        <audio [src]="playbackUrl" controls autoplay></audio>
+                        <button type="button" (click)="playbackStopped.emit()">Parar</button>
+                    </ng-container>
+                </div>
                 <div class="decision">
                     <button
                         type="button"
@@ -74,6 +134,17 @@
                     >
                         {{ reference.status === 'rejected' ? 'Rejeitada' : 'Rejeitar' }}
                     </button>
+                </div>
+                <button type="button" class="replace-button" [disabled]="busy" (click)="replacingId = reference.id; replacementId = ''">Substituir</button>
+                <div *ngIf="replacingId === reference.id" class="replacement-form">
+                    <label>Trocar por
+                        <select [(ngModel)]="replacementId" [disabled]="busy">
+                            <option value="">Selecione outra referência</option>
+                            <option *ngFor="let candidate of replacements" [value]="candidate.id">{{ candidate.title }} · {{ sourceLabel(candidate) }}</option>
+                        </select>
+                    </label>
+                    <button type="button" [disabled]="busy || !replacementId" (click)="replace()">Confirmar troca</button>
+                    <button type="button" (click)="replacingId = null">Cancelar</button>
                 </div>
             </div>
         </article>

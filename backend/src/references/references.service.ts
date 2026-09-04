@@ -13,6 +13,7 @@ import { ReferenceSource, ReferenceStatus } from './reference-status.enum';
 import { YouTubeClient } from './youtube.client';
 import { SpotifyClient } from './spotify.client';
 import { parseSpotifyTrackLink } from './spotify-link';
+import { sameRecording } from './curation-rules';
 
 export interface ReferenceSearchResponse {
   query: string;
@@ -134,13 +135,26 @@ export class ReferencesService {
     status: ReferenceStatus,
   ): Promise<MusicReferenceEntity> {
     await this.projectsService.getActiveProject(ownerId, projectId);
-    const reference = await this.referencesRepository.findOneBy({
-      id: referenceId,
-      projectId,
+    return this.referencesRepository.manager.transaction(async (manager) => {
+      await manager.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE', [projectId]);
+      const repository = manager.getRepository(MusicReferenceEntity);
+      const reference = await repository.findOneBy({ id: referenceId, projectId });
+      if (!reference) throw new NotFoundException('Referência não encontrada.');
+      if (status === ReferenceStatus.APPROVED) {
+        if (reference.source === ReferenceSource.LIBRARY && !reference.libraryTrackId) {
+          throw new ConflictException('Esta faixa foi removida do acervo.');
+        }
+        const approved = await repository.findBy({ projectId, status: ReferenceStatus.APPROVED });
+        if (approved.some((item) => item.id !== reference.id && sameRecording(item, reference))) {
+          throw new ConflictException('Uma versão desta referência já está aprovada. Use Substituir para trocar a versão.');
+        }
+      }
+      if (reference.status !== status) {
+        await manager.query('UPDATE reference_selections SET confirmed_at=NULL WHERE project_id=$1', [projectId]);
+      }
+      reference.status = status;
+      return repository.save(reference);
     });
-    if (!reference) throw new NotFoundException('Referência não encontrada.');
-    reference.status = status;
-    return this.referencesRepository.save(reference);
   }
 
   private buildSearchQuery(data: BriefingData): string {

@@ -10,6 +10,7 @@ import { AiProviderError } from '../src/ai/ai-provider.error';
 import { YouTubeClient } from '../src/references/youtube.client';
 import { SpotifyClient } from '../src/references/spotify.client';
 import { StorageService } from '../src/library/storage.service';
+import { CloudflareEmbeddingsService } from '../src/library/cloudflare-embeddings.service';
 
 describe('Eclipse API (e2e)', () => {
   let app: NestExpressApplication;
@@ -20,6 +21,13 @@ describe('Eclipse API (e2e)', () => {
     | 'invalid_json_once'
     | 'tool_search' = 'success';
   let jsonGenerationCalls = 0;
+  let invalidCurationEvidence = false;
+  const fakeEmbeddings = {
+    configured: false,
+    model: '@cf/qwen/qwen3-embedding-0.6b',
+    dimensions: 1024,
+    embed: jest.fn(async (texts: string[]) => texts.map(() => [1, ...Array(1023).fill(0)])),
+  };
   const briefingFixture = {
     objective: 'Criar uma canção sobre um encontro impossível.',
     theme: 'Sol e Lua',
@@ -70,10 +78,14 @@ describe('Eclipse API (e2e)', () => {
         usage: { promptTokens: 20, completionTokens: 9 },
       };
     },
-    async generateJson() {
+    async generateJson(messages) {
       jsonGenerationCalls++;
       if (providerMode === 'failure') {
         throw new AiProviderError('Limite simulado.', 'rate_limited', 2);
+      }
+      if (messages[0]?.content?.includes('Você auxilia a curadoria musical')) {
+        const candidates = JSON.parse(messages[1].content!);
+        return { content: JSON.stringify({ items: candidates.map((item: any) => ({ id: item.id, evidenceIds: [invalidCurationEvidence ? 'invented-bpm' : item.evidence[0].id] })) }) };
       }
       if (providerMode === 'invalid_json_once' && jsonGenerationCalls === 1) {
         return { content: '{"theme":"incompleto"}' };
@@ -152,6 +164,8 @@ describe('Eclipse API (e2e)', () => {
       .useValue(fakeSpotifyClient)
       .overrideProvider(StorageService)
       .useValue(fakeStorageService)
+      .overrideProvider(CloudflareEmbeddingsService)
+      .useValue(fakeEmbeddings)
       .compile();
 
     app = moduleFixture.createNestApplication<NestExpressApplication>();
@@ -165,6 +179,9 @@ describe('Eclipse API (e2e)', () => {
   beforeEach(async () => {
     providerMode = 'success';
     jsonGenerationCalls = 0;
+    invalidCurationEvidence = false;
+    fakeEmbeddings.configured = false;
+    fakeEmbeddings.embed.mockClear();
     fakeYouTubeClient.search.mockClear();
     fakeSpotifyClient.getTrack.mockClear();
     fakeStorageService.createUploadUrl.mockClear();
@@ -591,6 +608,89 @@ describe('Eclipse API (e2e)', () => {
     await intruder
       .get(`/api/projects/${project.body.id}/briefings/latest`)
       .expect(404);
+  });
+
+  it('persists curation, final ordering, replacement and invalidation with ownership checks', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const other = request.agent(app.getHttpServer());
+    await owner.post('/api/auth/register').send({ name: 'Curador', email: 'curador@example.com', password: 'senha-segura-123' }).expect(201);
+    await other.post('/api/auth/register').send({ name: 'Outro', email: 'outro@example.com', password: 'senha-segura-123' }).expect(201);
+    const project = await owner.post('/api/projects').send({ title: 'Curadoria' }).expect(201);
+    const base = `/api/projects/${project.body.id}`;
+    const refs = `${base}/references`;
+    await owner.post(`${refs}/curation`).send({}).expect(404);
+    const conversation = await owner.post(`${base}/conversations`).send({}).expect(201);
+    await owner.post(`${base}/conversations/${conversation.body.id}/messages`).send({ role: 'user', content: 'Pop noturno com piano sobre Sol e Lua' }).expect(201);
+    await owner.post(`${base}/briefings/generate`).send({ conversationId: conversation.body.id }).expect(201);
+    await owner.post(`${base}/briefings/1/confirm`).send({}).expect(201);
+    await owner.post(`${refs}/youtube/search`).send({}).expect(201);
+    await owner.post(`${refs}/manual`).send({ title: 'Piano noturno', creator: 'Artista', url: 'https://example.com/piano' }).expect(201);
+    const duplicate = await owner.post(`${refs}/manual`).send({ title: 'Mesmo link', creator: '', url: 'https://example.com/piano?utm_source=test' }).expect(201);
+    expect(duplicate.body.items).toHaveLength(3);
+    await owner.post(`${refs}/manual`).send({ title: 'Inválido', creator: '', url: 'javascript:alert(1)' }).expect(400);
+    await other.get(`${refs}/curation`).expect(404);
+    await other.post(`${refs}/curation`).send({}).expect(404);
+    const curated = await owner.post(`${refs}/curation`).send({}).expect(201);
+    expect(curated.body.notices.join(' ')).toContain('metadados');
+    expect(curated.body.items.every((item: any) => item.score !== null && item.justification && item.justificationModel === 'qwen/test-model')).toBe(true);
+    const [a, b, c] = curated.body.items.map((item: any) => item.id);
+    await owner.patch(`${refs}/${a}`).send({ status: 'approved' }).expect(200);
+    await owner.patch(`${refs}/${b}`).send({ status: 'approved' }).expect(200);
+    await owner.put(`${refs}/selection`).send({ referenceIds: [a], confirm: true }).expect(400);
+    const confirmed = await owner.put(`${refs}/selection`).send({ referenceIds: [b, a], confirm: true }).expect(200);
+    expect(confirmed.body.selection.valid).toBe(true);
+    const restored = await owner.get(`${refs}/curation`).expect(200);
+    expect(restored.body.selection.referenceIds).toEqual([b, a]);
+    expect(restored.body.selection.valid).toBe(true);
+    const replaced = await owner.post(`${refs}/${b}/replace`).send({ replacementId: c }).expect(201);
+    expect(replaced.body.selection.referenceIds).toEqual([c, a]);
+    expect(replaced.body.selection.valid).toBe(false);
+    await owner.put(`${refs}/selection`).send({ referenceIds: [c, a], confirm: true }).expect(200);
+    await owner.patch(`${refs}/${a}`).send({ status: 'rejected' }).expect(200);
+    const changed = await owner.get(`${refs}/curation`).expect(200);
+    expect(changed.body.selection.valid).toBe(false);
+    providerMode = 'failure';
+    const fallback = await owner.post(`${refs}/curation`).send({}).expect(201);
+    expect(fallback.body.notices.join(' ')).toContain('Justificativas baseadas em regras');
+    expect(fallback.body.items.find((item: any) => item.id === a).status).toBe('rejected');
+  });
+
+  it('curates private library tracks with cached pgvector ranking and rejects invented evidence', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const other = request.agent(app.getHttpServer());
+    await owner.post('/api/auth/register').send({ name: 'Acervo', email: 'acervo-curadoria@example.com', password: 'senha-segura-123' }).expect(201);
+    await other.post('/api/auth/register').send({ name: 'Outro', email: 'outro-acervo@example.com', password: 'senha-segura-123' }).expect(201);
+    const project = await owner.post('/api/projects').send({ title: 'Acervo e vetores' }).expect(201);
+    const base = `/api/projects/${project.body.id}`;
+    const conversation = await owner.post(`${base}/conversations`).send({}).expect(201);
+    await owner.post(`${base}/conversations/${conversation.body.id}/messages`).send({ role: 'user', content: 'Piano noturno' }).expect(201);
+    await owner.post(`${base}/briefings/generate`).send({ conversationId: conversation.body.id }).expect(201);
+    await owner.post(`${base}/briefings/1/confirm`).send({}).expect(201);
+    const upload = await owner.post('/api/library/tracks/uploads').send({ filename: 'demo.mp3', contentType: 'audio/mpeg', sizeBytes: 3, title: 'Piano noturno', artist: 'Artista' }).expect(201);
+    const trackId = upload.body.track.id;
+    await owner.post(`/api/library/tracks/${trackId}/complete`).send({}).expect(201);
+    const otherProject = await other.post('/api/projects').send({ title: 'Outro projeto' }).expect(201);
+    await other.post(`/api/projects/${otherProject.body.id}/references/library`).send({ trackId }).expect(404);
+    fakeEmbeddings.configured = true;
+    invalidCurationEvidence = true;
+    const first = await owner.post(`${base}/references/curation`).send({}).expect(201);
+    expect(first.body.items).toHaveLength(1);
+    expect(first.body.items[0]).toMatchObject({ source: 'library', libraryTrackId: trackId, rankingMethod: 'semantic+metadata', justificationModel: null });
+    expect(first.body.items[0].score).toBeGreaterThan(.75);
+    expect(first.body.notices.join(' ')).toContain('Justificativas baseadas em regras');
+    expect(first.body.items[0].justification).not.toContain('invented-bpm');
+    expect(fakeEmbeddings.embed).toHaveBeenCalledTimes(2);
+    const second = await owner.post(`${base}/references/curation`).send({}).expect(201);
+    expect(second.body.items).toHaveLength(1);
+    expect(fakeEmbeddings.embed).toHaveBeenCalledTimes(2);
+    const id = first.body.items[0].id;
+    await owner.patch(`${base}/references/${id}`).send({ status: 'approved' }).expect(200);
+    await owner.put(`${base}/references/selection`).send({ referenceIds: [id], confirm: true }).expect(200);
+    await owner.delete(`/api/library/tracks/${trackId}`).expect(204);
+    const removed = await owner.get(`${base}/references/curation`).expect(200);
+    expect(removed.body.items[0].libraryTrackId).toBeNull();
+    expect(removed.body.selection.valid).toBe(false);
+    await owner.put(`${base}/references/selection`).send({ referenceIds: [id], confirm: true }).expect(409);
   });
 
   it('searches, deduplicates and curates YouTube references after confirmation', async () => {

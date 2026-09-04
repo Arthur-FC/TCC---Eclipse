@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { Chat } from '../../models/chat.model';
 import { Briefing, BriefingData } from '../../models/briefing.model';
-import { MusicReference, ReferenceStatus } from '../../models/reference.model';
+import { CurationAction, CurationState, MusicReference, ReferenceStatus } from '../../models/reference.model';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
 
 @Component({
@@ -33,6 +33,8 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() referencesError = '';
     @Input() referenceSearchQuery = '';
     @Input() referencesFromCache = false;
+    @Input() curationState: CurationState | null = null;
+    @Output() curationRequested = new EventEmitter<CurationAction>();
     @Input() libraryTracks: LibraryTrack[] = [];
     @Input() libraryBusy = false;
     @Input() libraryError = '';

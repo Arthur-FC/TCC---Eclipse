@@ -24,6 +24,8 @@ import { LibraryContentHash1788307200000 } from './migrations/1788307200000-libr
 import { AudioAnalysisJobEntity } from '../library/audio-analysis-job.entity';
 import { AudioAnalysis1788393600000 } from './migrations/1788393600000-audio-analysis';
 import { SemanticLibrarySearch1788480000000 } from './migrations/1788480000000-semantic-library-search';
+import { ReferenceCuration1788566400000 } from './migrations/1788566400000-reference-curation';
+import { ReferenceSelectionEntity } from '../references/reference-selection.entity';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -53,6 +55,7 @@ export function createDataSourceOptions(
       BriefingEntity,
       AiToolExecutionEntity,
       MusicReferenceEntity,
+      ReferenceSelectionEntity,
       YouTubeSearchCacheEntity,
       YouTubeQuotaUsageEntity,
       LibraryTrackEntity,
@@ -70,6 +73,7 @@ export function createDataSourceOptions(
       LibraryContentHash1788307200000,
       AudioAnalysis1788393600000,
       SemanticLibrarySearch1788480000000,
+      ReferenceCuration1788566400000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

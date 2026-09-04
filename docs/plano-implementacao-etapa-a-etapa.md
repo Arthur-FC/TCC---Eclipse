@@ -712,6 +712,57 @@ Lista curada e confirmada de referências do projeto.
 
 Cada recomendação mostra sua fonte e explica a relevância sem apresentar metadados não verificados.
 
+### Implementação da etapa 14
+
+Implementada e validada por compilação e testes automatizados. A migração
+`ReferenceCuration1788566400000` foi aplicada ao banco local.
+
+- O botão **Gerar curadoria** combina referências já pesquisadas no YouTube,
+  faixas adicionadas pelo link do Spotify, links manuais e até 50 áudios recentes
+  e prontos do acervo privado. Não realiza uma nova busca externa por conta própria.
+- Até 100 candidatas não rejeitadas recebem pontuação: 75% similaridade textual
+  semântica e 25% correspondência de termos nos metadados. Sem Cloudflare, usa
+  somente metadados e apresenta aviso. Acervo com resultado base de pelo menos
+  0,55 recebe bônus de 0,05, limitado ao total de 1. A interface mostra 0–100,
+  não uma probabilidade nem uma medição da qualidade musical.
+- Vetores das referências são persistidos no pgvector e refeitos se texto/modelo
+  mudar. O vetor do briefing reutiliza o cache por usuário da etapa 13.
+- A Groq escolhe IDs de evidências permitidas para até 20 melhores candidatas;
+  o backend monta a justificativa. IDs inventados, JSON inválido, falha ou timeout
+  de 20 segundos levam a explicações por regras com aviso. Não há texto livre
+  gerado pela IA nem afirmações sobre atributos não disponíveis.
+- Links equivalentes são normalizados. Entre fontes diferentes, título e criador
+  devem coincidir após normalização e a duração conhecida deve diferir em até
+  3 segundos para agrupamento. Alternativas continuam salvas e podem ser mostradas;
+  versões ao vivo, remixes ou dados insuficientes não são agrupados por suposição.
+- Aprovação, rejeição, substituição, links manuais e inclusão individual do acervo
+  estão disponíveis. Dados manuais são identificados como não verificados;
+  BPM, tonalidade e tags do analisador continuam identificados como estimativas.
+- A seleção final guarda até 20 referências aprovadas na ordem escolhida. As setas
+  salvam a ordem como rascunho; **Confirmar seleção final** confirma o conjunto.
+  Alterar decisões ou ordem, trocar o briefing ou excluir áudio selecionado exige
+  nova revisão. O backend impede aprovar versões duplicadas e valida o proprietário.
+- Moodboard, roadmap e PDF continuam nas etapas seguintes.
+
+### Como testar no site
+
+1. Reinicie o backend se ele não estiver em modo watch e recarregue o frontend.
+2. Abra um projeto, gere/revise o briefing e confirme-o.
+3. Abra **Referências**, pesquise no YouTube e/ou adicione uma faixa do Spotify.
+4. Se quiser, inclua um link manual ou um áudio do acervo pelo painel expansível.
+5. Clique em **Gerar curadoria**. Confira fonte, nota, método, versão do briefing
+   e justificativa. Aviso de fallback significa que a operação usou regras/metadados.
+6. Aprove duas referências, use as setas na seleção final e confirme.
+7. Recarregue a página e reabra o projeto: escolhas, ordem e confirmação devem permanecer.
+8. Substitua uma referência: a anterior fica rejeitada, a nova aprovada e a seleção
+   volta para revisão. Confirme novamente após revisar.
+
+Validação: 62 testes unitários e 21 E2E aprovados, builds do backend/frontend
+aprovados. Os testes desta etapa usam provedores externos simulados e PostgreSQL
+real de teste, incluindo ranking pgvector, cache, isolamento do acervo, fallback,
+evidência inventada, persistência e exclusão de áudio selecionado. A qualidade
+musical da curadoria com suas credenciais reais ainda deve ser avaliada no site.
+
 ## Etapa 15 - Gerar moodboard e roadmap
 
 ### Objetivo

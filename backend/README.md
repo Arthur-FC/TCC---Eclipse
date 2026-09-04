@@ -282,6 +282,41 @@ Os logs `semantic-search` mostram `queryCache` (`hit`, `miss` ou `shared`),
 `cloudflare-embedding` mede `cloudflareMs` de cada chamada externa real. Nenhum
 desses logs de tempo inclui chave de API ou conteúdo da pesquisa.
 
+## Curadoria de referências — etapa 14
+
+Execute `pnpm db:migration:run` antes de iniciar uma instalação atualizada.
+A migração acrescenta fontes `library`/`manual`, justificativas, notas, grupos de
+duplicatas, `reference_embeddings` e `reference_selections`, sem apagar referências.
+
+Rotas autenticadas sob `/api/projects/:projectId/references`:
+
+| Método | Sufixo | Uso |
+|---|---|---|
+| GET | `/curation` | Referências ranqueadas, avisos e validade da seleção |
+| POST | `/curation` | Gerar curadoria usando o briefing confirmado |
+| POST | `/manual` | Adicionar `{title, creator, url, description?}` |
+| POST | `/library` | Adicionar `{trackId}` do acervo do próprio usuário |
+| PUT | `/selection` | Salvar `{referenceIds, confirm}`; todos e somente os aprovados, até 20 |
+| POST | `/:referenceId/replace` | Rejeitar a antiga e aprovar `{replacementId}` no mesmo projeto |
+
+São consideradas até 100 candidatas não rejeitadas, incluindo automaticamente
+até 50 áudios prontos recentes. YouTube e Spotify usam as referências já incluídas
+no projeto. A pontuação combina 75% cosseno dos embeddings e 25% termos dos
+metadados; o acervo recebe +0,05 se o resultado base for >=0,55. Sem embeddings,
+utiliza apenas metadados. Não representa probabilidade nem análise do áudio externo.
+
+Usa as configurações existentes da Groq e Cloudflare. Vetores são persistidos por
+referência/texto/modelo, e consultas reutilizam o cache da etapa 13. Áudio bruto e
+URLs privadas de reprodução não são enviados aos provedores: a Cloudflare recebe
+o briefing e textos de metadados, inclusive observações do acervo; a Groq recebe
+títulos e evidências textuais. A IA só escolhe IDs autorizados de evidências para
+as 20 melhores candidatas. Respostas inválidas/timeout usam justificativas por regras.
+
+A ordem e confirmação pertencem ao projeto. Mudanças de decisões invalidam a
+confirmação, e um hash verifica briefing e dados da seleção ao reabrir. Excluir
+áudio mantém a referência histórica, mas impede confirmar essa faixa indisponível.
+Não são apagadas alternativas agrupadas como duplicatas.
+
 ## Análise básica de áudio
 
 Depois que um MP3 ou WAV válido fica pronto, a API responde imediatamente com a análise em `queued`. Um trabalho persistente em `audio_analysis_jobs` é consumido pelo worker em segundo plano, que lê o objeto privado do MinIO e processa tudo localmente, sem enviar o áudio à Groq ou a outro serviço externo.

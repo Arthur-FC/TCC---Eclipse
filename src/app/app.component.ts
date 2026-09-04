@@ -7,7 +7,7 @@ import { ChatService, ChatStreamPhase } from './services/chat.service';
 import { AssistantStreamError } from './services/conversations-api.service';
 import { Briefing, BriefingData } from './models/briefing.model';
 import { BriefingsApiService } from './services/briefings-api.service';
-import { MusicReference, ReferenceStatus } from './models/reference.model';
+import { CurationAction, CurationState, MusicReference, ReferenceStatus } from './models/reference.model';
 import { ReferencesApiService } from './services/references-api.service';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from './models/library-track.model';
 import { LibraryApiService } from './services/library-api.service';
@@ -40,6 +40,7 @@ export class AppComponent implements OnInit, OnDestroy {
     referencesErrorMessage = '';
     referenceSearchQuery = '';
     referencesFromCache = false;
+    curationState: CurationState | null = null;
     libraryTracks: LibraryTrack[] = [];
     isLibraryBusy = false;
     libraryErrorMessage = '';
@@ -108,6 +109,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.selectedChat = null;
             this.briefing = null;
             this.references = [];
+            this.curationState = null;
             this.referencesFromCache = false;
             this.libraryTracks = [];
             this.libraryPlaybackTrackId = null;
@@ -133,6 +135,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     selectChat(chat: Chat): void {
+        this.curationState = null;
         this.errorMessage = '';
         this.isDraftChat = false;
         this.selectedChat = chat;
@@ -349,7 +352,12 @@ export class AppComponent implements OnInit, OnDestroy {
         this.isReferencesBusy = true;
         this.referencesErrorMessage = '';
         try {
-            this.references = await this.referencesApi.list(this.selectedChat.id);
+            const projectId = this.selectedChat.id;
+            const [state, tracks] = await Promise.all([this.referencesApi.curation(projectId), this.libraryApi.list()]);
+            if (this.selectedChat?.id !== projectId) return;
+            this.curationState = state;
+            this.references = state.items;
+            this.libraryTracks = tracks;
             this.referenceSearchQuery =
                 this.references.find(reference => reference.source === 'youtube')
                     ?.searchQuery ?? '';
@@ -358,6 +366,30 @@ export class AppComponent implements OnInit, OnDestroy {
         } finally {
             this.isReferencesBusy = false;
         }
+    }
+
+    async handleCuration(action: CurationAction): Promise<void> {
+        if (!this.selectedChat || this.isReferencesBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isReferencesBusy = true;
+        this.referencesErrorMessage = '';
+        try {
+            const state = await this.referencesApi.curateAction(projectId, action);
+            if (this.selectedChat?.id !== projectId) return;
+            this.curationState = state;
+            this.references = state.items;
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.referencesErrorMessage = this.describeError(error);
+        } finally { this.isReferencesBusy = false; }
+    }
+
+    private async refreshCurationState(): Promise<void> {
+        if (!this.selectedChat) return;
+        const projectId = this.selectedChat.id;
+        const state = await this.referencesApi.curation(projectId);
+        if (this.selectedChat?.id !== projectId) return;
+        this.curationState = state;
+        this.references = state.items;
     }
 
     async searchYouTubeReferences(refresh = false): Promise<void> {
@@ -373,6 +405,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.references = response.items;
             this.referenceSearchQuery = response.query;
             this.referencesFromCache = response.fromCache;
+            await this.refreshCurationState();
         } catch (error) {
             this.referencesErrorMessage = this.describeError(error);
         } finally {
@@ -394,6 +427,7 @@ export class AppComponent implements OnInit, OnDestroy {
                 added,
                 ...this.references.filter(reference => reference.id !== added.id)
             ];
+            await this.refreshCurationState();
         } catch (error) {
             this.referencesErrorMessage = this.describeError(error);
         } finally {
@@ -418,6 +452,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.references = this.references.map(reference =>
                 reference.id === updated.id ? updated : reference
             );
+            await this.refreshCurationState();
         } catch (error) {
             this.referencesErrorMessage = this.describeError(error);
         } finally {

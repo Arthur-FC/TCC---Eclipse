@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { ProjectEntity } from '../projects/project.entity';
 import { ReferenceSource, ReferenceStatus } from './reference-status.enum';
+import { LibraryTrackEntity } from '../library/library-track.entity';
 
 @Entity({ name: 'music_references' })
 @Index(
@@ -57,6 +58,34 @@ export class MusicReferenceEntity {
 
   @Column({ type: 'varchar', length: 20, default: ReferenceStatus.PENDING })
   status!: ReferenceStatus;
+
+  @Column({ name: 'library_track_id', type: 'uuid', nullable: true })
+  libraryTrackId!: string | null;
+
+  @ManyToOne(() => LibraryTrackEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'library_track_id', foreignKeyConstraintName: 'FK_music_references_library_track' })
+  libraryTrack!: LibraryTrackEntity | null;
+
+  @Column({ type: 'varchar', length: 2000, default: '' })
+  description!: string;
+
+  @Column({ type: 'double precision', nullable: true })
+  score!: number | null;
+
+  @Column({ type: 'varchar', length: 3000, nullable: true })
+  justification!: string | null;
+
+  @Column({ name: 'ranking_method', type: 'varchar', length: 50, nullable: true })
+  rankingMethod!: string | null;
+
+  @Column({ name: 'justification_model', type: 'varchar', length: 120, nullable: true })
+  justificationModel!: string | null;
+
+  @Column({ name: 'duplicate_of_id', type: 'uuid', nullable: true })
+  duplicateOfId!: string | null;
+
+  @Column({ name: 'curated_briefing_version', type: 'integer', nullable: true })
+  curatedBriefingVersion!: number | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
