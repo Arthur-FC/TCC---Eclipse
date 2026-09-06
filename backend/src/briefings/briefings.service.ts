@@ -18,7 +18,7 @@ import {
   AiProvider,
   AiTokenUsage,
 } from '../ai/ai-provider.interface';
-import { AiProviderError } from '../ai/ai-provider.error';
+import { AiProviderError, describeGroqRateLimit } from '../ai/ai-provider.error';
 import { MessageRole } from '../projects/message-role.enum';
 import { ProjectEntity } from '../projects/project.entity';
 import { ProjectsService } from '../projects/projects.service';
@@ -348,7 +348,7 @@ export class BriefingsService {
     }
     if (error.code === 'rate_limited') {
       throw new HttpException(
-        'O limite gratuito da Groq foi atingido. Aguarde e tente novamente.',
+        describeGroqRateLimit(error),
         429,
       );
     }

@@ -8,6 +8,15 @@
             *ngIf="chat.conversationId"
             type="button"
             class="panel-button"
+            [class.active]="moodboardOpen"
+            (click)="toggleMoodboard()"
+        >
+            {{ moodboardOpen ? 'Voltar ao chat' : 'Moodboard' }}
+        </button>
+        <button
+            *ngIf="chat.conversationId"
+            type="button"
+            class="panel-button"
             [class.active]="briefingOpen"
             (click)="toggleBriefing()"
         >
@@ -90,7 +99,17 @@
         (searchCleared)="librarySearchCleared.emit()"
     ></app-library-panel>
 
-    <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen" #messages class="messages">
+    <app-moodboard-panel
+        *ngIf="moodboardOpen"
+        [moodboard]="moodboard"
+        [versions]="moodboardVersions"
+        [busy]="moodboardBusy"
+        [errorMessage]="moodboardError"
+        (generateRequested)="moodboardGenerateRequested.emit()"
+        (versionRequested)="moodboardVersionRequested.emit($event)"
+    ></app-moodboard-panel>
+
+    <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen && !moodboardOpen" #messages class="messages">
         <app-message
             *ngFor="let message of chat.messages"
             [message]="message"
@@ -112,7 +131,7 @@
         </p>
     </div>
 
-    <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen" class="composer-area">
+    <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen && !moodboardOpen" class="composer-area">
         <button
             *ngIf="retryAvailable"
             type="button"

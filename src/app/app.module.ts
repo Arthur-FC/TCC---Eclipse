@@ -16,6 +16,7 @@ import { MarkdownPipe } from './pipes/markdown.pipe';
 import { BriefingPanelComponent } from './components/briefing-panel/briefing-panel.component';
 import { ReferencesPanelComponent } from './components/references-panel/references-panel.component';
 import { LibraryPanelComponent } from './components/library-panel/library-panel.component';
+import { MoodboardPanelComponent } from './components/moodboard-panel/moodboard-panel.component';
 
 @NgModule({
     declarations: [
@@ -29,7 +30,8 @@ import { LibraryPanelComponent } from './components/library-panel/library-panel.
         MarkdownPipe,
         BriefingPanelComponent,
         ReferencesPanelComponent,
-        LibraryPanelComponent
+        LibraryPanelComponent,
+        MoodboardPanelComponent
     ],
     imports: [BrowserModule, HttpClientModule, FormsModule, IonicModule.forRoot()],
     bootstrap: [AppComponent]

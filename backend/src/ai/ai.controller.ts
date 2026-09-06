@@ -13,7 +13,7 @@ import { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { AiChatService } from './ai-chat.service';
-import { AiProviderError } from './ai-provider.error';
+import { AiProviderError, describeGroqRateLimit } from './ai-provider.error';
 import { StreamReplyDto } from './dto/stream-reply.dto';
 
 @Controller('projects')
@@ -77,8 +77,7 @@ export class AiController {
       const messages = {
         not_configured:
           'A IA ainda não foi configurada. Adicione GROQ_API_KEY ao backend.',
-        rate_limited:
-          'O limite gratuito da Groq foi atingido. Aguarde e tente novamente.',
+        rate_limited: describeGroqRateLimit(error),
         timeout: 'A Groq demorou demais para responder. Tente novamente.',
         unavailable: 'A Groq está indisponível no momento. Tente novamente.',
         invalid_response:

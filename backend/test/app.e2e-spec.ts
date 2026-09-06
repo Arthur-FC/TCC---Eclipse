@@ -22,6 +22,9 @@ describe('Eclipse API (e2e)', () => {
     | 'tool_search' = 'success';
   let jsonGenerationCalls = 0;
   let invalidCurationEvidence = false;
+  let invalidMoodboardOnce = false;
+  let moodboardAttempts = 0;
+  let lastMoodboardPayload: any = null;
   const fakeEmbeddings = {
     configured: false,
     model: '@cf/qwen/qwen3-embedding-0.6b',
@@ -86,6 +89,27 @@ describe('Eclipse API (e2e)', () => {
       if (messages[0]?.content?.includes('Você auxilia a curadoria musical')) {
         const candidates = JSON.parse(messages[1].content!);
         return { content: JSON.stringify({ items: candidates.map((item: any) => ({ id: item.id, evidenceIds: [invalidCurationEvidence ? 'invented-bpm' : item.evidence[0].id] })) }) };
+      }
+      if (messages[0]?.content?.includes('Você cria um moodboard e roadmap musical')) {
+        moodboardAttempts++;
+        const content = messages[1].content!;
+        lastMoodboardPayload = JSON.parse(
+          content
+            .slice(content.indexOf('\n') + 1)
+            .split(/\nA (?:resposta|tentativa) anterior/)[0],
+        );
+        if (invalidMoodboardOnce && moodboardAttempts === 1) return { content: '{"title":"incompleto"}' };
+        const ids = lastMoodboardPayload.references.map((item: any) => item.id);
+        return { content: JSON.stringify({
+          title: 'Órbita noturna', creativeDirection: 'Desenvolver uma canção íntima com crescimento gradual.',
+          emotionalPalette: [{ label: 'Saudade', description: 'Começar contido e abrir no refrão.' }],
+          instrumentation: [{ instrument: 'Piano', role: 'Sustentar a harmonia como escolha criativa.' }],
+          structure: [{ section: 'Verso', goal: 'Apresentar o conflito entre Sol e Lua.', energy: 'Baixa' }],
+          production: [{ area: 'Ambiência', suggestion: 'Experimentar reverberação curta no início.' }],
+          roadmap: [{ order: 1, title: 'Rascunho', action: 'Escrever verso e refrão.', deliverable: 'Letra v1' }],
+          referenceApplications: ids.map((id: string) => ({ referenceId: id, application: 'Usar somente como orientação estrutural.' })),
+          constraints: ['Não inventar atributos do áudio.'],
+        }), usage: { promptTokens: 120, completionTokens: 90 } };
       }
       if (providerMode === 'invalid_json_once' && jsonGenerationCalls === 1) {
         return { content: '{"theme":"incompleto"}' };
@@ -180,6 +204,9 @@ describe('Eclipse API (e2e)', () => {
     providerMode = 'success';
     jsonGenerationCalls = 0;
     invalidCurationEvidence = false;
+    invalidMoodboardOnce = false;
+    moodboardAttempts = 0;
+    lastMoodboardPayload = null;
     fakeEmbeddings.configured = false;
     fakeEmbeddings.embed.mockClear();
     fakeYouTubeClient.search.mockClear();
@@ -691,6 +718,43 @@ describe('Eclipse API (e2e)', () => {
     expect(removed.body.items[0].libraryTrackId).toBeNull();
     expect(removed.body.selection.valid).toBe(false);
     await owner.put(`${base}/references/selection`).send({ referenceIds: [id], confirm: true }).expect(409);
+  });
+
+  it('generates, versions and invalidates a grounded moodboard from the confirmed selection', async () => {
+    const owner = request.agent(app.getHttpServer());
+    const other = request.agent(app.getHttpServer());
+    await owner.post('/api/auth/register').send({ name: 'Moodboard', email: 'moodboard@example.com', password: 'senha-segura-123' }).expect(201);
+    await other.post('/api/auth/register').send({ name: 'Intruso', email: 'moodboard-intruso@example.com', password: 'senha-segura-123' }).expect(201);
+    const project = await owner.post('/api/projects').send({ title: 'Projeto visual' }).expect(201);
+    const base = `/api/projects/${project.body.id}`;
+    await owner.post(`${base}/moodboards/generate`).send({}).expect(404);
+    const conversation = await owner.post(`${base}/conversations`).send({}).expect(201);
+    await owner.post(`${base}/conversations/${conversation.body.id}/messages`).send({ role: 'user', content: 'Pop noturno sobre Sol e Lua com piano.' }).expect(201);
+    await owner.post(`${base}/briefings/generate`).send({ conversationId: conversation.body.id }).expect(201);
+    await owner.post(`${base}/briefings/1/confirm`).send({}).expect(201);
+    await owner.post(`${base}/moodboards/generate`).send({}).expect(409);
+    const search = await owner.post(`${base}/references/youtube/search`).send({}).expect(201);
+    const approved = search.body.items[0];
+    await owner.patch(`${base}/references/${approved.id}`).send({ status: 'approved' }).expect(200);
+    await owner.put(`${base}/references/selection`).send({ referenceIds: [approved.id], confirm: true }).expect(200);
+    invalidMoodboardOnce = true;
+    const generated = await owner.post(`${base}/moodboards/generate`).send({}).expect(201);
+    expect(moodboardAttempts).toBe(2);
+    expect(generated.body).toMatchObject({ version: 1, briefingVersion: 1, aiProvider: 'fake-groq', aiModel: 'qwen/test-model', current: true });
+    expect(generated.body.referenceInputs).toHaveLength(1);
+    expect(generated.body.referenceInputs[0]).toMatchObject({ id: approved.id, dataStatus: 'source-metadata' });
+    expect(lastMoodboardPayload.references).toHaveLength(1);
+    expect(lastMoodboardPayload.references[0]).not.toHaveProperty('url');
+    const second = await owner.post(`${base}/moodboards/generate`).send({}).expect(201);
+    expect(second.body.version).toBe(2);
+    const list = await owner.get(`${base}/moodboards`).expect(200);
+    expect(list.body.map((item: any) => item.version)).toEqual([2, 1]);
+    await owner.get(`${base}/moodboards/1`).expect(200);
+    await other.get(`${base}/moodboards`).expect(404);
+    await owner.patch(`${base}/references/${approved.id}`).send({ status: 'rejected' }).expect(200);
+    const historical = await owner.get(`${base}/moodboards/latest`).expect(200);
+    expect(historical.body.current).toBe(false);
+    await owner.post(`${base}/moodboards/generate`).send({}).expect(409);
   });
 
   it('searches, deduplicates and curates YouTube references after confirmation', async () => {

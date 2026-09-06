@@ -789,6 +789,57 @@ Moodboard visual e roadmap salvos no projeto.
 
 O resultado utiliza somente referências aprovadas, pode ser reaberto e não mistura estimativas com fatos sem identificação.
 
+### Implementação da etapa 15
+
+Implementada e validada. A API só gera quando o briefing mais recente e a seleção
+final de referências estão confirmados e continuam válidos.
+
+- O moodboard possui esquema JSON estrito: título, direção criativa, paleta
+  emocional, instrumentação, estrutura, produção, roadmap, aplicação das
+  referências e restrições. Campos desconhecidos, seções vazias, textos acima dos
+  limites, ordens repetidas e IDs fora da seleção confirmada são rejeitados.
+- A Groq recebe somente o conteúdo do briefing confirmado e um retrato das
+  referências aprovadas na ordem escolhida. Não recebe conversa, referências
+  pendentes/rejeitadas, URL privada do acervo nem o arquivo de áudio.
+- O prompt trata as entradas como dados não confiáveis e proíbe afirmar que a IA
+  ouviu ou mediu o áudio. Uma resposta inválida é corrigida em no máximo duas
+  tentativas; se continuar inválida, não é salva. O tempo máximo por tentativa é
+  30 segundos.
+- As restrições exibidas são copiadas pelo backend diretamente do briefing, não
+  aceitas do texto gerado. O restante dos cards é identificado como **Sugestão da
+  IA**. As referências mostram separadamente **Metadados da fonte**, **Informado
+  pelo usuário** ou **Metadados e estimativas locais**.
+- Cada geração cria uma versão imutável com modelo, provedor, tokens, data,
+  versão do briefing, hash da seleção, ordem das referências e retrato das entradas.
+  Até 50 versões podem ser reabertas pelo seletor da tela.
+- Se briefing, decisão, ordem ou disponibilidade do acervo mudar, versões antigas
+  são marcadas como históricas. Após confirmar novamente as entradas, o botão
+  **Gerar nova versão** produz um resultado atualizado sem apagar o anterior.
+- A interface apresenta cards responsivos de direção, emoções, instrumentação,
+  estrutura, produção, roadmap e uso de cada referência. A exportação PDF continua
+  reservada à etapa 16.
+
+### Como testar no site
+
+1. Reinicie backend e frontend para carregar a nova rota e o botão **Moodboard**.
+2. Em um projeto, confirme o briefing. Em **Referências**, aprove pelo menos uma,
+   ajuste a ordem e clique em **Confirmar seleção final**.
+3. Abra **Moodboard** e clique em **Gerar moodboard**. A geração pode levar alguns
+   segundos por depender da Groq.
+4. Confira os cards e os rótulos de proveniência. Toda direção criativa deve estar
+   marcada como sugestão; itens do acervo devem avisar que a análise é estimada.
+5. Clique em **Gerar nova versão** e use o seletor para alternar entre v1 e v2.
+6. Volte às referências, mude uma aprovação e abra o moodboard: a versão deve ser
+   marcada como histórica, e uma nova geração deve pedir reconfirmação da seleção.
+7. Recarregue a página e abra o projeto novamente. As versões e seus dados de
+   modelo/data devem permanecer disponíveis.
+
+Validação automatizada: 66 testes unitários e 22 E2E aprovados. Os testes cobrem
+esquema inválido, ID de referência não aprovado, correção automática, isolamento
+entre usuários, versionamento, persistência, proveniência e invalidação após mudança.
+O provedor é simulado nos testes; a qualidade criativa deve ser avaliada no site
+com a chave Groq configurada.
+
 ## Etapa 16 - Exportar o moodboard em PDF
 
 ### Objetivo

@@ -57,6 +57,10 @@
             [libraryPlaybackUrl]="libraryPlaybackUrl"
             [librarySearchResponse]="librarySearchResponse"
             [librarySearchBusy]="isLibrarySearchBusy"
+            [moodboard]="moodboard"
+            [moodboardVersions]="moodboardVersions"
+            [moodboardBusy]="isMoodboardBusy"
+            [moodboardError]="moodboardErrorMessage"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
             (retryRequested)="retryAssistant()"
@@ -76,6 +80,9 @@
             (libraryDeleteRequested)="deleteLibraryTrack($event)"
             (librarySearchRequested)="searchLibrary($event)"
             (librarySearchCleared)="clearLibrarySearch()"
+            (moodboardRequested)="loadMoodboards()"
+            (moodboardGenerateRequested)="generateMoodboard()"
+            (moodboardVersionRequested)="loadMoodboardVersion($event)"
         ></app-chat-window>
     </main>
 </ion-app>

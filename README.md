@@ -32,6 +32,8 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Busca do acervo em linguagem natural com Cloudflare Workers AI, pgvector e fallback por metadados.
 - Curadoria unificada de YouTube, Spotify, acervo e links manuais, com pontuação e justificativas limitadas às evidências disponíveis.
 - Agrupamento de duplicatas, substituição de referências e seleção final ordenada e confirmada por projeto.
+- Moodboard e roadmap estruturados e versionados, gerados somente com briefing e seleção de referências confirmados.
+- Cards de direção criativa com origem dos dados, avisos de estimativas e acesso às versões históricas.
 - Armazenamento S3 compatível pelo MinIO com URLs temporárias.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.

@@ -26,6 +26,9 @@ import { AudioAnalysis1788393600000 } from './migrations/1788393600000-audio-ana
 import { SemanticLibrarySearch1788480000000 } from './migrations/1788480000000-semantic-library-search';
 import { ReferenceCuration1788566400000 } from './migrations/1788566400000-reference-curation';
 import { ReferenceSelectionEntity } from '../references/reference-selection.entity';
+import { MoodboardEntity } from '../moodboards/moodboard.entity';
+import { Moodboards1788652800000 } from './migrations/1788652800000-moodboards';
+import { MoodboardReferenceInputs1788656400000 } from './migrations/1788656400000-moodboard-reference-inputs';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -60,6 +63,7 @@ export function createDataSourceOptions(
       YouTubeQuotaUsageEntity,
       LibraryTrackEntity,
       AudioAnalysisJobEntity,
+      MoodboardEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
@@ -74,6 +78,8 @@ export function createDataSourceOptions(
       AudioAnalysis1788393600000,
       SemanticLibrarySearch1788480000000,
       ReferenceCuration1788566400000,
+      Moodboards1788652800000,
+      MoodboardReferenceInputs1788656400000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

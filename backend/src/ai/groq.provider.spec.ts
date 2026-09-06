@@ -71,10 +71,13 @@ describe('GroqProvider', () => {
 
   it('maps a rate limit response and preserves retry-after', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('{"error":{"message":"rate limit"}}', {
-        status: 429,
-        headers: { 'retry-after': '4' },
-      }),
+      new Response(
+        '{"error":{"message":"Rate limit reached on output tokens per minute (OTPM): Limit 1,000, Used 120, Requested 900."}}',
+        {
+          status: 429,
+          headers: { 'retry-after': '4' },
+        },
+      ),
     );
     const provider = new GroqProvider(config('gsk_test_key_for_unit_tests'));
     const iterator = provider.streamChat(
@@ -85,6 +88,7 @@ describe('GroqProvider', () => {
     await expect(iterator.next()).rejects.toMatchObject({
       code: 'rate_limited',
       retryAfterSeconds: 4,
+      rateLimit: { type: 'OTPM', limit: 1000, requested: 900 },
     });
   });
 
@@ -103,6 +107,7 @@ describe('GroqProvider', () => {
     const result = await provider.generateJson(
       [{ role: 'user', content: 'Gere JSON.' }],
       new AbortController().signal,
+      { maxCompletionTokens: 900 },
     );
 
     expect(result).toEqual({
@@ -114,6 +119,7 @@ describe('GroqProvider', () => {
       stream: false,
       response_format: { type: 'json_object' },
       reasoning_format: 'hidden',
+      max_completion_tokens: 900,
     });
   });
 

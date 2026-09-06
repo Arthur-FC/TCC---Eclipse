@@ -39,6 +39,10 @@ export interface AiProviderResponse {
   usage?: AiTokenUsage;
 }
 
+export interface AiJsonGenerationOptions {
+  maxCompletionTokens?: number;
+}
+
 export interface AiProvider {
   readonly name: string;
   readonly model: string;
@@ -50,6 +54,7 @@ export interface AiProvider {
   generateJson?(
     messages: AiChatMessage[],
     signal: AbortSignal,
+    options?: AiJsonGenerationOptions,
   ): Promise<AiProviderResponse>;
 }
 

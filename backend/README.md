@@ -33,6 +33,7 @@ Variáveis disponíveis nesta etapa:
 | `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |
 | `GROQ_TIMEOUT_MS` | `45000` | Tempo máximo de uma geração |
 | `AI_MAX_COMPLETION_TOKENS` | `1500` | Limite de tokens da resposta |
+| `AI_MOODBOARD_MAX_COMPLETION_TOKENS` | `550` | Limite da primeira geração do moodboard; uma eventual correção usa até 400 tokens |
 | `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
 | `AI_BRIEFING_MAX_ATTEMPTS` | `2` | Máximo de tentativas para obter um briefing JSON válido |
 | `AI_MAX_TOOL_CALLS` | `4` | Máximo de ferramentas executadas em uma resposta |
@@ -316,6 +317,38 @@ A ordem e confirmação pertencem ao projeto. Mudanças de decisões invalidam a
 confirmação, e um hash verifica briefing e dados da seleção ao reabrir. Excluir
 áudio mantém a referência histórica, mas impede confirmar essa faixa indisponível.
 Não são apagadas alternativas agrupadas como duplicatas.
+
+## Moodboard e roadmap — etapa 15
+
+As migrações `Moodboards1788652800000` e
+`MoodboardReferenceInputs1788656400000` criam versões persistentes do moodboard e
+o retrato imutável das referências usadas em cada geração.
+
+Rotas autenticadas sob `/api/projects/:projectId/moodboards`:
+
+| Método | Sufixo | Uso |
+|---|---|---|
+| POST | `/generate` | Gerar uma nova versão com Groq |
+| GET | `/latest` | Abrir a versão mais recente |
+| GET | `/` | Listar até 50 versões, da mais recente para a antiga |
+| GET | `/:version` | Abrir uma versão específica |
+
+A geração exige o briefing mais recente confirmado e uma seleção final confirmada,
+válida e não vazia. A Groq recebe o briefing e somente as referências aprovadas na
+ordem salva. Conversa, áudio, URLs privadas e demais referências não são enviados.
+
+A resposta é concisa e validada contra um esquema fechado. Se vier inválida, uma
+correção compacta de até 400 tokens mantém as duas chamadas abaixo da cota de saída.
+Falhas transitórias do provedor também recebem uma única nova tentativa automática.
+Campos extras, seções vazias, tamanhos excessivos, ordens repetidas e IDs fora da
+seleção são recusados; nenhuma versão inválida é persistida. O backend substitui as
+restrições geradas pelas restrições exatas do briefing. Cada versão registra modelo,
+provedor, tokens, horário, briefing, hash da seleção e o retrato das entradas.
+
+O campo `current` indica se a versão ainda corresponde ao briefing e à seleção
+confirmados. Alterações não apagam resultados: eles passam a históricos até uma
+nova geração. Conteúdo criativo é sugestão da IA; metadados externos, dados do
+usuário e estimativas locais são classificados separadamente na resposta e na tela.
 
 ## Análise básica de áudio
 

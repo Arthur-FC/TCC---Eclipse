@@ -11,6 +11,8 @@ import { CurationAction, CurationState, MusicReference, ReferenceStatus } from '
 import { ReferencesApiService } from './services/references-api.service';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from './models/library-track.model';
 import { LibraryApiService } from './services/library-api.service';
+import { Moodboard } from './models/moodboard.model';
+import { MoodboardsApiService } from './services/moodboards-api.service';
 
 @Component({
     selector: 'app-root',
@@ -48,6 +50,10 @@ export class AppComponent implements OnInit, OnDestroy {
     libraryPlaybackUrl = '';
     librarySearchResponse: LibrarySearchResponse | null = null;
     isLibrarySearchBusy = false;
+    moodboard: Moodboard | null = null;
+    moodboardVersions: Moodboard[] = [];
+    isMoodboardBusy = false;
+    moodboardErrorMessage = '';
     private isDraftChat = false;
     private libraryPollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -56,7 +62,8 @@ export class AppComponent implements OnInit, OnDestroy {
         private readonly chatService: ChatService,
         private readonly briefingsApi: BriefingsApiService,
         private readonly referencesApi: ReferencesApiService,
-        private readonly libraryApi: LibraryApiService
+        private readonly libraryApi: LibraryApiService,
+        private readonly moodboardsApi: MoodboardsApiService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -115,6 +122,9 @@ export class AppComponent implements OnInit, OnDestroy {
             this.libraryPlaybackTrackId = null;
             this.libraryPlaybackUrl = '';
             this.librarySearchResponse = null;
+            this.moodboard = null;
+            this.moodboardVersions = [];
+            this.moodboardErrorMessage = '';
             this.stopLibraryPolling();
             this.isDraftChat = false;
         } catch (error) {
@@ -145,6 +155,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.referencesErrorMessage = '';
         this.referenceSearchQuery = '';
         this.referencesFromCache = false;
+        this.moodboard = null;
+        this.moodboardVersions = [];
+        this.moodboardErrorMessage = '';
         this.failedReplyChatId = chat.messages.at(-1)?.author === 'user'
             ? chat.id
             : null;
@@ -160,6 +173,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.referencesErrorMessage = '';
         this.referenceSearchQuery = '';
         this.referencesFromCache = false;
+        this.moodboard = null;
+        this.moodboardVersions = [];
+        this.moodboardErrorMessage = '';
     }
 
     async deleteChat(chatId: string): Promise<void> {
@@ -177,6 +193,8 @@ export class AppComponent implements OnInit, OnDestroy {
                 this.briefing = null;
                 this.references = [];
                 this.referencesFromCache = false;
+                this.moodboard = null;
+                this.moodboardVersions = [];
             }
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -457,6 +475,55 @@ export class AppComponent implements OnInit, OnDestroy {
             this.referencesErrorMessage = this.describeError(error);
         } finally {
             this.isReferencesBusy = false;
+        }
+    }
+
+    async loadMoodboards(): Promise<void> {
+        if (!this.selectedChat || this.isMoodboardBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isMoodboardBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const versions = await this.moodboardsApi.list(projectId);
+            if (this.selectedChat?.id !== projectId) return;
+            this.moodboardVersions = versions;
+            this.moodboard = versions[0] ?? null;
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally {
+            this.isMoodboardBusy = false;
+        }
+    }
+
+    async generateMoodboard(): Promise<void> {
+        if (!this.selectedChat || this.isMoodboardBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isMoodboardBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const generated = await this.moodboardsApi.generate(projectId);
+            if (this.selectedChat?.id !== projectId) return;
+            this.moodboard = generated;
+            this.moodboardVersions = [generated, ...this.moodboardVersions.filter(item => item.id !== generated.id)];
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally {
+            this.isMoodboardBusy = false;
+        }
+    }
+
+    async loadMoodboardVersion(version: number): Promise<void> {
+        if (!this.selectedChat || this.isMoodboardBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isMoodboardBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const selected = await this.moodboardsApi.getVersion(projectId, version);
+            if (this.selectedChat?.id === projectId) this.moodboard = selected;
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally {
+            this.isMoodboardBusy = false;
         }
     }
 

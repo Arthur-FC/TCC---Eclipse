@@ -1,0 +1,27 @@
+<section class="moodboard" aria-labelledby="moodboard-title">
+    <header>
+        <div><p class="eyebrow">Direção criativa</p><h2 id="moodboard-title">Moodboard e roadmap</h2></div>
+        <div class="header-actions">
+            <label *ngIf="versions.length">Versão<select [value]="moodboard?.version" [disabled]="busy" (change)="selectVersion($any($event.target).value)"><option *ngFor="let item of versions" [value]="item.version">v{{ item.version }} · {{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</option></select></label>
+            <button type="button" [disabled]="busy" (click)="generateRequested.emit()">{{ moodboard ? 'Gerar nova versão' : 'Gerar moodboard' }}</button>
+        </div>
+    </header>
+    <p class="provenance"><strong>Sugestões da IA:</strong> todo conteúdo criativo nos cards abaixo é orientação, não medição do áudio.</p>
+    <p *ngIf="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
+    <div *ngIf="busy" class="empty" aria-live="polite"><span class="dots">•••</span> Gerando direção criativa...</div>
+    <div *ngIf="!busy && !moodboard" class="empty"><h3>Moodboard ainda não criado</h3><p>Confirme o briefing e a seleção final de referências. Depois gere a primeira versão.</p></div>
+    <ng-container *ngIf="!busy && moodboard as board">
+        <div class="version-line"><span [class.current]="board.current">{{ board.current ? 'Atual para o briefing e a seleção confirmados' : 'Versão histórica — as entradas mudaram' }}</span><small>v{{ board.version }} · briefing v{{ board.briefingVersion }} · {{ board.aiModel }} · {{ board.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
+        <article class="hero-card"><span class="badge ai">Sugestão da IA</span><h3>{{ board.data.title }}</h3><p>{{ board.data.creativeDirection }}</p></article>
+        <div class="grid">
+            <article><span class="badge ai">Sugestão da IA</span><h3>Paleta emocional</h3><ul><li *ngFor="let item of board.data.emotionalPalette"><strong>{{ item.label }}</strong><p>{{ item.description }}</p></li></ul></article>
+            <article><span class="badge ai">Sugestão da IA</span><h3>Instrumentação</h3><ul><li *ngFor="let item of board.data.instrumentation"><strong>{{ item.instrument }}</strong><p>{{ item.role }}</p></li></ul></article>
+            <article><span class="badge ai">Sugestão da IA</span><h3>Estrutura</h3><ol><li *ngFor="let item of board.data.structure"><strong>{{ item.section }}</strong><small>{{ item.energy }}</small><p>{{ item.goal }}</p></li></ol></article>
+            <article><span class="badge ai">Sugestão da IA</span><h3>Produção</h3><ul><li *ngFor="let item of board.data.production"><strong>{{ item.area }}</strong><p>{{ item.suggestion }}</p></li></ul></article>
+        </div>
+        <article><span class="badge ai">Sugestão da IA</span><h3>Roadmap</h3><ol class="roadmap"><li *ngFor="let item of board.data.roadmap"><span>{{ item.order }}</span><div><strong>{{ item.title }}</strong><p>{{ item.action }}</p><small>Entrega: {{ item.deliverable }}</small></div></li></ol></article>
+        <article><span class="badge ai">Sugestão da IA</span><h3>Como aplicar as referências</h3><ul><li *ngFor="let item of board.data.referenceApplications"><strong>{{ reference(item.referenceId)?.title || 'Referência selecionada' }}</strong><p>{{ item.application }}</p></li></ul></article>
+        <article *ngIf="board.data.constraints.length"><span class="badge provided">Briefing</span><h3>Restrições preservadas</h3><ul><li *ngFor="let item of board.data.constraints">{{ item }}</li></ul></article>
+        <article class="inputs"><h3>Entradas utilizadas</h3><p>Nenhuma referência fora da seleção confirmada foi enviada à IA.</p><ul><li *ngFor="let ref of board.referenceInputs"><strong>{{ ref.title }}</strong><span>{{ sourceLabel(ref) }} · {{ statusLabel(ref.dataStatus) }}</span><small *ngIf="ref.dataStatus === 'mixed-estimates'">BPM, tonalidade e tags locais, quando presentes, são estimativas.</small></li></ul></article>
+    </ng-container>
+</section>

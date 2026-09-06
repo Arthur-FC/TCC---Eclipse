@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AiChatMessage,
+  AiJsonGenerationOptions,
   AiProvider,
   AiProviderChunk,
   AiProviderResponse,
@@ -195,6 +196,7 @@ export class GroqProvider implements AiProvider {
   async generateJson(
     messages: AiChatMessage[],
     signal: AbortSignal,
+    options?: AiJsonGenerationOptions,
   ): Promise<AiProviderResponse> {
     if (!this.apiKey) {
       throw new AiProviderError(
@@ -226,7 +228,10 @@ export class GroqProvider implements AiProvider {
             reasoning_format: 'hidden',
             temperature: 0.2,
             top_p: 0.8,
-            max_completion_tokens: this.maxCompletionTokens,
+            max_completion_tokens: Math.min(
+              this.maxCompletionTokens,
+              options?.maxCompletionTokens ?? this.maxCompletionTokens,
+            ),
           }),
           signal: requestController.signal,
         },
@@ -277,12 +282,39 @@ export class GroqProvider implements AiProvider {
     const retryAfterSeconds = retryAfterHeader
       ? Number.parseInt(retryAfterHeader, 10)
       : undefined;
+    const payload = (await response.json().catch(() => null)) as {
+      error?: { message?: string };
+    } | null;
+    const rateLimitMessage = payload?.error?.message ?? '';
+    const rateLimitType = rateLimitMessage.match(
+      /\b(RPM|RPD|TPM|TPD|ITPM|OTPM)\b/i,
+    );
+    const rateLimitValue = rateLimitMessage.match(/\bLimit\s+([\d,]+)/i);
+    const requestedValue = rateLimitMessage.match(/\bRequested\s+([\d,]+)/i);
+    const rateLimit = rateLimitType
+      ? {
+          type: rateLimitType[1].toUpperCase() as
+            | 'RPM'
+            | 'RPD'
+            | 'TPM'
+            | 'TPD'
+            | 'ITPM'
+            | 'OTPM',
+          limit: rateLimitValue
+            ? Number(rateLimitValue[1].replaceAll(',', ''))
+            : undefined,
+          requested: requestedValue
+            ? Number(requestedValue[1].replaceAll(',', ''))
+            : undefined,
+        }
+      : undefined;
 
     if (response.status === 429) {
       throw new AiProviderError(
         'O limite de uso da Groq foi atingido.',
         'rate_limited',
         Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : undefined,
+        rateLimit,
       );
     }
     if (response.status >= 500 || response.status === 498) {

@@ -10,6 +10,7 @@ import { AiModule } from './ai/ai.module';
 import { BriefingsModule } from './briefings/briefings.module';
 import { ReferencesModule } from './references/references.module';
 import { LibraryModule } from './library/library.module';
+import { MoodboardsModule } from './moodboards/moodboards.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { LibraryModule } from './library/library.module';
     BriefingsModule,
     ReferencesModule,
     LibraryModule,
+    MoodboardsModule,
   ],
 })
 export class AppModule {}

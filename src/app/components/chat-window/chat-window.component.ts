@@ -13,6 +13,7 @@ import { Chat } from '../../models/chat.model';
 import { Briefing, BriefingData } from '../../models/briefing.model';
 import { CurationAction, CurationState, MusicReference, ReferenceStatus } from '../../models/reference.model';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
+import { Moodboard } from '../../models/moodboard.model';
 
 @Component({
     selector: 'app-chat-window',
@@ -42,6 +43,10 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() libraryPlaybackUrl = '';
     @Input() librarySearchResponse: LibrarySearchResponse | null = null;
     @Input() librarySearchBusy = false;
+    @Input() moodboard: Moodboard | null = null;
+    @Input() moodboardVersions: Moodboard[] = [];
+    @Input() moodboardBusy = false;
+    @Input() moodboardError = '';
     @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
     @Output() retryRequested = new EventEmitter<void>();
@@ -64,6 +69,9 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() libraryDeleteRequested = new EventEmitter<string>();
     @Output() librarySearchRequested = new EventEmitter<LibrarySearchQuery>();
     @Output() librarySearchCleared = new EventEmitter<void>();
+    @Output() moodboardRequested = new EventEmitter<void>();
+    @Output() moodboardGenerateRequested = new EventEmitter<void>();
+    @Output() moodboardVersionRequested = new EventEmitter<number>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 
@@ -75,6 +83,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     briefingOpen = false;
     referencesOpen = false;
     libraryOpen = false;
+    moodboardOpen = false;
 
     get showTypingIndicator(): boolean {
         return !!this.chat &&
@@ -86,6 +95,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         this.briefingOpen = !this.briefingOpen;
         this.referencesOpen = false;
         this.libraryOpen = false;
+        this.moodboardOpen = false;
         if (this.briefingOpen) {
             this.briefingRequested.emit();
         } else {
@@ -97,6 +107,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         this.referencesOpen = !this.referencesOpen;
         this.briefingOpen = false;
         this.libraryOpen = false;
+        this.moodboardOpen = false;
         if (this.referencesOpen) {
             this.referencesRequested.emit();
         } else {
@@ -108,6 +119,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         this.libraryOpen = !this.libraryOpen;
         this.briefingOpen = false;
         this.referencesOpen = false;
+        this.moodboardOpen = false;
         if (this.libraryOpen) {
             this.libraryRequested.emit();
         } else {
@@ -115,11 +127,21 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         }
     }
 
+    toggleMoodboard(): void {
+        this.moodboardOpen = !this.moodboardOpen;
+        this.briefingOpen = false;
+        this.referencesOpen = false;
+        this.libraryOpen = false;
+        if (this.moodboardOpen) this.moodboardRequested.emit();
+        else this.scrollToBottomWhenChatReturns = true;
+    }
+
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['chat'] && !changes['chat'].firstChange) {
             this.briefingOpen = false;
             this.referencesOpen = false;
             this.libraryOpen = false;
+            this.moodboardOpen = false;
         }
     }
 

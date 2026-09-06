@@ -10,6 +10,7 @@ process.env.SESSION_TTL_DAYS = '7';
 process.env.GROQ_API_KEY = '';
 process.env.GROQ_MODEL = 'qwen/qwen3.6-27b';
 process.env.AI_BRIEFING_MAX_ATTEMPTS = '2';
+process.env.AI_MOODBOARD_MAX_COMPLETION_TOKENS = '550';
 process.env.AI_MAX_TOOL_CALLS = '4';
 process.env.YOUTUBE_API_KEY = 'youtube_test_key_not_used_directly';
 process.env.YOUTUBE_TIMEOUT_MS = '15000';
