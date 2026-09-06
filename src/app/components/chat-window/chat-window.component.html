@@ -107,6 +107,7 @@
         [errorMessage]="moodboardError"
         (generateRequested)="moodboardGenerateRequested.emit()"
         (versionRequested)="moodboardVersionRequested.emit($event)"
+        (pdfRequested)="moodboardPdfRequested.emit()"
     ></app-moodboard-panel>
 
     <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen && !moodboardOpen" #messages class="messages">

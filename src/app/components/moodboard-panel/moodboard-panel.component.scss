@@ -7,6 +7,7 @@ h2 { margin: 0; font: 25px 'Varela Round'; } h3 { margin: 0; font-size: 16px; } 
 label { display: grid; gap: 5px; color: #bbb; font-size: 11px; }
 select, button { min-height: 38px; border: 1px solid #79548f; border-radius: 9px; background: #3d3342; color: #fff; font: 600 12px Inter; }
 select { padding: 0 9px; } button { padding: 0 14px; cursor: pointer; background: linear-gradient(120deg, #d63882, #776dff); }
+button.secondary { background: #352e3a; border-color: #9a78ad; }
 button:disabled { cursor: wait; opacity: .55; }
 .provenance, .error { margin: 15px 0; padding: 11px 13px; border-radius: 10px; background: #352e3a; color: #d9cddd; font-size: 12px; }
 .error { background: #6c303a; color: #ffe3e7; }

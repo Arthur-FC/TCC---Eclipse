@@ -11,7 +11,8 @@ export interface MoodboardData {
 }
 export interface MoodboardReferenceInput {
   id: string; title: string; creator: string; source: string; durationSeconds: number | null;
-  description: string; dataStatus: 'source-metadata' | 'user-provided' | 'mixed-estimates';
+  description: string; url?: string | null;
+  dataStatus: 'source-metadata' | 'user-provided' | 'mixed-estimates';
 }
 
 export class InvalidMoodboardDataError extends Error {}

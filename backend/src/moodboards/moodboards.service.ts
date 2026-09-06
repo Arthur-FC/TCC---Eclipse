@@ -2,6 +2,7 @@ import { BadGatewayException, ConflictException, HttpException, Inject, Injectab
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { BriefingEntity } from '../briefings/briefing.entity';
 import { AI_PROVIDER, AiProvider } from '../ai/ai-provider.interface';
 import { AiProviderError, describeGroqRateLimit } from '../ai/ai-provider.error';
 import { BriefingsService } from '../briefings/briefings.service';
@@ -11,6 +12,7 @@ import { ReferenceSelectionEntity } from '../references/reference-selection.enti
 import { selectionHash } from '../references/curation-rules';
 import { MoodboardData, MoodboardReferenceInput, InvalidMoodboardDataError, parseMoodboardJson } from './moodboard-data';
 import { MoodboardEntity } from './moodboard.entity';
+import { MoodboardPdfService, PdfExport } from './moodboard-pdf.service';
 
 export interface MoodboardResponse extends MoodboardEntity {
   current: boolean;
@@ -34,9 +36,11 @@ export class MoodboardsService {
     @InjectRepository(MoodboardEntity) private readonly moodboards: Repository<MoodboardEntity>,
     @InjectRepository(MusicReferenceEntity) private readonly references: Repository<MusicReferenceEntity>,
     @InjectRepository(ReferenceSelectionEntity) private readonly selections: Repository<ReferenceSelectionEntity>,
+    @InjectRepository(BriefingEntity) private readonly briefingVersions: Repository<BriefingEntity>,
     private readonly db: DataSource,
     private readonly projects: ProjectsService,
     private readonly briefings: BriefingsService,
+    private readonly pdf: MoodboardPdfService,
     configService: ConfigService,
     @Inject(AI_PROVIDER) private readonly ai: AiProvider,
   ) {
@@ -153,6 +157,19 @@ export class MoodboardsService {
     return this.hydrate(ownerId, projectId, entity);
   }
 
+  async exportPdf(ownerId: string, projectId: string, version: number): Promise<PdfExport> {
+    const project = await this.projects.getProject(ownerId, projectId);
+    if (!Number.isInteger(version) || version < 1) throw new NotFoundException('Versão não encontrada.');
+    const moodboard = await this.moodboards.findOneBy({ projectId, version });
+    if (!moodboard) throw new NotFoundException('Versão do moodboard não encontrada.');
+    const briefing = await this.briefingVersions.findOneBy({
+      projectId,
+      version: moodboard.briefingVersion,
+    });
+    if (!briefing) throw new NotFoundException('Briefing desta versão não foi encontrado.');
+    return this.pdf.generate({ project, moodboard, briefing });
+  }
+
   private async requireCurrentInput(ownerId: string, projectId: string) {
     const briefing = await this.briefings.requireConfirmedBriefing(ownerId, projectId);
     const selection = await this.selections.findOneBy({ projectId });
@@ -175,7 +192,7 @@ export class MoodboardsService {
   private response(entity: MoodboardEntity, current: boolean): MoodboardResponse {
     return Object.assign(entity, { current });
   }
-  private referenceInputs(refs: MusicReferenceEntity[]): MoodboardReferenceInput[] { return refs.map((ref) => ({ id: ref.id, title: ref.title, creator: ref.creator, source: ref.source, durationSeconds: ref.durationSeconds, description: ref.description, dataStatus: this.dataStatus(ref) })); }
+  private referenceInputs(refs: MusicReferenceEntity[]): MoodboardReferenceInput[] { return refs.map((ref) => ({ id: ref.id, title: ref.title, creator: ref.creator, source: ref.source, durationSeconds: ref.durationSeconds, description: ref.description, url: ref.source === 'library' ? null : ref.url || null, dataStatus: this.dataStatus(ref) })); }
   private dataStatus(ref: MusicReferenceEntity): MoodboardReferenceInput['dataStatus'] {
     return ref.source === 'library' ? 'mixed-estimates' : ref.source === 'manual' ? 'user-provided' : 'source-metadata';
   }

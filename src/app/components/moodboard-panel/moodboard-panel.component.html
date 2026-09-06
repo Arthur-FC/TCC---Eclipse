@@ -3,6 +3,7 @@
         <div><p class="eyebrow">Direção criativa</p><h2 id="moodboard-title">Moodboard e roadmap</h2></div>
         <div class="header-actions">
             <label *ngIf="versions.length">Versão<select [value]="moodboard?.version" [disabled]="busy" (change)="selectVersion($any($event.target).value)"><option *ngFor="let item of versions" [value]="item.version">v{{ item.version }} · {{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</option></select></label>
+            <button *ngIf="moodboard" type="button" class="secondary" [disabled]="busy" (click)="pdfRequested.emit()">Exportar PDF</button>
             <button type="button" [disabled]="busy" (click)="generateRequested.emit()">{{ moodboard ? 'Gerar nova versão' : 'Gerar moodboard' }}</button>
         </div>
     </header>

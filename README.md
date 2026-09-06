@@ -34,6 +34,7 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Agrupamento de duplicatas, substituição de referências e seleção final ordenada e confirmada por projeto.
 - Moodboard e roadmap estruturados e versionados, gerados somente com briefing e seleção de referências confirmados.
 - Cards de direção criativa com origem dos dados, avisos de estimativas e acesso às versões históricas.
+- Exportação autenticada de cada versão do moodboard em PDF com identidade Eclipse e links públicos clicáveis.
 - Armazenamento S3 compatível pelo MinIO com URLs temporárias.
 
 A interface está conectada ao backend para autenticação, projetos, histórico e respostas da IA. Para utilizar a Groq, ainda é necessário configurar uma chave pessoal no `backend/.env`.

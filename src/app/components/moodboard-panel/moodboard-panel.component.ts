@@ -9,6 +9,7 @@ export class MoodboardPanelComponent {
     @Input() errorMessage = '';
     @Output() generateRequested = new EventEmitter<void>();
     @Output() versionRequested = new EventEmitter<number>();
+    @Output() pdfRequested = new EventEmitter<void>();
     reference(id: string): MoodboardReferenceInput | undefined { return this.moodboard?.referenceInputs.find(ref => ref.id === id); }
     sourceLabel(ref: MoodboardReferenceInput): string { return { youtube: 'YouTube', spotify: 'Spotify', library: 'Acervo próprio', manual: 'Link manual' }[ref.source]; }
     statusLabel(status: MoodboardReferenceInput['dataStatus']): string { return { 'source-metadata': 'Metadados da fonte', 'user-provided': 'Informado pelo usuário', 'mixed-estimates': 'Metadados e estimativas locais' }[status]; }

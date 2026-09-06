@@ -318,7 +318,7 @@ confirmação, e um hash verifica briefing e dados da seleção ao reabrir. Excl
 áudio mantém a referência histórica, mas impede confirmar essa faixa indisponível.
 Não são apagadas alternativas agrupadas como duplicatas.
 
-## Moodboard e roadmap — etapa 15
+## Moodboard, roadmap e PDF — etapas 15 e 16
 
 As migrações `Moodboards1788652800000` e
 `MoodboardReferenceInputs1788656400000` criam versões persistentes do moodboard e
@@ -332,6 +332,7 @@ Rotas autenticadas sob `/api/projects/:projectId/moodboards`:
 | GET | `/latest` | Abrir a versão mais recente |
 | GET | `/` | Listar até 50 versões, da mais recente para a antiga |
 | GET | `/:version` | Abrir uma versão específica |
+| GET | `/:version/pdf` | Baixar o PDF da versão específica |
 
 A geração exige o briefing mais recente confirmado e uma seleção final confirmada,
 válida e não vazia. A Groq recebe o briefing e somente as referências aprovadas na
@@ -349,6 +350,12 @@ O campo `current` indica se a versão ainda corresponde ao briefing e à seleç�
 confirmados. Alterações não apagam resultados: eles passam a históricos até uma
 nova geração. Conteúdo criativo é sugestão da IA; metadados externos, dados do
 usuário e estimativas locais são classificados separadamente na resposta e na tela.
+
+O PDF é montado sob demanda com PDFKit a partir da versão imutável do
+moodboard e do briefing correspondente. Ele inclui identidade Eclipse, data,
+versões, briefing, referências, características e roadmap. Links HTTP(S) públicos
+das referências são clicáveis; URLs privadas do acervo não são incluídas. A rota
+exige a sessão do proprietário e responde como anexo sem cache compartilhado.
 
 ## Análise básica de áudio
 

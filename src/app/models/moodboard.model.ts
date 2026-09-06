@@ -16,6 +16,7 @@ export interface MoodboardReferenceInput {
     source: 'youtube' | 'spotify' | 'library' | 'manual';
     durationSeconds: number | null;
     description: string;
+    url?: string | null;
     dataStatus: 'source-metadata' | 'user-provided' | 'mixed-estimates';
 }
 export interface Moodboard {

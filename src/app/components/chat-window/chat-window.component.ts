@@ -72,6 +72,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() moodboardRequested = new EventEmitter<void>();
     @Output() moodboardGenerateRequested = new EventEmitter<void>();
     @Output() moodboardVersionRequested = new EventEmitter<number>();
+    @Output() moodboardPdfRequested = new EventEmitter<void>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 

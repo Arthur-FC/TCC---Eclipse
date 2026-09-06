@@ -11,4 +11,5 @@ export class MoodboardsApiService {
     list(projectId: string): Promise<Moodboard[]> { return firstValueFrom(this.http.get<Moodboard[]>(`${this.projectsUrl}/${projectId}/moodboards`, { withCredentials: true })); }
     getVersion(projectId: string, version: number): Promise<Moodboard> { return firstValueFrom(this.http.get<Moodboard>(`${this.projectsUrl}/${projectId}/moodboards/${version}`, { withCredentials: true })); }
     generate(projectId: string): Promise<Moodboard> { return firstValueFrom(this.http.post<Moodboard>(`${this.projectsUrl}/${projectId}/moodboards/generate`, {}, { withCredentials: true })); }
+    downloadPdf(projectId: string, version: number): Promise<Blob> { return firstValueFrom(this.http.get(`${this.projectsUrl}/${projectId}/moodboards/${version}/pdf`, { withCredentials: true, responseType: 'blob' })); }
 }

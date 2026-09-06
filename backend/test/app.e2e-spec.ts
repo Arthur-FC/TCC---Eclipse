@@ -745,6 +745,10 @@ describe('Eclipse API (e2e)', () => {
     expect(generated.body.referenceInputs[0]).toMatchObject({ id: approved.id, dataStatus: 'source-metadata' });
     expect(lastMoodboardPayload.references).toHaveLength(1);
     expect(lastMoodboardPayload.references[0]).not.toHaveProperty('url');
+    const pdf = await owner.get(`${base}/moodboards/1/pdf`).expect(200).expect('Content-Type', /application\/pdf/).expect('Content-Disposition', 'attachment; filename="eclipse-moodboard-v1.pdf"');
+    expect(Buffer.isBuffer(pdf.body)).toBe(true);
+    expect(pdf.body.subarray(0, 5).toString()).toBe('%PDF-');
+    await other.get(`${base}/moodboards/1/pdf`).expect(404);
     const second = await owner.post(`${base}/moodboards/generate`).send({}).expect(201);
     expect(second.body.version).toBe(2);
     const list = await owner.get(`${base}/moodboards`).expect(200);

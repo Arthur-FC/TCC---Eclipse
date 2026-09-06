@@ -527,6 +527,28 @@ export class AppComponent implements OnInit, OnDestroy {
         }
     }
 
+    async downloadMoodboardPdf(): Promise<void> {
+        if (!this.selectedChat || !this.moodboard || this.isMoodboardBusy) return;
+        const projectId = this.selectedChat.id;
+        const version = this.moodboard.version;
+        this.isMoodboardBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const blob = await this.moodboardsApi.downloadPdf(projectId, version);
+            if (this.selectedChat?.id !== projectId) return;
+            const objectUrl = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = objectUrl;
+            anchor.download = `eclipse-moodboard-v${version}.pdf`;
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally {
+            this.isMoodboardBusy = false;
+        }
+    }
+
     async loadLibrary(): Promise<void> {
         if (this.isLibraryBusy) return;
         this.isLibraryBusy = true;

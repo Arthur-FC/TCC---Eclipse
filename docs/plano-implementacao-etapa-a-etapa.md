@@ -866,6 +866,38 @@ PDF final do moodboard.
 
 O PDF corresponde ao moodboard exibido, abre corretamente e não apresenta defeitos visuais.
 
+### Implementação da etapa 16
+
+Implementada. Cada versão do moodboard pode ser exportada sob demanda pela rota
+autenticada `GET /api/projects/:projectId/moodboards/:version/pdf` e pelo botão
+**Exportar PDF** da interface.
+
+- O documento usa um template A4 com identidade Eclipse, cabeçalho, rodapé,
+  paginação, hierarquia tipográfica e marcadores de proveniência.
+- A exportação recupera o projeto, a versão imutável do moodboard e a versão
+  exata do briefing, incluindo briefing, referências, direção criativa,
+  instrumentação, estrutura, produção, restrições e roadmap.
+- Novas versões preservam no retrato das referências os links públicos de
+  YouTube, Spotify e links manuais. Somente URLs HTTP(S) válidas viram links
+  clicáveis; o acervo privado nunca expõe URL no PDF.
+- O arquivo é gerado em memória, enviado como anexo com nome estável e marcado
+  como privado e sem cache. A autorização usa o mesmo isolamento por proprietário
+  das demais rotas do projeto.
+- Testes unitários verificam assinatura, paginação, encerramento do arquivo,
+  hyperlink permitido e rejeição de protocolo inseguro. O E2E cobre download,
+  cabeçalhos e isolamento entre usuários.
+- Uma amostra de sete páginas foi renderizada em PNG com Poppler e inspecionada
+  para eliminar páginas vazias, textos cortados e sobreposições.
+
+### Como testar no site
+
+1. Abra um projeto que já possua ao menos uma versão do moodboard.
+2. Selecione a versão desejada e clique em **Exportar PDF**.
+3. Abra o arquivo baixado e confira versão, data, briefing, referências,
+   características e roadmap.
+4. Clique em um link público de referência. Faixas do acervo devem aparecer sem
+   link privado.
+
 ## Etapa 17 - Ativar o assistente com memória do projeto
 
 ### Objetivo
