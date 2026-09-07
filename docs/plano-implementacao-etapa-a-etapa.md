@@ -924,6 +924,43 @@ Assistente que acompanha a criação dentro do contexto correto.
 
 A IA responde sobre decisões anteriores do projeto sem misturar informações de outros projetos ou usuários.
 
+### Implementação da etapa 17
+
+Implementada. Antes de cada resposta do chat, o backend monta automaticamente um
+contexto compacto e autorizado do projeto atual.
+
+- O contexto recupera somente o briefing confirmado mais recente e o moodboard
+  que ainda corresponde ao briefing e à seleção confirmada. Versões históricas ou
+  invalidadas não são apresentadas como vigentes.
+- Referências aprovadas entram com título, autoria, descrição e rótulo de origem.
+  Referências rejeitadas e dados de outros projetos não são incluídos.
+- A mensagem atual é usada para buscar no acervo privado até três resultados
+  semanticamente relevantes. Quando embeddings não estão disponíveis, permanece
+  o fallback por metadados. Somente metadados, observações e estimativas locais são
+  enviados; áudio, chave de objeto e URL privada nunca entram no prompt.
+- Briefing, moodboard, referências e acervo recebem rótulos explícitos que separam
+  decisões confirmadas, sugestões da IA, metadados de fonte, dados do usuário e
+  estimativas locais. O prompt proíbe tratar conteúdo recuperado como instrução.
+- A memória possui orçamento padrão de 12.000 caracteres dividido por seção. A
+  janela recente mantém no máximo 20 mensagens e 24.000 caracteres, sempre
+  preservando integralmente a mensagem atual. As ferramentas internas continuam
+  disponíveis para buscas pontuais no histórico sem enviar todo o banco.
+- Testes unitários cobrem composição, proveniência, orçamento, tolerância a
+  artefatos ausentes, janela recente e bloqueio antes de qualquer leitura quando o
+  usuário não possui acesso. O E2E verifica briefing, moodboard vigente,
+  referências, invalidação e ausência de dados de outro usuário no prompt.
+
+### Como testar no site
+
+1. Em um projeto, confirme o briefing, a seleção de referências e gere um
+   moodboard. Envie uma nova mensagem perguntando pelas decisões anteriores.
+2. Confirme que a resposta considera briefing, direção criativa e referências sem
+   afirmar que ouviu ou mediu o áudio.
+3. Altere a seleção para invalidar o moodboard e pergunte novamente. A versão
+   histórica não deve ser apresentada como vigente.
+4. Repita em outro projeto ou conta e confirme que nenhuma decisão do primeiro
+   aparece na resposta.
+
 ## Etapa 18 - Registrar a obra final
 
 ### Objetivo

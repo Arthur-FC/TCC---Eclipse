@@ -29,6 +29,6 @@ import { QueryEmbeddingCacheService } from './query-embedding-cache.service';
     QueryEmbeddingCacheService,
     SemanticLibrarySearchService,
   ],
-  exports: [LibraryService, CloudflareEmbeddingsService, QueryEmbeddingCacheService],
+  exports: [LibraryService, CloudflareEmbeddingsService, QueryEmbeddingCacheService, SemanticLibrarySearchService],
 })
 export class LibraryModule {}

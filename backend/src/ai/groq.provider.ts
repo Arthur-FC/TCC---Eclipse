@@ -59,7 +59,7 @@ export class GroqProvider implements AiProvider {
     this.timeoutMs = configService.get<number>('GROQ_TIMEOUT_MS', 45_000);
     this.maxCompletionTokens = configService.get<number>(
       'AI_MAX_COMPLETION_TOKENS',
-      1_500,
+      600,
     );
   }
 

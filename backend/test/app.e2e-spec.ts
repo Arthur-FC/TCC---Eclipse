@@ -25,6 +25,7 @@ describe('Eclipse API (e2e)', () => {
   let invalidMoodboardOnce = false;
   let moodboardAttempts = 0;
   let lastMoodboardPayload: any = null;
+  let lastChatMessages: any[] = [];
   const fakeEmbeddings = {
     configured: false,
     model: '@cf/qwen/qwen3-embedding-0.6b',
@@ -52,6 +53,7 @@ describe('Eclipse API (e2e)', () => {
     name: 'fake-groq',
     model: 'qwen/test-model',
     async *streamChat(messages) {
+      lastChatMessages = messages.map((message) => ({ ...message }));
       if (providerMode === 'failure') {
         throw new AiProviderError('Limite simulado.', 'rate_limited', 2);
       }
@@ -207,6 +209,7 @@ describe('Eclipse API (e2e)', () => {
     invalidMoodboardOnce = false;
     moodboardAttempts = 0;
     lastMoodboardPayload = null;
+    lastChatMessages = [];
     fakeEmbeddings.configured = false;
     fakeEmbeddings.embed.mockClear();
     fakeYouTubeClient.search.mockClear();
@@ -725,6 +728,7 @@ describe('Eclipse API (e2e)', () => {
     const other = request.agent(app.getHttpServer());
     await owner.post('/api/auth/register').send({ name: 'Moodboard', email: 'moodboard@example.com', password: 'senha-segura-123' }).expect(201);
     await other.post('/api/auth/register').send({ name: 'Intruso', email: 'moodboard-intruso@example.com', password: 'senha-segura-123' }).expect(201);
+    await other.post('/api/projects').send({ title: 'Projeto secreto', description: 'Não pode vazar entre usuários.' }).expect(201);
     const project = await owner.post('/api/projects').send({ title: 'Projeto visual' }).expect(201);
     const base = `/api/projects/${project.body.id}`;
     await owner.post(`${base}/moodboards/generate`).send({}).expect(404);
@@ -749,6 +753,14 @@ describe('Eclipse API (e2e)', () => {
     expect(Buffer.isBuffer(pdf.body)).toBe(true);
     expect(pdf.body.subarray(0, 5).toString()).toBe('%PDF-');
     await other.get(`${base}/moodboards/1/pdf`).expect(404);
+    await owner.post(`${base}/conversations/${conversation.body.id}/assistant/stream`).send({ content: 'Retome as decisões criativas deste projeto.' }).expect(200);
+    const memory = lastChatMessages.find((message) => message.role === 'system' && message.content?.includes('CONTEXTO AUTOMÁTICO'))?.content as string;
+    expect(memory).toContain('DADO_CONFIRMADO_PELO_USUÁRIO');
+    expect(memory).toContain('SUGESTÃO_DA_IA');
+    expect(memory).toContain('Órbita noturna');
+    expect(memory).toContain('Canção do Sol e da Lua');
+    expect(memory).not.toContain('Projeto secreto');
+    expect(memory).not.toContain('Não pode vazar');
     const second = await owner.post(`${base}/moodboards/generate`).send({}).expect(201);
     expect(second.body.version).toBe(2);
     const list = await owner.get(`${base}/moodboards`).expect(200);
@@ -758,6 +770,10 @@ describe('Eclipse API (e2e)', () => {
     await owner.patch(`${base}/references/${approved.id}`).send({ status: 'rejected' }).expect(200);
     const historical = await owner.get(`${base}/moodboards/latest`).expect(200);
     expect(historical.body.current).toBe(false);
+    await owner.post(`${base}/conversations/${conversation.body.id}/assistant/stream`).send({ content: 'Qual é o moodboard vigente agora?' }).expect(200);
+    const invalidatedMemory = lastChatMessages.find((message) => message.role === 'system' && message.content?.includes('CONTEXTO AUTOMÁTICO'))?.content as string;
+    expect(invalidatedMemory).toContain('MOODBOARD VIGENTE\nNão disponível ou desatualizado.');
+    expect(invalidatedMemory).not.toContain('Órbita noturna');
     await owner.post(`${base}/moodboards/generate`).send({}).expect(409);
   });
 

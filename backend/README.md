@@ -32,9 +32,12 @@ Variáveis disponíveis nesta etapa:
 | `GROQ_API_KEY` | vazio | Chave secreta da Groq; obrigatória em produção |
 | `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |
 | `GROQ_TIMEOUT_MS` | `45000` | Tempo máximo de uma geração |
-| `AI_MAX_COMPLETION_TOKENS` | `1500` | Limite de tokens da resposta |
+| `AI_MAX_COMPLETION_TOKENS` | `900` | Limite de tokens da resposta, abaixo da cota padrão de saída da Groq |
 | `AI_MOODBOARD_MAX_COMPLETION_TOKENS` | `550` | Limite da primeira geração do moodboard; uma eventual correção usa até 400 tokens |
 | `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
+| `AI_RECENT_CONTEXT_MAX_CHARS` | `24000` | Orçamento em caracteres para a janela recente da conversa |
+| `AI_PROJECT_MEMORY_MAX_CHARS` | `12000` | Orçamento máximo do contexto automático do projeto |
+| `AI_PROJECT_MEMORY_LIBRARY_RESULTS` | `3` | Máximo de resultados relevantes do acervo incluídos na memória |
 | `AI_BRIEFING_MAX_ATTEMPTS` | `2` | Máximo de tentativas para obter um briefing JSON válido |
 | `AI_MAX_TOOL_CALLS` | `4` | Máximo de ferramentas executadas em uma resposta |
 | `YOUTUBE_API_KEY` | vazio | Chave da YouTube Data API v3; obrigatória em produção |
@@ -164,6 +167,14 @@ Repetição após falha da Groq, sem duplicar a mensagem:
 
 A resposta utiliza `text/event-stream` com eventos `user_message`, `delta`, `done` e `error`. As respostas da assistente guardam modelo, provedor, tokens e latência no PostgreSQL.
 
+Antes de cada resposta, o backend monta uma memória compacta somente do projeto
+autorizado. Ela reúne o briefing confirmado, o moodboard que ainda corresponde às
+entradas atuais, referências aprovadas e até três resultados do acervo relevantes
+para a mensagem mais recente. O histórico continua limitado por quantidade e agora
+também por caracteres. Cada seção informa se representa dado confirmado, metadado,
+estimativa local ou sugestão da IA; arquivos de áudio e URLs privadas nunca entram
+no contexto enviado ao modelo.
+
 ## Briefing estruturado
 
 O briefing transforma o histórico da conversa em dados editáveis. O Qwen usa o modo de objeto JSON da Groq, mas o backend continua validando cada campo e faz no máximo duas tentativas. Valores ausentes permanecem `null` ou como listas vazias; dúvidas e perguntas complementares são mantidas separadamente.
@@ -232,7 +243,7 @@ São aceitos links HTTPS de faixa em `open.spotify.com/track/...`, inclusive lin
 
 ## Limites atuais
 
-A busca no acervo ainda pertence às próximas etapas. A integração do Spotify adiciona apenas os metadados verificados da faixa e não fornece o áudio à IA.
+A integração do Spotify não pesquisa o catálogo por conta própria: ela adiciona somente os metadados verificados de um link de faixa e não fornece o áudio à IA.
 
 ## Biblioteca musical privada
 

@@ -21,9 +21,12 @@ describe('environment configuration', () => {
       GROQ_API_KEY: '',
       GROQ_MODEL: 'qwen/qwen3.6-27b',
       GROQ_TIMEOUT_MS: 45_000,
-      AI_MAX_COMPLETION_TOKENS: 1_500,
+      AI_MAX_COMPLETION_TOKENS: 900,
       AI_MOODBOARD_MAX_COMPLETION_TOKENS: 550,
       AI_CONTEXT_MESSAGES: 20,
+      AI_RECENT_CONTEXT_MAX_CHARS: 24_000,
+      AI_PROJECT_MEMORY_MAX_CHARS: 12_000,
+      AI_PROJECT_MEMORY_LIBRARY_RESULTS: 3,
     });
   });
 

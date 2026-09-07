@@ -157,6 +157,25 @@ export class MoodboardsService {
     return this.hydrate(ownerId, projectId, entity);
   }
 
+  async current(ownerId: string, projectId: string): Promise<MoodboardResponse | null> {
+    await this.projects.getProject(ownerId, projectId);
+    let input: Awaited<ReturnType<MoodboardsService['requireCurrentInput']>>;
+    try { input = await this.requireCurrentInput(ownerId, projectId); }
+    catch (error) {
+      if (error instanceof NotFoundException || error instanceof ConflictException) return null;
+      throw error;
+    }
+    const entity = await this.moodboards.findOne({
+      where: {
+        projectId,
+        briefingVersion: input.briefing.version,
+        selectionHash: input.selection.snapshotHash,
+      },
+      order: { version: 'DESC' },
+    });
+    return entity ? this.response(entity, true) : null;
+  }
+
   async exportPdf(ownerId: string, projectId: string, version: number): Promise<PdfExport> {
     const project = await this.projects.getProject(ownerId, projectId);
     if (!Number.isInteger(version) || version < 1) throw new NotFoundException('Versão não encontrada.');

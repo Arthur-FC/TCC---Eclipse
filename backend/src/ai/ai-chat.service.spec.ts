@@ -6,6 +6,7 @@ import { AiChatService } from './ai-chat.service';
 import { AiProvider } from './ai-provider.interface';
 import { AiProviderError } from './ai-provider.error';
 import { AiToolsService } from '../ai-tools/ai-tools.service';
+import { ProjectMemoryService } from './project-memory.service';
 
 function message(
   role: MessageRole,
@@ -33,16 +34,18 @@ describe('AiChatService', () => {
     'Podemos começar com piano e cordas suaves.',
   );
 
-  function createService(provider: AiProvider, maxToolCalls = 20) {
+  function createService(provider: AiProvider, maxToolCalls = 20, contextMaxChars = 24_000) {
     const projectsService = {
       createMessage: jest.fn().mockResolvedValue(userMessage),
       getConversationContext: jest.fn().mockResolvedValue([userMessage]),
       createAssistantMessage: jest.fn().mockResolvedValue(assistantMessage),
     } as unknown as jest.Mocked<ProjectsService>;
     const configService = {
-      get: jest.fn((key: string) =>
-        key === 'AI_MAX_TOOL_CALLS' ? maxToolCalls : 20,
-      ),
+      get: jest.fn((key: string) => ({
+        AI_MAX_TOOL_CALLS: maxToolCalls,
+        AI_CONTEXT_MESSAGES: 20,
+        AI_RECENT_CONTEXT_MAX_CHARS: contextMaxChars,
+      } as Record<string, number>)[key]),
     } as unknown as ConfigService;
     const aiToolsService = {
       getDefinitions: jest.fn().mockReturnValue([
@@ -59,23 +62,34 @@ describe('AiChatService', () => {
         JSON.stringify({ ok: true, data: [{ excerpt: 'piano' }] }),
       ),
     } as unknown as jest.Mocked<AiToolsService>;
+    const projectMemory = {
+      build: jest.fn().mockResolvedValue({
+        content: '[FONTE: DADO_DO_PROJETO] PROJETO ATUAL\nTítulo: Projeto',
+        characterCount: 58,
+        sources: { briefing: false, moodboard: false, approvedReferences: 0, libraryMatches: 0 },
+      }),
+    } as unknown as jest.Mocked<ProjectMemoryService>;
     return {
       service: new AiChatService(
         projectsService,
         aiToolsService,
+        projectMemory,
         configService,
         provider,
       ),
       projectsService,
       aiToolsService,
+      projectMemory,
     };
   }
 
   it('streams deltas and persists the final assistant message with metadata', async () => {
+    const receivedMessages: unknown[] = [];
     const provider: AiProvider = {
       name: 'fake',
       model: 'fake/model',
-      async *streamChat() {
+      async *streamChat(messages) {
+        receivedMessages.push(messages);
         yield { content: 'Podemos começar ' };
         yield {
           content: 'com piano e cordas suaves.',
@@ -102,6 +116,9 @@ describe('AiChatService', () => {
       'delta',
       'done',
     ]);
+    expect(receivedMessages[0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'system', content: expect.stringContaining('PROJETO ATUAL') }),
+    ]));
     expect(projectsService.createAssistantMessage).toHaveBeenCalledWith(
       'owner-id',
       'project-id',
@@ -114,6 +131,27 @@ describe('AiChatService', () => {
         completionTokens: 8,
       }),
     );
+  });
+
+  it('keeps the latest message and limits older recent history by character budget', async () => {
+    const latest = message(MessageRole.USER, 'pergunta atual');
+    const old = message(MessageRole.ASSISTANT, 'resposta anterior extensa');
+    const received: any[] = [];
+    const provider: AiProvider = {
+      name: 'fake', model: 'fake/model',
+      async *streamChat(messages) { received.push(messages); yield { content: 'Resposta.' }; },
+    };
+    const { service, projectsService, projectMemory } = createService(provider, 4, 15);
+    projectsService.getConversationContext.mockResolvedValueOnce([old, latest]);
+    for await (const _event of service.streamReply('owner-id', 'project-id', 'conversation-id', { retry: true }, new AbortController().signal)) { /* consume */ }
+
+    expect(projectMemory.build).toHaveBeenCalledWith('owner-id', 'project-id', 'pergunta atual');
+    expect(received[0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'user', content: 'pergunta atual' }),
+    ]));
+    expect(received[0]).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ content: 'resposta anterior extensa' }),
+    ]));
   });
 
   it('keeps the user message when the provider fails', async () => {
