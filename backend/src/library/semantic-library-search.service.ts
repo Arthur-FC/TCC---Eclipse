@@ -90,6 +90,18 @@ export class SemanticLibrarySearchService {
     }
   }
 
+  async indexTrack(ownerId: string, trackId: string): Promise<boolean> {
+    if (!this.embeddings.configured) return false;
+    const track = await this.tracks.findOneBy({
+      id: trackId,
+      ownerId,
+      status: LibraryTrackStatus.READY,
+    });
+    if (!track) return false;
+    await this.ensureIndexed([track]);
+    return true;
+  }
+
   private async ensureIndexed(tracks: LibraryTrackEntity[]): Promise<void> {
     const storedResult = await this.dataSource.query<StoredEmbedding[]>(`
       SELECT "track_id", "text_hash", "model" FROM "library_track_embeddings"
@@ -131,6 +143,7 @@ export class SemanticLibrarySearchService {
       track.genreTags.length ? `Gêneros: ${track.genreTags.join(', ')}.` : '',
       track.moodTags.length ? `Clima: ${track.moodTags.join(', ')}.` : '',
       track.instrumentTags.length ? `Instrumentação: ${track.instrumentTags.join(', ')}.` : '',
+      track.creativeOrigin?.searchText ?? '',
     ].filter(Boolean).join(' ');
   }
 

@@ -388,3 +388,11 @@ AUDIO_ANALYSIS_POLL_INTERVAL_MS=1000
 ```
 
 O analisador usa `music-metadata` para metadados e `audio-decode` para decodificação MP3/WAV em JavaScript/WASM. BPM é estimado por autocorrelação do envelope de onsets; tonalidade usa energia por classe de altura e perfis maior/menor. Essas estimativas são auxiliares e não devem ser tratadas como medição musical absoluta.
+A etapa de obra final usa `POST /projects/:projectId/final-works/uploads`, seguido
+do envio `PUT` para a URL assinada e de
+`POST /projects/:projectId/final-works/:trackId/complete`. O registro recebe uma
+versão sequencial e guarda uma cópia do briefing confirmado, moodboard vigente e
+referências selecionadas. `GET /projects/:projectId/final-works` lista as versões.
+Após a análise local, as tags entram no texto indexado e o embedding é criado
+automaticamente quando a Cloudflare está configurada; sem ela, a busca por
+metadados continua disponível.

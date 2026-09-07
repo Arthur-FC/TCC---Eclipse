@@ -12,6 +12,7 @@ import { AudioAnalyzerService } from './audio-analyzer.service';
 import { CloudflareEmbeddingsService } from './cloudflare-embeddings.service';
 import { SemanticLibrarySearchService } from './semantic-library-search.service';
 import { QueryEmbeddingCacheService } from './query-embedding-cache.service';
+import { AudioFormatValidatorService } from './audio-format-validator.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { QueryEmbeddingCacheService } from './query-embedding-cache.service';
     CloudflareEmbeddingsService,
     QueryEmbeddingCacheService,
     SemanticLibrarySearchService,
+    AudioFormatValidatorService,
   ],
   exports: [LibraryService, CloudflareEmbeddingsService, QueryEmbeddingCacheService, SemanticLibrarySearchService],
 })

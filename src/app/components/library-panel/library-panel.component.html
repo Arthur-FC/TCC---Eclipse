@@ -54,8 +54,15 @@
             Observações
             <textarea name="trackNotes" [(ngModel)]="notes" maxlength="2000" rows="2" [disabled]="busy"></textarea>
         </label>
+        <label *ngIf="projectId" class="final-work-option">
+            <input type="checkbox" name="registerAsFinalWork" [(ngModel)]="registerAsFinalWork" [disabled]="busy" />
+            <span>
+                <strong>Registrar como obra final</strong>
+                <small>Cria uma versão concluída de “{{ projectTitle }}” com o briefing, moodboard e referências atuais.</small>
+            </span>
+        </label>
         <button class="primary-action" type="submit" [disabled]="busy || !selectedFile || !title.trim()">
-            {{ busy ? 'Enviando e verificando...' : 'Adicionar ao acervo' }}
+            {{ busy ? 'Enviando e verificando...' : (registerAsFinalWork ? 'Registrar obra final' : 'Adicionar ao acervo') }}
         </button>
     </form>
 
@@ -111,6 +118,7 @@
         <article *ngFor="let track of sortedTracks; trackBy: trackById" [class.failed]="track.status === 'failed'">
             <div class="track-info">
                 <strong>{{ track.title }}</strong>
+                <span *ngIf="track.workVersion" class="final-work-badge">Obra final · {{ track.sourceProjectTitle }} · v{{ track.workVersion }}</span>
                 <span *ngIf="matchPercentage(track) !== null" class="match-score">{{ matchPercentage(track) }}% compatível</span>
                 <span>{{ track.artist || 'Artista não informado' }}</span>
                 <small>{{ track.originalFilename }} · {{ formatSize(track.sizeBytes) }}</small>

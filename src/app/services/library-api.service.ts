@@ -37,9 +37,12 @@ export class LibraryApiService {
 
     async upload(request: TrackUploadRequest): Promise<LibraryTrack> {
         const contentType = this.contentType(request.file);
+        const baseUrl = request.finalWorkProjectId
+            ? `${environment.apiBaseUrl}/projects/${request.finalWorkProjectId}/final-works`
+            : this.tracksUrl;
         const reservation = await firstValueFrom(
             this.http.post<TrackUploadReservation>(
-                `${this.tracksUrl}/uploads`,
+                `${baseUrl}/uploads`,
                 {
                     filename: request.file.name,
                     contentType,
@@ -63,7 +66,9 @@ export class LibraryApiService {
         }
         return firstValueFrom(
             this.http.post<LibraryTrack>(
-                `${this.tracksUrl}/${reservation.track.id}/complete`,
+                request.finalWorkProjectId
+                    ? `${baseUrl}/${reservation.track.id}/complete`
+                    : `${this.tracksUrl}/${reservation.track.id}/complete`,
                 {},
                 { withCredentials: true }
             )

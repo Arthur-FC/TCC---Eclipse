@@ -963,6 +963,12 @@ contexto compacto e autorizado do projeto atual.
 
 ## Etapa 18 - Registrar a obra final
 
+**Status: concluída em 07/09/2026.** A biblioteca agora registra uma faixa como
+obra final versionada do projeto, preserva um retrato do briefing confirmado,
+do moodboard vigente e das referências selecionadas, executa a análise local,
+gera tags e agenda a indexação semântica. A obra permanece disponível no acervo
+privado e nas buscas textuais ou semânticas de projetos futuros do mesmo usuário.
+
 ### Objetivo
 
 Fechar o ciclo da proposta, incorporando a produção concluída ao acervo.

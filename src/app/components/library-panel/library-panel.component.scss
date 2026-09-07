@@ -530,3 +530,26 @@ button:disabled { cursor: wait; opacity: .55; }
     .technical-grid { grid-template-columns: 1fr; }
     .search-filters { grid-template-columns: 1fr; }
 }
+.final-work-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border: 1px solid rgba(187, 83, 255, 0.38);
+    border-radius: 12px;
+    background: rgba(187, 83, 255, 0.08);
+
+    input { width: auto; margin-top: 0.2rem; }
+    span { display: grid; gap: 0.2rem; }
+    small { color: #bdb7c5; font-weight: 400; }
+}
+
+.final-work-badge {
+    width: fit-content;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    color: #e4b8ff;
+    background: rgba(187, 83, 255, 0.16);
+    font-size: 0.75rem;
+    font-weight: 700;
+}

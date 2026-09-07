@@ -29,6 +29,7 @@ import { ReferenceSelectionEntity } from '../references/reference-selection.enti
 import { MoodboardEntity } from '../moodboards/moodboard.entity';
 import { Moodboards1788652800000 } from './migrations/1788652800000-moodboards';
 import { MoodboardReferenceInputs1788656400000 } from './migrations/1788656400000-moodboard-reference-inputs';
+import { FinalWorks1788742800000 } from './migrations/1788742800000-final-works';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -80,6 +81,7 @@ export function createDataSourceOptions(
       ReferenceCuration1788566400000,
       Moodboards1788652800000,
       MoodboardReferenceInputs1788656400000,
+      FinalWorks1788742800000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

@@ -9,12 +9,13 @@ import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import { LessThan, Repository } from 'typeorm';
 import { CreateTrackUploadDto } from './dto/create-track-upload.dto';
-import { LibraryTrackEntity } from './library-track.entity';
+import { CreativeOriginSnapshot, LibraryTrackEntity } from './library-track.entity';
 import { LibraryTrackStatus } from './library-track-status.enum';
 import { StorageService } from './storage.service';
 import { ConfigService } from '@nestjs/config';
 import { AudioAnalysisStatus } from './audio-analysis-status.enum';
 import { AudioAnalysisQueueService } from './audio-analysis-queue.service';
+import { AudioFormatValidatorService } from './audio-format-validator.service';
 
 export interface LibraryTrackResponse {
   id: string;
@@ -46,6 +47,11 @@ export interface LibraryTrackResponse {
   genreTags: string[];
   moodTags: string[];
   instrumentTags: string[];
+  sourceProjectId: string | null;
+  sourceProjectTitle: string | null;
+  workVersion: number | null;
+  completedAt: Date | null;
+  creativeOrigin: CreativeOriginSnapshot | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,6 +74,7 @@ export class LibraryService {
     private readonly storage: StorageService,
     private readonly analysisQueue: AudioAnalysisQueueService,
     configService: ConfigService,
+    private readonly formatValidator: AudioFormatValidatorService,
   ) {
     this.maxFileSizeBytes = configService.get<number>(
       'AUDIO_MAX_FILE_SIZE_BYTES',
@@ -78,6 +85,11 @@ export class LibraryService {
   async createUpload(
     ownerId: string,
     dto: CreateTrackUploadDto,
+    finalWork?: {
+      projectId: string;
+      projectTitle: string;
+      origin: CreativeOriginSnapshot;
+    },
   ): Promise<TrackUploadResponse> {
     await this.cleanupExpired(ownerId);
     const file = this.validateFile(dto);
@@ -126,8 +138,23 @@ export class LibraryService {
       genreTags: [],
       moodTags: [],
       instrumentTags: [],
+      sourceProjectId: finalWork?.projectId ?? null,
+      sourceProjectTitle: finalWork?.projectTitle ?? null,
+      workVersion: null,
+      completedAt: null,
+      creativeOrigin: finalWork?.origin ?? null,
     });
-    const saved = await this.tracksRepository.save(entity);
+    const saved = finalWork
+      ? await this.tracksRepository.manager.transaction(async (manager) => {
+          await manager.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE', [finalWork.projectId]);
+          const [{ next_version }] = await manager.query(
+            'SELECT COALESCE(MAX(work_version),0)+1 AS next_version FROM library_tracks WHERE source_project_id=$1',
+            [finalWork.projectId],
+          );
+          entity.workVersion = Number(next_version);
+          return manager.getRepository(LibraryTrackEntity).save(entity);
+        })
+      : await this.tracksRepository.save(entity);
     return {
       track: this.toResponse(saved),
       uploadUrl: signed.url,
@@ -161,10 +188,16 @@ export class LibraryService {
         'O tamanho recebido é diferente do tamanho informado.',
       );
     }
-    if (!this.signatureMatches(track.contentType, object.signature)) {
+    const validationError = await this.validateStoredAudio(
+      track.objectKey,
+      track.contentType,
+      object.signature,
+      object.sizeBytes,
+    );
+    if (validationError) {
       await this.failUpload(
         track,
-        'O conteúdo do arquivo não corresponde a um MP3 ou WAV válido.',
+        validationError,
       );
     }
 
@@ -188,6 +221,32 @@ export class LibraryService {
       }
       throw error;
     }
+  }
+
+  async completeFinalWork(
+    ownerId: string,
+    projectId: string,
+    trackId: string,
+  ): Promise<LibraryTrackResponse> {
+    const track = await this.getOwned(ownerId, trackId);
+    if (track.sourceProjectId !== projectId || !track.creativeOrigin) {
+      throw new NotFoundException('Obra final não encontrada neste projeto.');
+    }
+    const completed = await this.completeUpload(ownerId, trackId);
+    if (!track.completedAt) {
+      await this.tracksRepository.update(track.id, { completedAt: new Date() });
+      const saved = await this.getOwned(ownerId, trackId);
+      return this.toResponse(saved);
+    }
+    return completed;
+  }
+
+  async listFinalWorks(ownerId: string, projectId: string): Promise<LibraryTrackResponse[]> {
+    const tracks = await this.tracksRepository.find({
+      where: { ownerId, sourceProjectId: projectId },
+      order: { workVersion: 'DESC' },
+    });
+    return tracks.map((track) => this.toResponse(track));
   }
 
   async list(ownerId: string): Promise<LibraryTrackResponse[]> {
@@ -297,6 +356,33 @@ export class LibraryService {
     );
   }
 
+  private async validateStoredAudio(
+    objectKey: string,
+    contentType: string,
+    signature: Uint8Array,
+    sizeBytes: number,
+  ): Promise<string | null> {
+    if (
+      contentType === 'audio/mpeg' &&
+      String.fromCharCode(...signature.slice(4, 8)) === 'ftyp'
+    ) {
+      return 'O arquivo contém áudio MP4/AAC, apesar da extensão MP3. Converta-o para MP3 ou WAV antes de enviar.';
+    }
+    if (this.signatureMatches(contentType, signature)) return null;
+
+    try {
+      const bytes = await this.storage.getObjectBytes(objectKey);
+      if (await this.formatValidator.matches(
+        bytes,
+        contentType,
+        sizeBytes,
+      )) return null;
+    } catch {
+      // A mensagem uniforme abaixo evita expor detalhes internos do parser.
+    }
+    return 'O conteúdo do arquivo não corresponde a um MP3 ou WAV válido ou está corrompido.';
+  }
+
   private hasMpegFrameHeader(bytes: Uint8Array, index: number): boolean {
     if (bytes[index] !== 0xff || (bytes[index + 1] & 0xe0) !== 0xe0) {
       return false;
@@ -308,7 +394,6 @@ export class LibraryService {
     return (
       version !== 0x01 &&
       layer !== 0x00 &&
-      bitrate !== 0x00 &&
       bitrate !== 0x0f &&
       sampleRate !== 0x03
     );
@@ -427,6 +512,11 @@ export class LibraryService {
       genreTags: track.genreTags ?? [],
       moodTags: track.moodTags ?? [],
       instrumentTags: track.instrumentTags ?? [],
+      sourceProjectId: track.sourceProjectId ?? null,
+      sourceProjectTitle: track.sourceProjectTitle ?? null,
+      workVersion: track.workVersion ?? null,
+      completedAt: track.completedAt ?? null,
+      creativeOrigin: track.creativeOrigin ?? null,
       createdAt: track.createdAt,
       updatedAt: track.updatedAt,
     };

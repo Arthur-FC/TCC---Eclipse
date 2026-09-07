@@ -6,6 +6,7 @@ import { LibraryTrackStatus } from './library-track-status.enum';
 import { StorageService } from './storage.service';
 import { AudioAnalysisQueueService } from './audio-analysis-queue.service';
 import { AudioAnalysisStatus } from './audio-analysis-status.enum';
+import { AudioFormatValidatorService } from './audio-format-validator.service';
 
 function setup(existing: LibraryTrackEntity | null = null) {
   const now = new Date();
@@ -37,6 +38,7 @@ function setup(existing: LibraryTrackEntity | null = null) {
       expiresInSeconds: 900,
     }),
     deleteObject: jest.fn().mockResolvedValue(undefined),
+    getObjectBytes: jest.fn().mockResolvedValue(new Uint8Array()),
   } as unknown as jest.Mocked<StorageService>;
   const config = {
     get: jest.fn((_key: string, fallback: unknown) => fallback),
@@ -44,11 +46,21 @@ function setup(existing: LibraryTrackEntity | null = null) {
   const analysisQueue = {
     enqueue: jest.fn().mockResolvedValue(undefined),
   } as unknown as jest.Mocked<AudioAnalysisQueueService>;
+  const formatValidator = {
+    matches: jest.fn().mockResolvedValue(false),
+  } as unknown as jest.Mocked<AudioFormatValidatorService>;
   return {
     repository,
     storage,
     analysisQueue,
-    service: new LibraryService(repository, storage, analysisQueue, config),
+    formatValidator,
+    service: new LibraryService(
+      repository,
+      storage,
+      analysisQueue,
+      config,
+      formatValidator,
+    ),
   };
 }
 
@@ -131,6 +143,58 @@ describe('LibraryService', () => {
     expect(result.uploadedAt).toBeInstanceOf(Date);
   });
 
+  it('accepts a valid free-format MP3 frame', async () => {
+    const track = pendingTrack();
+    const { service, storage } = setup(track);
+    storage.inspectObject.mockResolvedValue({
+      sizeBytes: track.sizeBytes,
+      contentType: 'audio/mpeg',
+      signature: Uint8Array.from([0xff, 0xfb, 0x00, 0x00]),
+    });
+
+    const result = await service.completeUpload(track.ownerId, track.id);
+
+    expect(result.status).toBe('ready');
+    expect(storage.getObjectBytes).not.toHaveBeenCalled();
+  });
+
+  it('uses the audio parser when the initial signature is inconclusive', async () => {
+    const track = pendingTrack();
+    const { service, storage, formatValidator } = setup(track);
+    storage.inspectObject.mockResolvedValue({
+      sizeBytes: track.sizeBytes,
+      contentType: 'audio/mpeg',
+      signature: Uint8Array.from([0x00, 0x01, 0x02, 0x03]),
+    });
+    storage.getObjectBytes.mockResolvedValue(
+      Uint8Array.from([0x00, 0x01, 0x02, 0x03]),
+    );
+    formatValidator.matches.mockResolvedValue(true);
+
+    const result = await service.completeUpload(track.ownerId, track.id);
+
+    expect(result.status).toBe('ready');
+    expect(formatValidator.matches).toHaveBeenCalledWith(
+      expect.any(Uint8Array),
+      'audio/mpeg',
+      track.sizeBytes,
+    );
+  });
+
+  it('explains when an MP4/AAC file was only renamed to MP3', async () => {
+    const track = pendingTrack();
+    const { service, storage } = setup(track);
+    storage.inspectObject.mockResolvedValue({
+      sizeBytes: track.sizeBytes,
+      contentType: 'audio/mpeg',
+      signature: Uint8Array.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
+    });
+
+    await expect(service.completeUpload(track.ownerId, track.id)).rejects.toThrow(
+      'O arquivo contém áudio MP4/AAC',
+    );
+  });
+
   it('removes invalid content from storage and records the failure', async () => {
     const track = pendingTrack();
     const { service, storage, repository } = setup(track);
@@ -141,7 +205,7 @@ describe('LibraryService', () => {
     });
 
     await expect(service.completeUpload(track.ownerId, track.id)).rejects.toThrow(
-      'O conteúdo do arquivo não corresponde a um MP3 ou WAV válido.',
+      'O conteúdo do arquivo não corresponde a um MP3 ou WAV válido ou está corrompido.',
     );
     expect(storage.deleteObject).toHaveBeenCalledWith(track.objectKey);
     expect(repository.save).toHaveBeenCalledWith(

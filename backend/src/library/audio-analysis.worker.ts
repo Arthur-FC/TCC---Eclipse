@@ -17,6 +17,7 @@ import { AudioAnalysisStatus } from './audio-analysis-status.enum';
 import { LibraryTrackEntity } from './library-track.entity';
 import { LibraryTrackStatus } from './library-track-status.enum';
 import { StorageService } from './storage.service';
+import { SemanticLibrarySearchService } from './semantic-library-search.service';
 
 interface ClaimedJob {
   id: string;
@@ -41,6 +42,7 @@ export class AudioAnalysisWorker
     private readonly jobs: Repository<AudioAnalysisJobEntity>,
     private readonly storage: StorageService,
     private readonly analyzer: AudioAnalyzerService,
+    private readonly semanticSearch: SemanticLibrarySearchService,
     config: ConfigService,
   ) {
     this.enabled = config.get<boolean>('AUDIO_ANALYSIS_WORKER_ENABLED', true);
@@ -142,6 +144,13 @@ export class AudioAnalysisWorker
         instrumentTags: result.instrumentTags,
       });
       await this.tracks.save(track);
+      try {
+        await this.semanticSearch.indexTrack(track.ownerId, track.id);
+      } catch (error) {
+        this.logger.warn(
+          `Embedding adiado trackId=${track.id}: ${this.safeMessage(error)}`,
+        );
+      }
       await this.finishJob(job.id, 'completed', null);
       this.logger.log(`Análise concluída trackId=${track.id}`);
     } catch (error) {

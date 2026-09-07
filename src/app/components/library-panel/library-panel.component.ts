@@ -22,6 +22,8 @@ export class LibraryPanelComponent {
     @Input() playbackUrl = '';
     @Input() searchResponse: LibrarySearchResponse | null = null;
     @Input() searchBusy = false;
+    @Input() projectId: string | null = null;
+    @Input() projectTitle = '';
     @Output() uploadRequested = new EventEmitter<TrackUploadRequest>();
     @Output() playbackRequested = new EventEmitter<string>();
     @Output() playbackStopped = new EventEmitter<void>();
@@ -36,6 +38,7 @@ export class LibraryPanelComponent {
     title = '';
     artist = '';
     notes = '';
+    registerAsFinalWork = false;
     searchQuery = '';
     searchBpmMin: number | null = null;
     searchBpmMax: number | null = null;
@@ -149,7 +152,10 @@ export class LibraryPanelComponent {
             file: this.selectedFile,
             title: this.title.trim(),
             artist: this.artist.trim(),
-            notes: this.notes.trim()
+            notes: this.notes.trim(),
+            finalWorkProjectId: this.registerAsFinalWork
+                ? this.projectId ?? undefined
+                : undefined
         });
     }
 

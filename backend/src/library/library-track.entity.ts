@@ -11,9 +11,22 @@ import {
 import { UserEntity } from '../users/user.entity';
 import { LibraryTrackStatus } from './library-track-status.enum';
 import { AudioAnalysisStatus } from './audio-analysis-status.enum';
+import { ProjectEntity } from '../projects/project.entity';
+
+export interface CreativeOriginSnapshot {
+  project: { id: string; title: string };
+  briefing: { id: string; version: number; data: unknown; confirmedAt: string | null };
+  moodboard: { id: string; version: number; data: unknown; createdAt: string };
+  references: unknown[];
+  searchText: string;
+}
 
 @Entity({ name: 'library_tracks' })
 @Index('IDX_library_tracks_owner_updated_at', ['ownerId', 'updatedAt'])
+@Index('UQ_library_tracks_final_work_version', ['sourceProjectId', 'workVersion'], {
+  unique: true,
+  where: '"source_project_id" IS NOT NULL',
+})
 export class LibraryTrackEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -119,6 +132,21 @@ export class LibraryTrackEntity {
   @Column({ name: 'instrument_tags', type: 'text', array: true, default: () => "'{}'" })
   instrumentTags!: string[];
 
+  @Column({ name: 'source_project_id', type: 'uuid', nullable: true })
+  sourceProjectId!: string | null;
+
+  @Column({ name: 'source_project_title', type: 'varchar', length: 120, nullable: true })
+  sourceProjectTitle!: string | null;
+
+  @Column({ name: 'work_version', type: 'integer', nullable: true })
+  workVersion!: number | null;
+
+  @Column({ name: 'completed_at', type: 'timestamptz', nullable: true })
+  completedAt!: Date | null;
+
+  @Column({ name: 'creative_origin', type: 'jsonb', nullable: true })
+  creativeOrigin!: CreativeOriginSnapshot | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 
@@ -131,4 +159,11 @@ export class LibraryTrackEntity {
     foreignKeyConstraintName: 'FK_library_tracks_owner',
   })
   owner!: UserEntity;
+
+  @ManyToOne(() => ProjectEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({
+    name: 'source_project_id',
+    foreignKeyConstraintName: 'FK_library_tracks_source_project',
+  })
+  sourceProject!: ProjectEntity | null;
 }

@@ -11,6 +11,7 @@ import { BriefingsModule } from './briefings/briefings.module';
 import { ReferencesModule } from './references/references.module';
 import { LibraryModule } from './library/library.module';
 import { MoodboardsModule } from './moodboards/moodboards.module';
+import { FinalWorksModule } from './final-works/final-works.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MoodboardsModule } from './moodboards/moodboards.module';
     ReferencesModule,
     LibraryModule,
     MoodboardsModule,
+    FinalWorksModule,
   ],
 })
 export class AppModule {}

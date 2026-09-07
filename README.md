@@ -139,3 +139,7 @@ Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanece
 ## Próximos passos
 
 - Implementar análise básica de áudio e busca semântica.
+Na Biblioteca, um áudio também pode ser marcado como **obra final** do projeto.
+Essa opção registra versão e data de conclusão, preserva a origem criativa
+(briefing, moodboard e referências) e disponibiliza a produção nas buscas futuras
+do acervo privado.

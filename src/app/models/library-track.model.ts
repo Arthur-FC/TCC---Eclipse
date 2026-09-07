@@ -31,6 +31,17 @@ export interface LibraryTrack {
     genreTags: string[];
     moodTags: string[];
     instrumentTags: string[];
+    sourceProjectId: string | null;
+    sourceProjectTitle: string | null;
+    workVersion: number | null;
+    completedAt: string | null;
+    creativeOrigin: {
+        project: { id: string; title: string };
+        briefing: { id: string; version: number; data: unknown; confirmedAt: string | null };
+        moodboard: { id: string; version: number; data: unknown; createdAt: string };
+        references: unknown[];
+        searchText: string;
+    } | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -40,6 +51,7 @@ export interface TrackUploadRequest {
     title: string;
     artist: string;
     notes: string;
+    finalWorkProjectId?: string;
 }
 
 export interface TrackUploadReservation {

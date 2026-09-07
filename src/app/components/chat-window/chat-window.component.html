@@ -90,6 +90,8 @@
         [playbackUrl]="libraryPlaybackUrl"
         [searchResponse]="librarySearchResponse"
         [searchBusy]="librarySearchBusy"
+        [projectId]="chat.id"
+        [projectTitle]="chat.title"
         (uploadRequested)="libraryUploadRequested.emit($event)"
         (playbackRequested)="libraryPlaybackRequested.emit($event)"
         (playbackStopped)="libraryPlaybackStopped.emit()"
