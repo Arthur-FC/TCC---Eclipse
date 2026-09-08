@@ -696,7 +696,7 @@ describe('Eclipse API (e2e)', () => {
     await owner.post(`${base}/conversations/${conversation.body.id}/messages`).send({ role: 'user', content: 'Piano noturno' }).expect(201);
     await owner.post(`${base}/briefings/generate`).send({ conversationId: conversation.body.id }).expect(201);
     await owner.post(`${base}/briefings/1/confirm`).send({}).expect(201);
-    const upload = await owner.post('/api/library/tracks/uploads').send({ filename: 'demo.mp3', contentType: 'audio/mpeg', sizeBytes: 3, title: 'Piano noturno', artist: 'Artista' }).expect(201);
+    const upload = await owner.post('/api/library/tracks/uploads').send({ filename: 'demo.mp3', contentType: 'audio/mpeg', sizeBytes: 3, title: 'Piano noturno', artist: 'Artista', processingConsent: true }).expect(201);
     const trackId = upload.body.track.id;
     await owner.post(`/api/library/tracks/${trackId}/complete`).send({}).expect(201);
     const otherProject = await other.post('/api/projects').send({ title: 'Outro projeto' }).expect(201);
@@ -758,7 +758,7 @@ describe('Eclipse API (e2e)', () => {
     expect(memory).toContain('DADO_CONFIRMADO_PELO_USUÁRIO');
     expect(memory).toContain('SUGESTÃO_DA_IA');
     expect(memory).toContain('Órbita noturna');
-    expect(memory).toContain('Canção do Sol e da Lua');
+    expect(memory).toContain(approved.title);
     expect(memory).not.toContain('Projeto secreto');
     expect(memory).not.toContain('Não pode vazar');
     const second = await owner.post(`${base}/moodboards/generate`).send({}).expect(201);
@@ -969,6 +969,7 @@ describe('Eclipse API (e2e)', () => {
         title: 'Demo privada',
         artist: 'Artista Eclipse',
         notes: 'Somente para o meu acervo.',
+        processingConsent: true,
       })
       .expect(201);
     expect(upload.body).toMatchObject({
@@ -1144,5 +1145,54 @@ describe('Eclipse API (e2e)', () => {
       error: 'Not Found',
       path: '/api/unknown',
     });
+  });
+
+  it('enforces origin, audio consent, usage privacy and account deletion', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent.post('/api/auth/register').send({
+      name: 'Privacidade',
+      email: 'privacidade@example.com',
+      password: 'senha-segura-privacidade',
+    }).expect(201);
+
+    await agent.post('/api/projects')
+      .set('Origin', 'https://origem-maliciosa.example')
+      .send({ title: 'Não deve existir' })
+      .expect(403);
+    await agent.post('/api/library/tracks/uploads').send({
+      filename: 'sem-consentimento.mp3',
+      contentType: 'audio/mpeg',
+      sizeBytes: 3,
+      title: 'Sem consentimento',
+      processingConsent: false,
+    }).expect(400);
+
+    const usage = await agent.get('/api/privacy/usage').expect(200);
+    expect(usage.body.externalBillingAllowed).toBe(false);
+    expect(usage.body.youtube).toHaveProperty('searches');
+    expect(usage.body.cloudflare).toHaveProperty('requests');
+    expect(usage.body).not.toHaveProperty('apiKey');
+
+    const exported = await agent.get('/api/privacy/export').expect(200);
+    expect(exported.body.profile.email).toBe('privacidade@example.com');
+    expect(JSON.stringify(exported.body)).not.toMatch(/password_hash|object_key|token_hash/);
+
+    await agent.patch('/api/privacy/profile').send({
+      name: 'Privacidade Corrigida',
+      email: 'privacidade-corrigida@example.com',
+    }).expect(200);
+
+    await agent.delete('/api/privacy/account')
+      .send({ confirmation: 'EXCLUIR', password: 'senha-incorreta' })
+      .expect(401);
+
+    const unknown = await agent.get('/api/unknown?apiKey=segredo').expect(404);
+    expect(unknown.body.path).toBe('/api/unknown');
+    expect(JSON.stringify(unknown.body)).not.toContain('segredo');
+
+    await agent.delete('/api/privacy/account')
+      .send({ confirmation: 'EXCLUIR', password: 'senha-segura-privacidade' })
+      .expect(204);
+    await agent.get('/api/auth/me').expect(401);
   });
 });

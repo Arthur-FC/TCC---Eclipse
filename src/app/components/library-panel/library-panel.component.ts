@@ -39,6 +39,7 @@ export class LibraryPanelComponent {
     artist = '';
     notes = '';
     registerAsFinalWork = false;
+    processingConsentAccepted = false;
     searchQuery = '';
     searchBpmMin: number | null = null;
     searchBpmMax: number | null = null;
@@ -147,7 +148,7 @@ export class LibraryPanelComponent {
     }
 
     upload(): void {
-        if (!this.selectedFile || !this.title.trim() || this.busy) return;
+        if (!this.selectedFile || !this.title.trim() || !this.processingConsentAccepted || this.busy) return;
         this.uploadRequested.emit({
             file: this.selectedFile,
             title: this.title.trim(),
@@ -155,7 +156,8 @@ export class LibraryPanelComponent {
             notes: this.notes.trim(),
             finalWorkProjectId: this.registerAsFinalWork
                 ? this.projectId ?? undefined
-                : undefined
+                : undefined,
+            processingConsent: true
         });
     }
 

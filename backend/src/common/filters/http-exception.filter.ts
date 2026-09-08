@@ -28,12 +28,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : undefined;
     const body = this.normalizeExceptionResponse(exceptionResponse, status);
-    const path = request.originalUrl || request.url;
+    const path = request.path || '/';
+    body.message = this.sanitizeMessage(
+      body.message,
+      request.originalUrl || request.url,
+      path,
+    );
     const logMessage = `${request.method} ${path} -> ${status}`;
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      const stack = exception instanceof Error ? exception.stack : undefined;
-      this.logger.error(logMessage, stack);
+      this.logger.error(logMessage);
     } else {
       this.logger.warn(logMessage);
     }
@@ -77,5 +81,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   private defaultError(status: number): string {
     return HttpStatus[status] ?? 'Error';
+  }
+
+  private sanitizeMessage(
+    message: string | string[],
+    originalUrl: string,
+    safePath: string,
+  ): string | string[] {
+    const clean = (value: string) => value.split(originalUrl).join(safePath);
+    return Array.isArray(message) ? message.map(clean) : clean(message);
   }
 }

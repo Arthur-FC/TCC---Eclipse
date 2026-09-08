@@ -130,6 +130,18 @@ export class AuthService {
     );
   }
 
+  async requireCurrentPassword(userId: string, password: string): Promise<void> {
+    const user = await this.dataSource
+      .getRepository(UserEntity)
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.id = :userId', { userId })
+      .getOne();
+    if (!user || !(await this.passwordService.verify(password, user.passwordHash))) {
+      throw new UnauthorizedException('Senha atual inválida.');
+    }
+  }
+
   async disableAccount(userId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       await manager

@@ -28,6 +28,22 @@ describe('GroqProvider', () => {
     });
   });
 
+  it('blocks the provider call when the local daily budget is exhausted', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch');
+    const dataSource = { query: jest.fn().mockResolvedValue([]) };
+    const provider = new GroqProvider(config('gsk_test_key_for_unit_tests'), dataSource as never);
+    const iterator = provider.streamChat(
+      [{ role: 'user', content: 'Olá' }],
+      new AbortController().signal,
+    )[Symbol.asyncIterator]();
+
+    await expect(iterator.next()).rejects.toMatchObject({
+      code: 'rate_limited',
+      message: 'O orçamento diário local da Groq foi atingido.',
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('parses content and token usage from the Groq SSE stream', async () => {
     const stream = [
       'data: {"choices":[{"delta":{"content":"Olá "}}]}',

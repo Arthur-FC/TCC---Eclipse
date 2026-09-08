@@ -30,6 +30,9 @@ import { MoodboardEntity } from '../moodboards/moodboard.entity';
 import { Moodboards1788652800000 } from './migrations/1788652800000-moodboards';
 import { MoodboardReferenceInputs1788656400000 } from './migrations/1788656400000-moodboard-reference-inputs';
 import { FinalWorks1788742800000 } from './migrations/1788742800000-final-works';
+import { SecurityConsent1788829200000 } from './migrations/1788829200000-security-consent';
+import { DistributedRateLimits1788915600000 } from './migrations/1788915600000-distributed-rate-limits';
+import { GroqDailyBudget1789002000000 } from './migrations/1789002000000-groq-daily-budget';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -82,6 +85,9 @@ export function createDataSourceOptions(
       Moodboards1788652800000,
       MoodboardReferenceInputs1788656400000,
       FinalWorks1788742800000,
+      SecurityConsent1788829200000,
+      DistributedRateLimits1788915600000,
+      GroqDailyBudget1789002000000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

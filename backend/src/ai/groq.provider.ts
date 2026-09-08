@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AiChatMessage,
@@ -10,6 +10,7 @@ import {
   AiToolDefinition,
 } from './ai-provider.interface';
 import { AiProviderError } from './ai-provider.error';
+import { DataSource } from 'typeorm';
 
 interface GroqStreamPayload {
   choices?: Array<{
@@ -49,8 +50,10 @@ export class GroqProvider implements AiProvider {
   private readonly apiKey: string;
   private readonly timeoutMs: number;
   private readonly maxCompletionTokens: number;
+  private readonly dailyRequestLimit: number;
+  private readonly dailyReservedTokenLimit: number;
 
-  constructor(configService: ConfigService) {
+  constructor(configService: ConfigService, @Optional() private readonly dataSource?: DataSource) {
     this.apiKey = configService.get<string>('GROQ_API_KEY', '').trim();
     this.model = configService.get<string>(
       'GROQ_MODEL',
@@ -61,6 +64,8 @@ export class GroqProvider implements AiProvider {
       'AI_MAX_COMPLETION_TOKENS',
       600,
     );
+    this.dailyRequestLimit = configService.get<number>('GROQ_DAILY_REQUEST_LIMIT', 500);
+    this.dailyReservedTokenLimit = configService.get<number>('GROQ_DAILY_RESERVED_COMPLETION_TOKENS', 100_000);
   }
 
   async *streamChat(
@@ -74,6 +79,7 @@ export class GroqProvider implements AiProvider {
         'not_configured',
       );
     }
+    await this.reserveDailyBudget(this.maxCompletionTokens);
 
     const requestController = new AbortController();
     const timeout = setTimeout(() => requestController.abort(), this.timeoutMs);
@@ -161,6 +167,7 @@ export class GroqProvider implements AiProvider {
                 completionTokens: usagePayload.completion_tokens,
               }
             : undefined;
+          if (usage) await this.recordUsage(usage.promptTokens, usage.completionTokens);
           if (content || usage) yield { content, usage };
         }
 
@@ -204,6 +211,11 @@ export class GroqProvider implements AiProvider {
         'not_configured',
       );
     }
+    const reservedTokens = Math.min(
+      this.maxCompletionTokens,
+      options?.maxCompletionTokens ?? this.maxCompletionTokens,
+    );
+    await this.reserveDailyBudget(reservedTokens);
 
     const requestController = new AbortController();
     const timeout = setTimeout(() => requestController.abort(), this.timeoutMs);
@@ -248,6 +260,9 @@ export class GroqProvider implements AiProvider {
           'invalid_response',
         );
       }
+      if (payload.usage) {
+        await this.recordUsage(payload.usage.prompt_tokens, payload.usage.completion_tokens);
+      }
       return {
         content,
         usage: payload.usage
@@ -275,6 +290,41 @@ export class GroqProvider implements AiProvider {
       clearTimeout(timeout);
       signal.removeEventListener('abort', abortFromCaller);
     }
+  }
+
+  private async reserveDailyBudget(tokens: number): Promise<void> {
+    if (!this.dataSource) return;
+    const result = await this.dataSource.query<Array<{ request_count: number }>>(`
+      INSERT INTO groq_usage_daily (usage_date, request_count, reserved_completion_tokens)
+      SELECT CURRENT_DATE, 1, $2 WHERE $2 <= $3
+      ON CONFLICT (usage_date) DO UPDATE
+      SET request_count = groq_usage_daily.request_count + 1,
+          reserved_completion_tokens = groq_usage_daily.reserved_completion_tokens + $2
+      WHERE groq_usage_daily.request_count < $1
+        AND groq_usage_daily.reserved_completion_tokens + $2 <= $3
+      RETURNING request_count
+    `, [this.dailyRequestLimit, tokens, this.dailyReservedTokenLimit]);
+    const rows = Array.isArray(result[0]) ? result[0] : result;
+    if (rows.length === 0) {
+      const now = new Date();
+      const nextDay = new Date(now);
+      nextDay.setHours(24, 0, 0, 0);
+      throw new AiProviderError(
+        'O orçamento diário local da Groq foi atingido.',
+        'rate_limited',
+        Math.max(1, Math.ceil((nextDay.getTime() - now.getTime()) / 1_000)),
+      );
+    }
+  }
+
+  private async recordUsage(promptTokens?: number, completionTokens?: number): Promise<void> {
+    if (!this.dataSource || (!promptTokens && !completionTokens)) return;
+    await this.dataSource.query(`
+      UPDATE groq_usage_daily
+      SET prompt_tokens = prompt_tokens + $1,
+          completion_tokens = completion_tokens + $2
+      WHERE usage_date = CURRENT_DATE
+    `, [promptTokens ?? 0, completionTokens ?? 0]);
   }
 
   private async throwResponseError(response: Response): Promise<never> {

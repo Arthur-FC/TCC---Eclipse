@@ -49,7 +49,8 @@ export class LibraryApiService {
                     sizeBytes: request.file.size,
                     title: request.title,
                     artist: request.artist || undefined,
-                    notes: request.notes || undefined
+                    notes: request.notes || undefined,
+                    processingConsent: request.processingConsent
                 },
                 { withCredentials: true }
             )

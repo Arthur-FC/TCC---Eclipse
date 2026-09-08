@@ -147,6 +147,12 @@ export class LibraryTrackEntity {
   @Column({ name: 'creative_origin', type: 'jsonb', nullable: true })
   creativeOrigin!: CreativeOriginSnapshot | null;
 
+  @Column({ name: 'processing_consent_at', type: 'timestamptz', nullable: true })
+  processingConsentAt!: Date | null;
+
+  @Column({ name: 'processing_consent_version', type: 'varchar', length: 20, nullable: true })
+  processingConsentVersion!: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 

@@ -31,6 +31,6 @@ import { AudioFormatValidatorService } from './audio-format-validator.service';
     SemanticLibrarySearchService,
     AudioFormatValidatorService,
   ],
-  exports: [LibraryService, CloudflareEmbeddingsService, QueryEmbeddingCacheService, SemanticLibrarySearchService],
+  exports: [LibraryService, StorageService, CloudflareEmbeddingsService, QueryEmbeddingCacheService, SemanticLibrarySearchService],
 })
 export class LibraryModule {}

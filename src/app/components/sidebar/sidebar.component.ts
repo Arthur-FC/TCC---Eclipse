@@ -18,6 +18,10 @@ export class SidebarComponent {
     @Output() newChat = new EventEmitter<void>();
     @Output() homeRequested = new EventEmitter<void>();
     @Output() logoutRequested = new EventEmitter<void>();
+    @Output() dataExportRequested = new EventEmitter<void>();
+    @Output() usageRequested = new EventEmitter<void>();
+    @Output() profileEditRequested = new EventEmitter<void>();
+    @Output() accountDeleteRequested = new EventEmitter<void>();
     @Output() chatSelected = new EventEmitter<Chat>();
     @Output() chatDeleted = new EventEmitter<string>();
     @Output() chatRenamed = new EventEmitter<{ chatId: string; title: string }>();

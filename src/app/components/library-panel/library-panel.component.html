@@ -61,7 +61,14 @@
                 <small>Cria uma versão concluída de “{{ projectTitle }}” com o briefing, moodboard e referências atuais.</small>
             </span>
         </label>
-        <button class="primary-action" type="submit" [disabled]="busy || !selectedFile || !title.trim()">
+        <label class="final-work-option consent-option">
+            <input type="checkbox" name="processingConsent" [(ngModel)]="processingConsentAccepted" [disabled]="busy" required />
+            <span>
+                <strong>Autorizo o processamento deste áudio</strong>
+                <small>O arquivo será armazenado privadamente e analisado localmente para extrair metadados e estimativas. O áudio não é enviado à Groq nem à Cloudflare.</small>
+            </span>
+        </label>
+        <button class="primary-action" type="submit" [disabled]="busy || !selectedFile || !title.trim() || !processingConsentAccepted">
             {{ busy ? 'Enviando e verificando...' : (registerAsFinalWork ? 'Registrar obra final' : 'Adicionar ao acervo') }}
         </button>
     </form>

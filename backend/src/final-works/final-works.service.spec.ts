@@ -42,7 +42,7 @@ describe('FinalWorksService', () => {
 
   it('reserva uma faixa com versão criativa imutável', async () => {
     const { service, library } = setup();
-    const dto = { filename: 'final.wav', contentType: 'audio/wav', sizeBytes: 100, title: 'Final' };
+    const dto = { filename: 'final.wav', contentType: 'audio/wav', sizeBytes: 100, title: 'Final', processingConsent: true as const };
 
     await service.createUpload('owner-1', 'project-1', dto);
 

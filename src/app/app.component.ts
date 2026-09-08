@@ -13,6 +13,7 @@ import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadReq
 import { LibraryApiService } from './services/library-api.service';
 import { Moodboard } from './models/moodboard.model';
 import { MoodboardsApiService } from './services/moodboards-api.service';
+import { PrivacyApiService } from './services/privacy-api.service';
 
 @Component({
     selector: 'app-root',
@@ -63,7 +64,8 @@ export class AppComponent implements OnInit, OnDestroy {
         private readonly briefingsApi: BriefingsApiService,
         private readonly referencesApi: ReferencesApiService,
         private readonly libraryApi: LibraryApiService,
-        private readonly moodboardsApi: MoodboardsApiService
+        private readonly moodboardsApi: MoodboardsApiService,
+        private readonly privacyApi: PrivacyApiService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -127,6 +129,82 @@ export class AppComponent implements OnInit, OnDestroy {
             this.moodboardErrorMessage = '';
             this.stopLibraryPolling();
             this.isDraftChat = false;
+        } catch (error) {
+            this.errorMessage = this.describeError(error);
+        } finally {
+            this.operationInProgress = false;
+        }
+    }
+
+    async exportMyData(): Promise<void> {
+        if (this.operationInProgress) return;
+        this.operationInProgress = true;
+        this.errorMessage = '';
+        try {
+            const data = await this.privacyApi.exportData();
+            const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `eclipse-dados-${new Date().toISOString().slice(0, 10)}.json`;
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+        } catch (error) {
+            this.errorMessage = this.describeError(error);
+        } finally {
+            this.operationInProgress = false;
+        }
+    }
+
+    async showProviderUsage(): Promise<void> {
+        if (this.operationInProgress) return;
+        this.operationInProgress = true;
+        this.errorMessage = '';
+        try {
+            const usage = await this.privacyApi.usage();
+            window.alert(
+                `Consumo de ${usage.period}\n` +
+                `Groq: ${usage.groq.requests}/${usage.groq.dailyRequestLimit} chamadas; ${usage.groq.reservedCompletionTokens}/${usage.groq.dailyReservedCompletionTokenLimit} tokens reservados\n` +
+                `Cloudflare: ${usage.cloudflare.requests}/${usage.cloudflare.dailyRequestLimit} requisições\n` +
+                `YouTube: ${usage.youtube.searches}/${usage.youtube.dailySearchLimit} buscas; ${usage.youtube.units}/${usage.youtube.dailyGeneralLimit} unidades`
+            );
+        } catch (error) {
+            this.errorMessage = this.describeError(error);
+        } finally {
+            this.operationInProgress = false;
+        }
+    }
+
+    async editMyProfile(): Promise<void> {
+        if (!this.user || this.operationInProgress) return;
+        const name = window.prompt('Nome:', this.user.name)?.trim();
+        if (!name) return;
+        const email = window.prompt('E-mail:', this.user.email)?.trim();
+        if (!email) return;
+        this.operationInProgress = true;
+        this.errorMessage = '';
+        try {
+            this.user = await this.privacyApi.updateProfile(name, email);
+        } catch (error) {
+            this.errorMessage = this.describeError(error);
+        } finally {
+            this.operationInProgress = false;
+        }
+    }
+
+    async deleteMyAccount(): Promise<void> {
+        if (this.operationInProgress) return;
+        const confirmation = window.prompt('Esta ação é definitiva. Digite EXCLUIR para confirmar:');
+        if (confirmation !== 'EXCLUIR') return;
+        const password = window.prompt('Digite sua senha atual:');
+        if (!password) return;
+        this.operationInProgress = true;
+        this.errorMessage = '';
+        try {
+            await this.privacyApi.deleteAccount(password);
+            this.stopLibraryPolling();
+            this.user = null;
+            this.chats = [];
+            this.selectedChat = null;
         } catch (error) {
             this.errorMessage = this.describeError(error);
         } finally {

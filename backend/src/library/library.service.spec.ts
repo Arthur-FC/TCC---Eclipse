@@ -115,6 +115,7 @@ describe('LibraryService', () => {
       sizeBytes: 2_048,
       title: ' Minha demo ',
       artist: 'Artista',
+      processingConsent: true,
     });
 
     expect(result.uploadMethod).toBe('PUT');
@@ -222,6 +223,7 @@ describe('LibraryService', () => {
         contentType: 'application/pdf',
         sizeBytes: 100,
         title: 'Inválido',
+        processingConsent: true,
       }),
     ).rejects.toThrow('Envie um arquivo MP3 ou WAV');
     expect(storage.createUploadUrl).not.toHaveBeenCalled();

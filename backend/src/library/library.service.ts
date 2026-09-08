@@ -52,6 +52,8 @@ export interface LibraryTrackResponse {
   workVersion: number | null;
   completedAt: Date | null;
   creativeOrigin: CreativeOriginSnapshot | null;
+  processingConsentAt: Date | null;
+  processingConsentVersion: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +93,11 @@ export class LibraryService {
       origin: CreativeOriginSnapshot;
     },
   ): Promise<TrackUploadResponse> {
+    if (dto.processingConsent !== true) {
+      throw new BadRequestException(
+        'É necessário consentir com o processamento local do áudio.',
+      );
+    }
     await this.cleanupExpired(ownerId);
     const file = this.validateFile(dto);
     await this.removeRepeatedFailures(
@@ -143,6 +150,8 @@ export class LibraryService {
       workVersion: null,
       completedAt: null,
       creativeOrigin: finalWork?.origin ?? null,
+      processingConsentAt: new Date(),
+      processingConsentVersion: '2026-09-07',
     });
     const saved = finalWork
       ? await this.tracksRepository.manager.transaction(async (manager) => {
@@ -517,6 +526,8 @@ export class LibraryService {
       workVersion: track.workVersion ?? null,
       completedAt: track.completedAt ?? null,
       creativeOrigin: track.creativeOrigin ?? null,
+      processingConsentAt: track.processingConsentAt ?? null,
+      processingConsentVersion: track.processingConsentVersion ?? null,
       createdAt: track.createdAt,
       updatedAt: track.updatedAt,
     };

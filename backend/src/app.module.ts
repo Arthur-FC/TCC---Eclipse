@@ -12,6 +12,7 @@ import { ReferencesModule } from './references/references.module';
 import { LibraryModule } from './library/library.module';
 import { MoodboardsModule } from './moodboards/moodboards.module';
 import { FinalWorksModule } from './final-works/final-works.module';
+import { PrivacyModule } from './privacy/privacy.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { FinalWorksModule } from './final-works/final-works.module';
     LibraryModule,
     MoodboardsModule,
     FinalWorksModule,
+    PrivacyModule,
   ],
 })
 export class AppModule {}

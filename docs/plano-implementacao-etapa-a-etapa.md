@@ -993,6 +993,15 @@ A faixa final aparece no acervo e pode ser encontrada em um novo projeto por bus
 
 ## Etapa 19 - Reforçar segurança, privacidade e custos
 
+**Status: concluída tecnicamente em 08/09/2026.** Foram adicionados rate limiting
+distribuído no PostgreSQL,
+proteção de origem, consentimento versionado de áudio, retenção automática,
+exportação e correção de dados, exclusão integral reautenticada da conta,
+monitoramento do consumo efetivo e bloqueio explícito de
+cobrança. O checklist de homologação registra os controles aprovados e separa as
+pendências institucionais e jurídicas que precisam ser resolvidas antes da
+produção com usuários reais.
+
 ### Objetivo
 
 Preparar o sistema para testes com usuários reais.

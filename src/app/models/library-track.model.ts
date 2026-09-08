@@ -42,6 +42,8 @@ export interface LibraryTrack {
         references: unknown[];
         searchText: string;
     } | null;
+    processingConsentAt: string | null;
+    processingConsentVersion: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -52,6 +54,7 @@ export interface TrackUploadRequest {
     artist: string;
     notes: string;
     finalWorkProjectId?: string;
+    processingConsent: true;
 }
 
 export interface TrackUploadReservation {

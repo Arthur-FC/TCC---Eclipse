@@ -4,6 +4,24 @@
     margin: 10px 0 10px 25px;
 }
 
+.account details { position: relative; }
+.account summary { color: #c15cff; cursor: pointer; font-size: .85rem; list-style: none; }
+.privacy-actions {
+    background: #303030;
+    border: 1px solid #654274;
+    border-radius: .6rem;
+    bottom: 2rem;
+    display: grid;
+    gap: .25rem;
+    min-width: 9rem;
+    padding: .45rem;
+    position: absolute;
+    right: 0;
+    z-index: 20;
+}
+.privacy-actions button { text-align: left; white-space: nowrap; }
+.privacy-actions .danger { color: #ff9aa8; }
+
 aside {
     position: relative;
     height: 100%;

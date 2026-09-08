@@ -33,6 +33,8 @@ Variáveis disponíveis nesta etapa:
 | `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |
 | `GROQ_TIMEOUT_MS` | `45000` | Tempo máximo de uma geração |
 | `AI_MAX_COMPLETION_TOKENS` | `900` | Limite de tokens da resposta, abaixo da cota padrão de saída da Groq |
+| `GROQ_DAILY_REQUEST_LIMIT` | `500` | Limite local diário de chamadas à Groq |
+| `GROQ_DAILY_RESERVED_COMPLETION_TOKENS` | `100000` | Orçamento diário conservador de tokens de saída reservados antes de cada chamada |
 | `AI_MOODBOARD_MAX_COMPLETION_TOKENS` | `550` | Limite da primeira geração do moodboard; uma eventual correção usa até 400 tokens |
 | `AI_CONTEXT_MESSAGES` | `20` | Quantidade máxima de mensagens enviadas como contexto |
 | `AI_RECENT_CONTEXT_MAX_CHARS` | `24000` | Orçamento em caracteres para a janela recente da conversa |
@@ -396,3 +398,9 @@ referências selecionadas. `GET /projects/:projectId/final-works` lista as vers�
 Após a análise local, as tags entram no texto indexado e o embedding é criado
 automaticamente quando a Cloudflare está configurada; sem ela, a busca por
 metadados continua disponível.
+A segurança operacional inclui limites por IP para tráfego geral, autenticação,
+IA e uploads, verificação de origem para operações mutáveis e consentimento
+obrigatório para processar áudio. Consulte
+`docs/seguranca-privacidade-homologacao.md` para o mapa de dados e a política de
+retenção. `GET /api/privacy/usage` apresenta o consumo e
+`DELETE /api/privacy/account` remove a conta com `{ "confirmation": "EXCLUIR" }`.

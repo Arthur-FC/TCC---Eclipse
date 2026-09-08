@@ -18,6 +18,8 @@ describe('environment configuration', () => {
       DATABASE_USER: 'eclipse',
       DATABASE_PASSWORD: 'eclipse_dev',
       SESSION_TTL_DAYS: 7,
+      RATE_LIMIT_PER_MINUTE: 300,
+      EXTERNAL_BILLING_ALLOWED: false,
       GROQ_API_KEY: '',
       GROQ_MODEL: 'qwen/qwen3.6-27b',
       GROQ_TIMEOUT_MS: 45_000,
@@ -28,6 +30,13 @@ describe('environment configuration', () => {
       AI_PROJECT_MEMORY_MAX_CHARS: 12_000,
       AI_PROJECT_MEMORY_LIBRARY_RESULTS: 3,
     });
+  });
+
+  it('refuses automatic activation of external billing', () => {
+    const result = environmentValidationSchema.validate({
+      EXTERNAL_BILLING_ALLOWED: true,
+    });
+    expect(result.error?.message).toContain('EXTERNAL_BILLING_ALLOWED');
   });
 
   it('requires a stronger database password in production', () => {

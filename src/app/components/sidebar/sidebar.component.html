@@ -53,6 +53,15 @@
 
     <div class="account">
         <span [title]="userName">{{ userName }}</span>
+        <details>
+            <summary>Privacidade</summary>
+            <div class="privacy-actions">
+                <button type="button" [disabled]="busy" (click)="usageRequested.emit()">Ver consumo</button>
+                <button type="button" [disabled]="busy" (click)="dataExportRequested.emit()">Exportar dados</button>
+                <button type="button" [disabled]="busy" (click)="profileEditRequested.emit()">Corrigir perfil</button>
+                <button type="button" class="danger" [disabled]="busy" (click)="accountDeleteRequested.emit()">Excluir conta</button>
+            </div>
+        </details>
         <button type="button" [disabled]="busy" (click)="logoutRequested.emit()">Sair</button>
     </div>
 </aside>

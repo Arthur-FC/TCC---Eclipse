@@ -3,8 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { DataSource } from 'typeorm';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { parseCorsOrigins } from './config/environment.config';
+import { createRequestSecurityMiddleware, PostgresRateLimitStore } from './common/security/request-security';
 
 export function configureApplication(
   app: NestExpressApplication,
@@ -17,6 +19,7 @@ export function configureApplication(
   app.setGlobalPrefix('api');
   app.use(helmet());
   app.use(cookieParser());
+  app.use(createRequestSecurityMiddleware(configService, new PostgresRateLimitStore(app.get(DataSource))));
   app.enableCors({
     origin: corsOrigins,
     credentials: true,

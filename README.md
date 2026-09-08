@@ -143,3 +143,6 @@ Na Biblioteca, um áudio também pode ser marcado como **obra final** do projeto
 Essa opção registra versão e data de conclusão, preserva a origem criativa
 (briefing, moodboard e referências) e disponibiliza a produção nas buscas futuras
 do acervo privado.
+- Controles de homologação para segurança e privacidade: rate limiting, proteção
+  de origem, consentimento de áudio, retenção, exclusão integral e monitoramento
+  de quotas.

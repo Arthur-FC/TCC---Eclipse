@@ -1,4 +1,6 @@
 import {
+  Equals,
+  IsBoolean,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +10,10 @@ import {
 } from 'class-validator';
 
 export class CreateTrackUploadDto {
+  @IsBoolean()
+  @Equals(true, { message: 'É necessário consentir com o processamento local do áudio.' })
+  processingConsent!: true;
+
   @IsString()
   @MaxLength(255)
   filename!: string;
