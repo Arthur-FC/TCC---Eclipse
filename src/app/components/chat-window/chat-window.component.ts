@@ -14,6 +14,7 @@ import { Briefing, BriefingData } from '../../models/briefing.model';
 import { CurationAction, CurationState, MusicReference, ReferenceStatus } from '../../models/reference.model';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
 import { Moodboard } from '../../models/moodboard.model';
+import { ProjectEvaluation, SaveProjectEvaluation } from '../../models/evaluation.model';
 
 @Component({
     selector: 'app-chat-window',
@@ -47,6 +48,8 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() moodboardVersions: Moodboard[] = [];
     @Input() moodboardBusy = false;
     @Input() moodboardError = '';
+    @Input() projectEvaluation: ProjectEvaluation | null = null;
+    @Input() evaluationBusy = false;
     @Output() closeRequested = new EventEmitter<void>();
     @Output() messageSent = new EventEmitter<string>();
     @Output() retryRequested = new EventEmitter<void>();
@@ -73,6 +76,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() moodboardGenerateRequested = new EventEmitter<void>();
     @Output() moodboardVersionRequested = new EventEmitter<number>();
     @Output() moodboardPdfRequested = new EventEmitter<void>();
+    @Output() evaluationSaveRequested = new EventEmitter<SaveProjectEvaluation>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;
 

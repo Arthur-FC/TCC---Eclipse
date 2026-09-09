@@ -1159,6 +1159,20 @@ describe('Eclipse API (e2e)', () => {
       .set('Origin', 'https://origem-maliciosa.example')
       .send({ title: 'Não deve existir' })
       .expect(403);
+    const evaluationProject = await agent.post('/api/projects')
+      .send({ title: 'Projeto de avaliação' })
+      .expect(201);
+    await agent.put(`/api/projects/${evaluationProject.body.id}/evaluation`).send({
+      referenceRelevance: 4,
+      moodboardUtility: 5,
+      reuseIntent: 4,
+      comments: 'Fluxo útil para o teste.',
+    }).expect(200);
+    const evaluation = await agent.get(`/api/projects/${evaluationProject.body.id}/evaluation`).expect(200);
+    expect(evaluation.body).toMatchObject({ referenceRelevance: 4, moodboardUtility: 5, reuseIntent: 4 });
+    await agent.put(`/api/projects/${evaluationProject.body.id}/evaluation`).send({
+      referenceRelevance: 6, moodboardUtility: 5, reuseIntent: 4,
+    }).expect(400);
     await agent.post('/api/library/tracks/uploads').send({
       filename: 'sem-consentimento.mp3',
       contentType: 'audio/mpeg',
@@ -1175,6 +1189,7 @@ describe('Eclipse API (e2e)', () => {
 
     const exported = await agent.get('/api/privacy/export').expect(200);
     expect(exported.body.profile.email).toBe('privacidade@example.com');
+    expect(exported.body.evaluations).toHaveLength(1);
     expect(JSON.stringify(exported.body)).not.toMatch(/password_hash|object_key|token_hash/);
 
     await agent.patch('/api/privacy/profile').send({

@@ -6,6 +6,7 @@ h2 { margin: 0; font: 25px 'Varela Round'; } h3 { margin: 0; font-size: 16px; } 
 .header-actions { display: flex; align-items: flex-end; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
 label { display: grid; gap: 5px; color: #bbb; font-size: 11px; }
 select, button { min-height: 38px; border: 1px solid #79548f; border-radius: 9px; background: #3d3342; color: #fff; font: 600 12px Inter; }
+textarea { min-height: 82px; resize: vertical; padding: 9px; border: 1px solid #79548f; border-radius: 9px; background: #343036; color: #fff; font: 12px Inter; }
 select { padding: 0 9px; } button { padding: 0 14px; cursor: pointer; background: linear-gradient(120deg, #d63882, #776dff); }
 button.secondary { background: #352e3a; border-color: #9a78ad; }
 button:disabled { cursor: wait; opacity: .55; }
@@ -25,5 +26,11 @@ ul, ol { margin: 11px 0 0; padding-left: 20px; } li { margin: 10px 0; color: #dd
 .roadmap { list-style: none; padding: 0; } .roadmap li { display: grid; grid-template-columns: 32px 1fr; gap: 11px; align-items: start; }
 .roadmap li > span { display: grid; width: 29px; height: 29px; place-content: center; border-radius: 50%; background: #693a78; color: #fff; font-weight: 700; }
 .inputs li { display: grid; gap: 4px; padding: 9px 0; border-bottom: 1px solid #ffffff12; } .inputs li:last-child { border: 0; } .inputs span { color: #ca9de4; }
+.evaluation { display: grid; gap: 12px; }
+.evaluation > p { margin: 0; color: #bbb; font-size: 12px; }
+.evaluation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.evaluation label, .evaluation select, .evaluation textarea { width: 100%; box-sizing: border-box; }
+.evaluation > button { justify-self: start; }
+.evaluation > small { color: #86daa5; }
 button:focus-visible, select:focus-visible { outline: 2px solid #d58cff; outline-offset: 3px; }
-@media (max-width: 720px) { header { flex-direction: column; } .header-actions, .header-actions label, .header-actions select, .header-actions button { width: 100%; } .grid { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { header { flex-direction: column; } .header-actions, .header-actions label, .header-actions select, .header-actions button { width: 100%; } .grid, .evaluation-grid { grid-template-columns: 1fr; } }

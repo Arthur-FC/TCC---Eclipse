@@ -106,6 +106,15 @@ function pendingTrack(): LibraryTrackEntity {
 }
 
 describe('LibraryService', () => {
+  it('rejects a file above the configured 50 MiB limit before storage', async () => {
+    const { service, storage } = setup();
+    await expect(service.createUpload('owner-id', {
+      filename: 'grande.mp3', contentType: 'audio/mpeg', sizeBytes: 52_428_801,
+      title: 'Arquivo grande', processingConsent: true,
+    })).rejects.toThrow('excede o limite');
+    expect(storage.createUploadUrl).not.toHaveBeenCalled();
+  });
+
   it('creates a private presigned upload for a valid MP3', async () => {
     const { service, storage, repository } = setup();
 

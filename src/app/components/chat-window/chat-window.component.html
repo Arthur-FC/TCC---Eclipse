@@ -107,9 +107,12 @@
         [versions]="moodboardVersions"
         [busy]="moodboardBusy"
         [errorMessage]="moodboardError"
+        [evaluation]="projectEvaluation"
+        [evaluationBusy]="evaluationBusy"
         (generateRequested)="moodboardGenerateRequested.emit()"
         (versionRequested)="moodboardVersionRequested.emit($event)"
         (pdfRequested)="moodboardPdfRequested.emit()"
+        (evaluationSaved)="evaluationSaveRequested.emit($event)"
     ></app-moodboard-panel>
 
     <div *ngIf="!briefingOpen && !referencesOpen && !libraryOpen && !moodboardOpen" #messages class="messages">

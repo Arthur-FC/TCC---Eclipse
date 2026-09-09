@@ -42,6 +42,16 @@ function repositories(cached: YouTubeSearchCacheEntity | null = null) {
 describe('YouTubeClient', () => {
   afterEach(() => jest.restoreAllMocks());
 
+  it('stops before YouTube when the local search quota is exhausted', async () => {
+    const repos = repositories();
+    repos.manager.query.mockResolvedValue([]);
+    const fetchSpy = jest.spyOn(global, 'fetch');
+    const client = new YouTubeClient(config(), repos.cacheRepository, repos.quotaRepository);
+
+    await expect(client.search('teste de quota')).rejects.toMatchObject({ status: 429 });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('normalizes public embeddable videos and caches the result', async () => {
     const repos = repositories();
     jest

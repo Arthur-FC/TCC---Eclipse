@@ -24,5 +24,18 @@
         <article><span class="badge ai">Sugestão da IA</span><h3>Como aplicar as referências</h3><ul><li *ngFor="let item of board.data.referenceApplications"><strong>{{ reference(item.referenceId)?.title || 'Referência selecionada' }}</strong><p>{{ item.application }}</p></li></ul></article>
         <article *ngIf="board.data.constraints.length"><span class="badge provided">Briefing</span><h3>Restrições preservadas</h3><ul><li *ngFor="let item of board.data.constraints">{{ item }}</li></ul></article>
         <article class="inputs"><h3>Entradas utilizadas</h3><p>Nenhuma referência fora da seleção confirmada foi enviada à IA.</p><ul><li *ngFor="let ref of board.referenceInputs"><strong>{{ ref.title }}</strong><span>{{ sourceLabel(ref) }} · {{ statusLabel(ref.dataStatus) }}</span><small *ngIf="ref.dataStatus === 'mixed-estimates'">BPM, tonalidade e tags locais, quando presentes, são estimativas.</small></li></ul></article>
+        <article class="evaluation" aria-labelledby="evaluation-title">
+            <span class="badge provided">Avaliação acadêmica</span>
+            <h3 id="evaluation-title">Como foi esta experiência?</h3>
+            <p>As respostas ajudam a medir a qualidade do MVP. Não inclua dados pessoais nos comentários.</p>
+            <div class="evaluation-grid">
+                <label>Relevância das referências<select [(ngModel)]="evaluationDraft.referenceRelevance" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
+                <label>Utilidade do moodboard<select [(ngModel)]="evaluationDraft.moodboardUtility" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
+                <label>Usaria a Eclipse novamente<select [(ngModel)]="evaluationDraft.reuseIntent" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
+            </div>
+            <label>Comentário opcional<textarea [(ngModel)]="evaluationDraft.comments" maxlength="2000" [disabled]="evaluationBusy" placeholder="O que ajudou ou poderia melhorar?"></textarea></label>
+            <button type="button" [disabled]="evaluationBusy || !evaluationValid" (click)="evaluationSaved.emit(evaluationDraft)">{{ evaluation ? 'Atualizar avaliação' : 'Enviar avaliação' }}</button>
+            <small *ngIf="evaluation">Avaliação registrada e atualizável.</small>
+        </article>
     </ng-container>
 </section>

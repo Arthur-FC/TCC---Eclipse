@@ -65,6 +65,8 @@
             [moodboardVersions]="moodboardVersions"
             [moodboardBusy]="isMoodboardBusy"
             [moodboardError]="moodboardErrorMessage"
+            [projectEvaluation]="projectEvaluation"
+            [evaluationBusy]="isEvaluationBusy"
             (closeRequested)="goHome()"
             (messageSent)="sendMessage($event)"
             (retryRequested)="retryAssistant()"
@@ -88,6 +90,7 @@
             (moodboardGenerateRequested)="generateMoodboard()"
             (moodboardVersionRequested)="loadMoodboardVersion($event)"
             (moodboardPdfRequested)="downloadMoodboardPdf()"
+            (evaluationSaveRequested)="saveProjectEvaluation($event)"
         ></app-chat-window>
     </main>
 </ion-app>

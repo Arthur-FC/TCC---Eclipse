@@ -124,6 +124,7 @@ src/app/
 
 backend/
 ├── src/              # Módulos e fundação da API NestJS
+├── evaluation/       # Protocolo e gerador de métricas acadêmicas
 ├── test/             # Testes de integração
 └── package.json      # Dependências e scripts do backend
 ```
@@ -136,9 +137,18 @@ Copie `backend/.env.example` para `backend/.env`. O arquivo de exemplo documenta
 
 Nunca coloque chaves de serviços de IA no frontend: todo segredo deve permanecer no servidor.
 
-## Próximos passos
+## Avaliação acadêmica
 
-- Implementar análise básica de áudio e busca semântica.
+A etapa 20 inclui um corpus fixo com oito gêneros/contextos, testes de qualidade
+e um formulário ao final do moodboard. O relatório agregado pode ser regenerado
+sem exportar comentários ou identificar participantes:
+
+```powershell
+pnpm --dir backend evaluation:report
+```
+
+Consulte `docs/relatorio-avaliacao-etapa-20.md` e
+`backend/evaluation/README.md` antes da coleta com participantes.
 Na Biblioteca, um áudio também pode ser marcado como **obra final** do projeto.
 Essa opção registra versão e data de conclusão, preserva a origem criativa
 (briefing, moodboard e referências) e disponibiliza a produção nas buscas futuras

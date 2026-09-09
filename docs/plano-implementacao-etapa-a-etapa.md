@@ -1031,6 +1031,12 @@ Testes de isolamento, abuso de quota, upload inválido e vazamento de credencial
 
 ## Etapa 20 - Testar o produto e a qualidade da IA
 
+**Status: instrumentação e avaliação técnica implementadas em 08/09/2026; coleta
+com participantes pendente.** O corpus fixo cobre oito gêneros/contextos, a suíte
+automatizada mede validade estrutural e bloqueio de conteúdo inventado, e o
+produto coleta notas de relevância, utilidade e intenção de reutilização. O
+relatório acadêmico é regenerado a partir do PostgreSQL sem expor participantes.
+
 ### Objetivo
 
 Comprovar tecnicamente e academicamente que o MVP resolve o problema proposto.
@@ -1056,6 +1062,24 @@ Relatório de testes e métricas para utilização no TCC.
 ### Critério de conclusão
 
 Todos os critérios de aceite do escopo estão aprovados e as métricas acadêmicas foram registradas com método reproduzível.
+
+### Implementação e verificação realizadas
+
+- corpus versionado com oito briefings e fatos conhecidos;
+- validação parametrizada de briefing e moodboard e rejeição de referências inventadas;
+- testes explícitos de quota da Groq, Cloudflare e YouTube;
+- testes de arquivo acima de 50 MiB, formato inválido, conteúdo corrompido e extensão enganosa;
+- contratos responsivos para desktop, tablet e celular incluídos na suíte;
+- formulário autenticado no moodboard para três notas de 1 a 5 e comentário opcional;
+- respostas isoladas por proprietário e projeto, atualizáveis e removidas em cascata;
+- gerador agregado de tempo, aprovação, tokens, notas e custo configurável;
+- protocolo de pesquisa e relatório técnico reproduzível documentados.
+
+### Pendência acadêmica
+
+Executar o protocolo com participantes voluntários. As metas de nota média não
+são marcadas como aprovadas enquanto não existir amostra real; avaliações
+simuladas não são usadas como evidência do TCC.
 
 ## Etapa 21 - Publicar a homologação
 

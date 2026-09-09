@@ -13,6 +13,7 @@ import { LibraryModule } from './library/library.module';
 import { MoodboardsModule } from './moodboards/moodboards.module';
 import { FinalWorksModule } from './final-works/final-works.module';
 import { PrivacyModule } from './privacy/privacy.module';
+import { EvaluationModule } from './evaluation/evaluation.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { PrivacyModule } from './privacy/privacy.module';
     MoodboardsModule,
     FinalWorksModule,
     PrivacyModule,
+    EvaluationModule,
   ],
 })
 export class AppModule {}

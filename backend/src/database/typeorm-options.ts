@@ -33,6 +33,8 @@ import { FinalWorks1788742800000 } from './migrations/1788742800000-final-works'
 import { SecurityConsent1788829200000 } from './migrations/1788829200000-security-consent';
 import { DistributedRateLimits1788915600000 } from './migrations/1788915600000-distributed-rate-limits';
 import { GroqDailyBudget1789002000000 } from './migrations/1789002000000-groq-daily-budget';
+import { EvaluationResponseEntity } from '../evaluation/evaluation-response.entity';
+import { AcademicEvaluations1789088400000 } from './migrations/1789088400000-academic-evaluations';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -68,6 +70,7 @@ export function createDataSourceOptions(
       LibraryTrackEntity,
       AudioAnalysisJobEntity,
       MoodboardEntity,
+      EvaluationResponseEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
@@ -88,6 +91,7 @@ export function createDataSourceOptions(
       SecurityConsent1788829200000,
       DistributedRateLimits1788915600000,
       GroqDailyBudget1789002000000,
+      AcademicEvaluations1789088400000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

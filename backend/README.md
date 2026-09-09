@@ -404,3 +404,14 @@ obrigatório para processar áudio. Consulte
 `docs/seguranca-privacidade-homologacao.md` para o mapa de dados e a política de
 retenção. `GET /api/privacy/usage` apresenta o consumo e
 `DELETE /api/privacy/account` remove a conta com `{ "confirmation": "EXCLUIR" }`.
+A exclusão também exige o campo `password` com a senha atual.
+
+## Avaliação acadêmica — etapa 20
+
+`GET /api/projects/:projectId/evaluation` recupera a avaliação do participante
+e `PUT` na mesma rota registra notas de 1 a 5 para relevância, utilidade e
+intenção de reutilização. As rotas exigem sessão e propriedade do projeto.
+
+O comando `pnpm evaluation:report` agrega notas, tempo até o moodboard,
+aprovação de referências, tokens e custo configurável. O protocolo completo
+está em `evaluation/README.md`.

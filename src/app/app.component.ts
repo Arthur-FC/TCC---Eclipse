@@ -14,6 +14,8 @@ import { LibraryApiService } from './services/library-api.service';
 import { Moodboard } from './models/moodboard.model';
 import { MoodboardsApiService } from './services/moodboards-api.service';
 import { PrivacyApiService } from './services/privacy-api.service';
+import { ProjectEvaluation, SaveProjectEvaluation } from './models/evaluation.model';
+import { EvaluationApiService } from './services/evaluation-api.service';
 
 @Component({
     selector: 'app-root',
@@ -55,6 +57,8 @@ export class AppComponent implements OnInit, OnDestroy {
     moodboardVersions: Moodboard[] = [];
     isMoodboardBusy = false;
     moodboardErrorMessage = '';
+    projectEvaluation: ProjectEvaluation | null = null;
+    isEvaluationBusy = false;
     private isDraftChat = false;
     private libraryPollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -65,7 +69,8 @@ export class AppComponent implements OnInit, OnDestroy {
         private readonly referencesApi: ReferencesApiService,
         private readonly libraryApi: LibraryApiService,
         private readonly moodboardsApi: MoodboardsApiService,
-        private readonly privacyApi: PrivacyApiService
+        private readonly privacyApi: PrivacyApiService,
+        private readonly evaluationApi: EvaluationApiService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -116,6 +121,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.user = null;
             this.chats = [];
             this.selectedChat = null;
+            this.projectEvaluation = null;
             this.briefing = null;
             this.references = [];
             this.curationState = null;
@@ -205,6 +211,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.user = null;
             this.chats = [];
             this.selectedChat = null;
+            this.projectEvaluation = null;
         } catch (error) {
             this.errorMessage = this.describeError(error);
         } finally {
@@ -220,6 +227,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.filter = '';
         this.isDraftChat = true;
         this.selectedChat = this.createDraftChat();
+        this.projectEvaluation = null;
     }
 
     selectChat(chat: Chat): void {
@@ -235,6 +243,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.referencesFromCache = false;
         this.moodboard = null;
         this.moodboardVersions = [];
+        this.projectEvaluation = null;
         this.moodboardErrorMessage = '';
         this.failedReplyChatId = chat.messages.at(-1)?.author === 'user'
             ? chat.id
@@ -253,6 +262,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.referencesFromCache = false;
         this.moodboard = null;
         this.moodboardVersions = [];
+        this.projectEvaluation = null;
         this.moodboardErrorMessage = '';
     }
 
@@ -273,6 +283,7 @@ export class AppComponent implements OnInit, OnDestroy {
                 this.referencesFromCache = false;
                 this.moodboard = null;
                 this.moodboardVersions = [];
+                this.projectEvaluation = null;
             }
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -562,10 +573,14 @@ export class AppComponent implements OnInit, OnDestroy {
         this.isMoodboardBusy = true;
         this.moodboardErrorMessage = '';
         try {
-            const versions = await this.moodboardsApi.list(projectId);
+            const [versions, evaluation] = await Promise.all([
+                this.moodboardsApi.list(projectId),
+                this.evaluationApi.get(projectId)
+            ]);
             if (this.selectedChat?.id !== projectId) return;
             this.moodboardVersions = versions;
             this.moodboard = versions[0] ?? null;
+            this.projectEvaluation = evaluation;
         } catch (error) {
             if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
         } finally {
@@ -624,6 +639,21 @@ export class AppComponent implements OnInit, OnDestroy {
             if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
         } finally {
             this.isMoodboardBusy = false;
+        }
+    }
+
+    async saveProjectEvaluation(value: SaveProjectEvaluation): Promise<void> {
+        if (!this.selectedChat || this.isEvaluationBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isEvaluationBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const saved = await this.evaluationApi.save(projectId, value);
+            if (this.selectedChat?.id === projectId) this.projectEvaluation = saved;
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally {
+            this.isEvaluationBusy = false;
         }
     }
 
