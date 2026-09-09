@@ -41,6 +41,10 @@ describe('GroqProvider', () => {
       code: 'rate_limited',
       message: 'O orçamento diário local da Groq foi atingido.',
     });
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('$2::integer'),
+      [500, 1_500, 100_000],
+    );
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

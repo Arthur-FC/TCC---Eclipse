@@ -296,12 +296,12 @@ export class GroqProvider implements AiProvider {
     if (!this.dataSource) return;
     const result = await this.dataSource.query<Array<{ request_count: number }>>(`
       INSERT INTO groq_usage_daily (usage_date, request_count, reserved_completion_tokens)
-      SELECT CURRENT_DATE, 1, $2 WHERE $2 <= $3
+      SELECT CURRENT_DATE, 1, $2::integer WHERE $2::integer <= $3::integer
       ON CONFLICT (usage_date) DO UPDATE
       SET request_count = groq_usage_daily.request_count + 1,
-          reserved_completion_tokens = groq_usage_daily.reserved_completion_tokens + $2
-      WHERE groq_usage_daily.request_count < $1
-        AND groq_usage_daily.reserved_completion_tokens + $2 <= $3
+          reserved_completion_tokens = groq_usage_daily.reserved_completion_tokens + $2::integer
+      WHERE groq_usage_daily.request_count < $1::integer
+        AND groq_usage_daily.reserved_completion_tokens + $2::integer <= $3::integer
       RETURNING request_count
     `, [this.dailyRequestLimit, tokens, this.dailyReservedTokenLimit]);
     const rows = Array.isArray(result[0]) ? result[0] : result;
