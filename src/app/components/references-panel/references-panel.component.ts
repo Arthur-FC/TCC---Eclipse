@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CurationAction, CurationState, MusicReference, ReferenceStatus } from '../../models/reference.model';
+import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation } from '../../models/reference.model';
 import { LibraryTrack } from '../../models/library-track.model';
 
 @Component({
@@ -18,6 +18,9 @@ export class ReferencesPanelComponent {
     @Input() libraryTracks: LibraryTrack[] = [];
     @Input() playbackTrackId: string | null = null;
     @Input() playbackUrl = '';
+    @Input() separations: StemSeparation[] = [];
+    @Input() separationBusyIds: ReadonlySet<string> = new Set();
+    @Input() stemPlaybackUrls: Record<string, string> = {};
     @Output() curationRequested = new EventEmitter<CurationAction>();
     @Output() playbackRequested = new EventEmitter<string>();
     @Output() playbackStopped = new EventEmitter<void>();
@@ -27,6 +30,9 @@ export class ReferencesPanelComponent {
         referenceId: string;
         status: ReferenceStatus;
     }>();
+    @Output() separationRequested = new EventEmitter<{ referenceId: string; libraryTrackId?: string }>();
+    @Output() separationUploadRequested = new EventEmitter<{ referenceId: string; file: File }>();
+    @Output() stemUrlRequested = new EventEmitter<{ referenceId: string; stemId: string; download: boolean }>();
     spotifyUrl = '';
     manualTitle = '';
     manualCreator = '';
@@ -36,6 +42,9 @@ export class ReferencesPanelComponent {
     showDuplicates = false;
     replacingId: string | null = null;
     replacementId = '';
+    separationTrackIds: Record<string, string> = {};
+    separationFiles: Record<string, File | null> = {};
+    separationConsents: Record<string, boolean> = {};
 
     get readyTracks(): LibraryTrack[] { return this.libraryTracks.filter(track => track.status === 'ready'); }
     get visibleReferences(): MusicReference[] {
@@ -52,6 +61,30 @@ export class ReferencesPanelComponent {
     }
     get replacements(): MusicReference[] {
         return this.references.filter(ref => ref.id !== this.replacingId && ref.status !== 'approved' && (ref.source !== 'library' || ref.libraryTrackId));
+    }
+    separationFor(referenceId: string): StemSeparation | undefined { return this.separations.find(item => item.referenceId === referenceId); }
+    isSeparationBusy(referenceId: string): boolean {
+        const status = this.separationFor(referenceId)?.status;
+        return this.separationBusyIds.has(referenceId) || status === 'queued' || status === 'processing';
+    }
+    stemLabel(type: string): string { return type === 'vocals' ? 'Voz' : 'Instrumental'; }
+    stemSize(bytes: number): string { return `${(bytes / 1_048_576).toFixed(1)} MB`; }
+    chooseSeparationFile(referenceId: string, event: Event): void {
+        this.separationFiles[referenceId] = (event.target as HTMLInputElement).files?.[0] ?? null;
+    }
+    startSeparation(reference: MusicReference): void {
+        if (this.isSeparationBusy(reference.id)) return;
+        if (reference.libraryTrackId) {
+            this.separationRequested.emit({ referenceId: reference.id });
+            return;
+        }
+        const file = this.separationFiles[reference.id];
+        if (file && this.separationConsents[reference.id]) {
+            this.separationUploadRequested.emit({ referenceId: reference.id, file });
+            return;
+        }
+        const trackId = this.separationTrackIds[reference.id];
+        if (trackId) this.separationRequested.emit({ referenceId: reference.id, libraryTrackId: trackId });
     }
     requestCuration(): void { if (!this.busy) this.curationRequested.emit({ type: 'curate' }); }
     addManual(): void {

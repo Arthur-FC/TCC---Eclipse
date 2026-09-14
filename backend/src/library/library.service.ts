@@ -306,6 +306,13 @@ export class LibraryService {
 
   async remove(ownerId: string, trackId: string): Promise<void> {
     const track = await this.getOwned(ownerId, trackId);
+    const stemRows = await this.tracksRepository.manager.query<Array<{ object_key: string }>>(`
+      SELECT rs.object_key FROM reference_stems rs
+      JOIN stem_separations ss ON ss.id = rs.separation_id
+      WHERE ss.input_track_id = $1
+    `, [trackId]);
+    const stems = Array.isArray(stemRows[0]) ? stemRows[0] : stemRows;
+    for (const stem of stems) await this.storage.deleteObject(stem.object_key);
     await this.storage.deleteObject(track.objectKey);
     await this.tracksRepository.remove(track);
   }

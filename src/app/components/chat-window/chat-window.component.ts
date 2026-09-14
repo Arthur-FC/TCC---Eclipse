@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { Chat } from '../../models/chat.model';
 import { Briefing, BriefingData } from '../../models/briefing.model';
-import { CurationAction, CurationState, MusicReference, ReferenceStatus } from '../../models/reference.model';
+import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation } from '../../models/reference.model';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
 import { Moodboard } from '../../models/moodboard.model';
 import { ProjectEvaluation, SaveProjectEvaluation } from '../../models/evaluation.model';
@@ -36,6 +36,9 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() referenceSearchQuery = '';
     @Input() referencesFromCache = false;
     @Input() curationState: CurationState | null = null;
+    @Input() stemSeparations: StemSeparation[] = [];
+    @Input() stemSeparationBusyIds: ReadonlySet<string> = new Set();
+    @Input() stemPlaybackUrls: Record<string, string> = {};
     @Output() curationRequested = new EventEmitter<CurationAction>();
     @Input() libraryTracks: LibraryTrack[] = [];
     @Input() libraryBusy = false;
@@ -64,6 +67,9 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
         referenceId: string;
         status: ReferenceStatus;
     }>();
+    @Output() stemSeparationRequested = new EventEmitter<{ referenceId: string; libraryTrackId?: string }>();
+    @Output() stemSeparationUploadRequested = new EventEmitter<{ referenceId: string; file: File }>();
+    @Output() stemUrlRequested = new EventEmitter<{ referenceId: string; stemId: string; download: boolean }>();
     @Output() libraryRequested = new EventEmitter<void>();
     @Output() libraryUploadRequested = new EventEmitter<TrackUploadRequest>();
     @Output() libraryPlaybackRequested = new EventEmitter<string>();

@@ -14,6 +14,7 @@ import { MoodboardsModule } from './moodboards/moodboards.module';
 import { FinalWorksModule } from './final-works/final-works.module';
 import { PrivacyModule } from './privacy/privacy.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
+import { StemSeparationModule } from './stem-separation/stem-separation.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { EvaluationModule } from './evaluation/evaluation.module';
     FinalWorksModule,
     PrivacyModule,
     EvaluationModule,
+    StemSeparationModule,
   ],
 })
 export class AppModule {}

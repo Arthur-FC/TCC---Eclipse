@@ -7,7 +7,7 @@ import { ChatService, ChatStreamPhase } from './services/chat.service';
 import { AssistantStreamError } from './services/conversations-api.service';
 import { Briefing, BriefingData } from './models/briefing.model';
 import { BriefingsApiService } from './services/briefings-api.service';
-import { CurationAction, CurationState, MusicReference, ReferenceStatus } from './models/reference.model';
+import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation } from './models/reference.model';
 import { ReferencesApiService } from './services/references-api.service';
 import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from './models/library-track.model';
 import { LibraryApiService } from './services/library-api.service';
@@ -46,6 +46,9 @@ export class AppComponent implements OnInit, OnDestroy {
     referenceSearchQuery = '';
     referencesFromCache = false;
     curationState: CurationState | null = null;
+    stemSeparations: StemSeparation[] = [];
+    stemSeparationBusyIds = new Set<string>();
+    stemPlaybackUrls: Record<string, string> = {};
     libraryTracks: LibraryTrack[] = [];
     isLibraryBusy = false;
     libraryErrorMessage = '';
@@ -61,6 +64,7 @@ export class AppComponent implements OnInit, OnDestroy {
     isEvaluationBusy = false;
     private isDraftChat = false;
     private libraryPollTimer: ReturnType<typeof setTimeout> | null = null;
+    private stemPollTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(
         private readonly authService: AuthService,
@@ -88,6 +92,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.stopLibraryPolling();
+        this.stopStemPolling();
     }
 
     async authenticate(request: AuthRequest): Promise<void> {
@@ -124,6 +129,9 @@ export class AppComponent implements OnInit, OnDestroy {
             this.projectEvaluation = null;
             this.briefing = null;
             this.references = [];
+            this.stemSeparations = [];
+            this.stemSeparationBusyIds = new Set();
+            this.stemPlaybackUrls = {};
             this.curationState = null;
             this.referencesFromCache = false;
             this.libraryTracks = [];
@@ -134,6 +142,7 @@ export class AppComponent implements OnInit, OnDestroy {
             this.moodboardVersions = [];
             this.moodboardErrorMessage = '';
             this.stopLibraryPolling();
+            this.stopStemPolling();
             this.isDraftChat = false;
         } catch (error) {
             this.errorMessage = this.describeError(error);
@@ -208,6 +217,7 @@ export class AppComponent implements OnInit, OnDestroy {
         try {
             await this.privacyApi.deleteAccount(password);
             this.stopLibraryPolling();
+            this.stopStemPolling();
             this.user = null;
             this.chats = [];
             this.selectedChat = null;
@@ -231,6 +241,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     selectChat(chat: Chat): void {
+        this.stopStemPolling();
         this.curationState = null;
         this.errorMessage = '';
         this.isDraftChat = false;
@@ -238,6 +249,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.briefing = null;
         this.briefingErrorMessage = '';
         this.references = [];
+        this.stemSeparations = [];
+        this.stemSeparationBusyIds = new Set();
+        this.stemPlaybackUrls = {};
         this.referencesErrorMessage = '';
         this.referenceSearchQuery = '';
         this.referencesFromCache = false;
@@ -251,12 +265,16 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     goHome(): void {
+        this.stopStemPolling();
         this.errorMessage = '';
         this.isDraftChat = false;
         this.selectedChat = null;
         this.briefing = null;
         this.briefingErrorMessage = '';
         this.references = [];
+        this.stemSeparations = [];
+        this.stemSeparationBusyIds = new Set();
+        this.stemPlaybackUrls = {};
         this.referencesErrorMessage = '';
         this.referenceSearchQuery = '';
         this.referencesFromCache = false;
@@ -460,11 +478,16 @@ export class AppComponent implements OnInit, OnDestroy {
         this.referencesErrorMessage = '';
         try {
             const projectId = this.selectedChat.id;
-            const [state, tracks] = await Promise.all([this.referencesApi.curation(projectId), this.libraryApi.list()]);
+            const [state, tracks, separations] = await Promise.all([
+                this.referencesApi.curation(projectId),
+                this.libraryApi.list(),
+                this.referencesApi.listSeparations(projectId)
+            ]);
             if (this.selectedChat?.id !== projectId) return;
             this.curationState = state;
             this.references = state.items;
             this.libraryTracks = tracks;
+            this.stemSeparations = separations;
             this.referenceSearchQuery =
                 this.references.find(reference => reference.source === 'youtube')
                     ?.searchQuery ?? '';
@@ -472,6 +495,69 @@ export class AppComponent implements OnInit, OnDestroy {
             this.referencesErrorMessage = this.describeError(error);
         } finally {
             this.isReferencesBusy = false;
+            this.scheduleStemPolling();
+        }
+    }
+
+    async startStemSeparation(event: { referenceId: string; libraryTrackId?: string }): Promise<void> {
+        if (!this.selectedChat || this.stemSeparationBusyIds.has(event.referenceId)) return;
+        const projectId = this.selectedChat.id;
+        this.setStemBusy(event.referenceId, true);
+        this.referencesErrorMessage = '';
+        try {
+            const separation = await this.referencesApi.startSeparation(projectId, event.referenceId, event.libraryTrackId);
+            if (this.selectedChat?.id !== projectId) return;
+            this.upsertStemSeparation(separation);
+            this.scheduleStemPolling();
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.referencesErrorMessage = this.describeError(error);
+        } finally {
+            this.setStemBusy(event.referenceId, false);
+        }
+    }
+
+    async uploadAndStartStemSeparation(event: { referenceId: string; file: File }): Promise<void> {
+        if (!this.selectedChat || this.stemSeparationBusyIds.has(event.referenceId)) return;
+        const reference = this.references.find(item => item.id === event.referenceId);
+        if (!reference) return;
+        const projectId = this.selectedChat.id;
+        this.setStemBusy(event.referenceId, true);
+        this.referencesErrorMessage = '';
+        try {
+            const track = await this.libraryApi.upload({
+                file: event.file,
+                title: reference.title,
+                artist: reference.creator,
+                notes: `Áudio autorizado para separar a referência ${reference.title}.`,
+                processingConsent: true
+            });
+            this.libraryTracks = [track, ...this.libraryTracks.filter(item => item.id !== track.id)];
+            const separation = await this.referencesApi.startSeparation(projectId, event.referenceId, track.id);
+            if (this.selectedChat?.id !== projectId) return;
+            this.upsertStemSeparation(separation);
+            this.scheduleLibraryPolling();
+            this.scheduleStemPolling();
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.referencesErrorMessage = this.describeError(error);
+        } finally {
+            this.setStemBusy(event.referenceId, false);
+        }
+    }
+
+    async handleStemUrl(event: { referenceId: string; stemId: string; download: boolean }): Promise<void> {
+        if (!this.selectedChat) return;
+        this.referencesErrorMessage = '';
+        try {
+            const result = await this.referencesApi.stemUrl(this.selectedChat.id, event.referenceId, event.stemId, event.download);
+            if (event.download) {
+                const anchor = document.createElement('a');
+                anchor.href = result.url;
+                anchor.click();
+            } else {
+                this.stemPlaybackUrls = { ...this.stemPlaybackUrls, [event.stemId]: result.url };
+            }
+        } catch (error) {
+            this.referencesErrorMessage = this.describeError(error);
         }
     }
 
@@ -796,6 +882,43 @@ export class AppComponent implements OnInit, OnDestroy {
     private stopLibraryPolling(): void {
         if (this.libraryPollTimer) clearTimeout(this.libraryPollTimer);
         this.libraryPollTimer = null;
+    }
+
+    private upsertStemSeparation(separation: StemSeparation): void {
+        this.stemSeparations = [
+            ...this.stemSeparations.filter(item => item.id !== separation.id),
+            separation
+        ];
+    }
+
+    private setStemBusy(referenceId: string, busy: boolean): void {
+        const next = new Set(this.stemSeparationBusyIds);
+        busy ? next.add(referenceId) : next.delete(referenceId);
+        this.stemSeparationBusyIds = next;
+    }
+
+    private scheduleStemPolling(): void {
+        this.stopStemPolling();
+        if (!this.selectedChat || !this.stemSeparations.some(item => item.status === 'queued' || item.status === 'processing')) return;
+        this.stemPollTimer = setTimeout(() => void this.pollStemSeparations(), 2_000);
+    }
+
+    private async pollStemSeparations(): Promise<void> {
+        const projectId = this.selectedChat?.id;
+        if (!projectId) return;
+        try {
+            const separations = await this.referencesApi.listSeparations(projectId);
+            if (this.selectedChat?.id === projectId) this.stemSeparations = separations;
+        } catch {
+            // Uma nova abertura da aba tentará novamente.
+        } finally {
+            if (this.selectedChat?.id === projectId) this.scheduleStemPolling();
+        }
+    }
+
+    private stopStemPolling(): void {
+        if (this.stemPollTimer) clearTimeout(this.stemPollTimer);
+        this.stemPollTimer = null;
     }
 
     private async refreshChats(): Promise<void> {

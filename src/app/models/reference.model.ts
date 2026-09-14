@@ -38,6 +38,24 @@ export interface CurationState {
     notices: string[];
 }
 
+export type StemSeparationStatus = 'queued' | 'processing' | 'completed' | 'failed';
+export type StemType = 'vocals' | 'instrumental';
+
+export interface StemSeparation {
+    id: string;
+    referenceId: string;
+    inputTrackId: string;
+    status: StemSeparationStatus;
+    progress: number;
+    modelName: string;
+    modelVersion: string;
+    errorMessage: string | null;
+    completedAt: string | null;
+    stems: Array<{ id: string; type: StemType; sizeBytes: number }>;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export type CurationAction =
     | { type: 'curate' }
     | { type: 'manual'; title: string; creator: string; url: string; description: string }

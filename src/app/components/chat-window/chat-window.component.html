@@ -73,12 +73,18 @@
         [libraryTracks]="libraryTracks"
         [playbackTrackId]="libraryPlaybackTrackId"
         [playbackUrl]="libraryPlaybackUrl"
+        [separations]="stemSeparations"
+        [separationBusyIds]="stemSeparationBusyIds"
+        [stemPlaybackUrls]="stemPlaybackUrls"
         (curationRequested)="curationRequested.emit($event)"
         (playbackRequested)="libraryPlaybackRequested.emit($event)"
         (playbackStopped)="libraryPlaybackStopped.emit()"
         (searchRequested)="referencesSearchRequested.emit($event)"
         (spotifyAddRequested)="spotifyReferenceAddRequested.emit($event)"
         (statusChanged)="referenceStatusChanged.emit($event)"
+        (separationRequested)="stemSeparationRequested.emit($event)"
+        (separationUploadRequested)="stemSeparationUploadRequested.emit($event)"
+        (stemUrlRequested)="stemUrlRequested.emit($event)"
     ></app-references-panel>
 
     <app-library-panel

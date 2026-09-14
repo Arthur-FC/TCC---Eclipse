@@ -35,6 +35,10 @@ import { DistributedRateLimits1788915600000 } from './migrations/1788915600000-d
 import { GroqDailyBudget1789002000000 } from './migrations/1789002000000-groq-daily-budget';
 import { EvaluationResponseEntity } from '../evaluation/evaluation-response.entity';
 import { AcademicEvaluations1789088400000 } from './migrations/1789088400000-academic-evaluations';
+import { StemSeparationEntity } from '../stem-separation/stem-separation.entity';
+import { ReferenceStemEntity } from '../stem-separation/reference-stem.entity';
+import { StemSeparationJobEntity } from '../stem-separation/stem-separation-job.entity';
+import { StemSeparation1789174800000 } from './migrations/1789174800000-stem-separation';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -71,6 +75,9 @@ export function createDataSourceOptions(
       AudioAnalysisJobEntity,
       MoodboardEntity,
       EvaluationResponseEntity,
+      StemSeparationEntity,
+      ReferenceStemEntity,
+      StemSeparationJobEntity,
     ],
     migrations: [
       InitialAuthSchema1756152000000,
@@ -92,6 +99,7 @@ export function createDataSourceOptions(
       DistributedRateLimits1788915600000,
       GroqDailyBudget1789002000000,
       AcademicEvaluations1789088400000,
+      StemSeparation1789174800000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

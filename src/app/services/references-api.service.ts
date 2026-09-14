@@ -7,7 +7,8 @@ import {
     CurationAction,
     CurationState,
     ReferenceSearchResponse,
-    ReferenceStatus
+    ReferenceStatus,
+    StemSeparation
 } from '../models/reference.model';
 
 @Injectable({ providedIn: 'root' })
@@ -72,5 +73,27 @@ export class ReferencesApiService {
                 { withCredentials: true }
             )
         );
+    }
+
+    listSeparations(projectId: string): Promise<StemSeparation[]> {
+        return firstValueFrom(this.http.get<StemSeparation[]>(
+            `${this.projectsUrl}/${projectId}/references/separations`,
+            { withCredentials: true }
+        ));
+    }
+
+    startSeparation(projectId: string, referenceId: string, libraryTrackId?: string): Promise<StemSeparation> {
+        return firstValueFrom(this.http.post<StemSeparation>(
+            `${this.projectsUrl}/${projectId}/references/${referenceId}/separation`,
+            libraryTrackId ? { libraryTrackId } : {},
+            { withCredentials: true }
+        ));
+    }
+
+    stemUrl(projectId: string, referenceId: string, stemId: string, download = false): Promise<{ url: string; expiresInSeconds: number }> {
+        return firstValueFrom(this.http.get<{ url: string; expiresInSeconds: number }>(
+            `${this.projectsUrl}/${projectId}/references/${referenceId}/stems/${stemId}/url`,
+            { params: download ? { download: 'true' } : {}, withCredentials: true }
+        ));
     }
 }

@@ -135,6 +135,54 @@
                         {{ reference.status === 'rejected' ? 'Rejeitada' : 'Rejeitar' }}
                     </button>
                 </div>
+                <section *ngIf="reference.status === 'approved'" class="stem-separation" aria-label="Separação de voz e instrumental">
+                    <div class="stem-heading">
+                        <strong>Separação de faixas</strong>
+                        <span *ngIf="separationFor(reference.id) as separation">
+                            {{ separation.status === 'completed' ? 'Concluída' : separation.status === 'failed' ? 'Falhou' : separation.status === 'processing' ? 'Processando' : 'Na fila' }}
+                        </span>
+                    </div>
+                    <ng-container *ngIf="separationFor(reference.id) as separation; else separationStart">
+                        <div *ngIf="separation.status === 'queued' || separation.status === 'processing'" class="stem-progress" role="status">
+                            <progress [value]="separation.progress" max="100"></progress>
+                            <small>{{ separation.progress }}%</small>
+                        </div>
+                        <div *ngIf="separation.status === 'failed'" class="stem-error">
+                            <p>{{ separation.errorMessage || 'Não foi possível separar as faixas.' }}</p>
+                            <button type="button" [disabled]="isSeparationBusy(reference.id)" (click)="separationRequested.emit({ referenceId: reference.id, libraryTrackId: separation.inputTrackId })">Tentar novamente</button>
+                        </div>
+                        <div *ngIf="separation.status === 'completed'" class="stem-results">
+                            <div *ngFor="let stem of separation.stems" class="stem-result">
+                                <span><strong>{{ stemLabel(stem.type) }}</strong><small>{{ stemSize(stem.sizeBytes) }}</small></span>
+                                <button type="button" (click)="stemUrlRequested.emit({ referenceId: reference.id, stemId: stem.id, download: false })">Reproduzir</button>
+                                <button type="button" (click)="stemUrlRequested.emit({ referenceId: reference.id, stemId: stem.id, download: true })">Baixar</button>
+                                <audio *ngIf="stemPlaybackUrls[stem.id]" [src]="stemPlaybackUrls[stem.id]" controls autoplay></audio>
+                            </div>
+                        </div>
+                    </ng-container>
+                    <ng-template #separationStart>
+                        <p>Separe esta música em voz e instrumental.</p>
+                        <ng-container *ngIf="!reference.libraryTrackId">
+                            <label>Enviar MP3 ou WAV autorizado
+                                <input type="file" accept=".mp3,.wav,audio/mpeg,audio/wav" [disabled]="isSeparationBusy(reference.id)" (change)="chooseSeparationFile(reference.id, $event)" />
+                            </label>
+                            <label class="stem-consent">
+                                <input type="checkbox" [(ngModel)]="separationConsents[reference.id]" />
+                                Confirmo que posso processar este áudio.
+                            </label>
+                            <span class="stem-or">ou selecione um áudio pronto do acervo</span>
+                            <select [(ngModel)]="separationTrackIds[reference.id]" [disabled]="isSeparationBusy(reference.id)">
+                                <option value="">Selecione uma faixa</option>
+                                <option *ngFor="let track of readyTracks" [value]="track.id">{{ track.title }}</option>
+                            </select>
+                        </ng-container>
+                        <button
+                            type="button"
+                            [disabled]="isSeparationBusy(reference.id) || (!reference.libraryTrackId && !(separationTrackIds[reference.id] || (separationFiles[reference.id] && separationConsents[reference.id])))"
+                            (click)="startSeparation(reference)"
+                        >Separar voz e instrumental</button>
+                    </ng-template>
+                </section>
                 <button type="button" class="replace-button" [disabled]="busy" (click)="replacingId = reference.id; replacementId = ''">Substituir</button>
                 <div *ngIf="replacingId === reference.id" class="replacement-form">
                     <label>Trocar por

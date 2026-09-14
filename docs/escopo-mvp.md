@@ -131,6 +131,14 @@ Para arquivos enviados pelo próprio usuário, extrair:
 
 Valores estimados devem ser apresentados como estimativas, e não como fatos absolutos.
 
+### RF-08A - Separação de voz e instrumental
+
+- Disponibilizar a ação somente após a aprovação da referência.
+- Processar localmente arquivos do acervo ou MP3/WAV enviados com autorização.
+- Separar voz e instrumental em segundo plano.
+- Permitir reprodução e download privado de cada stem.
+- Não baixar áudio de referências do YouTube ou Spotify.
+
 ### RF-09 - Busca semântica no acervo
 
 - Permitir pesquisas por descrição livre, como "melancólico, intimista e com violão".
@@ -206,9 +214,9 @@ Estas funcionalidades podem entrar no MVP apenas se as obrigatórias estiverem c
 
 - Geração automática de música ou áudio pela IA.
 - Clonagem de voz ou imitação de artista.
-- Separação de stems com Moises, Music AI ou AudioShake.
-- Execução local de Spleeter ou Demucs.
-- Player multipista para stems.
+- Separação avançada em bateria, baixo e outros instrumentos.
+- Integração com serviços comerciais de separação de stems.
+- Mixer multipista com controle de volume e sincronização.
 - Integração com iMusica.
 - Busca avançada e reprodução controlada pelo Spotify.
 - Aplicativos nativos para Android ou iOS.

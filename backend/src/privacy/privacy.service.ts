@@ -92,7 +92,7 @@ export class PrivacyService {
   }
 
   async exportData(ownerId: string): Promise<Record<string, unknown>> {
-    const [profile, projects, conversations, messages, briefings, references, moodboards, library, evaluations] = await Promise.all([
+    const [profile, projects, conversations, messages, briefings, references, moodboards, library, evaluations, stemSeparations] = await Promise.all([
       this.dataSource.query('SELECT id, name, email, status, created_at, updated_at FROM users WHERE id = $1', [ownerId]),
       this.dataSource.query('SELECT id, title, description, archived_at, created_at, updated_at FROM projects WHERE owner_id = $1 ORDER BY created_at', [ownerId]),
       this.dataSource.query('SELECT c.id, c.project_id, c.title, c.created_at, c.updated_at FROM conversations c JOIN projects p ON p.id = c.project_id WHERE p.owner_id = $1 ORDER BY c.created_at', [ownerId]),
@@ -102,8 +102,20 @@ export class PrivacyService {
       this.dataSource.query('SELECT m.id, m.project_id, m.version, m.data, m.reference_ids, m.created_at FROM moodboards m JOIN projects p ON p.id = m.project_id WHERE p.owner_id = $1 ORDER BY m.created_at', [ownerId]),
       this.dataSource.query('SELECT id, title, artist, notes, original_filename, content_type, size_bytes, status, processing_consent_at, processing_consent_version, uploaded_at, created_at, updated_at FROM library_tracks WHERE owner_id = $1 ORDER BY created_at', [ownerId]),
       this.dataSource.query('SELECT project_id, reference_relevance, moodboard_utility, reuse_intent, comments, created_at, updated_at FROM evaluation_responses WHERE owner_id = $1 ORDER BY created_at', [ownerId]),
+      this.dataSource.query(`
+        SELECT ss.id, ss.reference_id, ss.input_track_id, ss.status, ss.progress,
+               ss.model_name, ss.model_version, ss.error_message, ss.completed_at,
+               COALESCE(json_agg(json_build_object('id', rs.id, 'type', rs.type, 'sizeBytes', rs.size_bytes))
+                 FILTER (WHERE rs.id IS NOT NULL), '[]') AS stems
+        FROM stem_separations ss
+        JOIN music_references mr ON mr.id = ss.reference_id
+        JOIN projects p ON p.id = mr.project_id
+        LEFT JOIN reference_stems rs ON rs.separation_id = ss.id
+        WHERE p.owner_id = $1
+        GROUP BY ss.id ORDER BY ss.created_at
+      `, [ownerId]),
     ]);
-    return { exportedAt: new Date().toISOString(), profile: profile[0] ?? null, projects, conversations, messages, briefings, references, moodboards, library, evaluations };
+    return { exportedAt: new Date().toISOString(), profile: profile[0] ?? null, projects, conversations, messages, briefings, references, moodboards, library, evaluations, stemSeparations };
   }
 
   async updateProfile(ownerId: string, dto: UpdateProfileDto): Promise<{ id: string; name: string; email: string; createdAt: Date }> {
@@ -132,6 +144,14 @@ export class PrivacyService {
       throw new NotFoundException('Conta não encontrada.');
     }
     const tracks = await this.tracks.findBy({ ownerId });
+    const stemResult = await this.dataSource.query<Array<{ object_key: string }>>(`
+      SELECT rs.object_key FROM reference_stems rs
+      JOIN stem_separations ss ON ss.id = rs.separation_id
+      JOIN library_tracks lt ON lt.id = ss.input_track_id
+      WHERE lt.owner_id = $1
+    `, [ownerId]);
+    const stems = Array.isArray(stemResult[0]) ? stemResult[0] : stemResult;
+    for (const stem of stems) await this.storage.deleteObject(stem.object_key);
     for (const track of tracks) {
       await this.storage.deleteObject(track.objectKey);
     }

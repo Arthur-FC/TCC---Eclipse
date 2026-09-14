@@ -60,6 +60,9 @@ Variáveis disponíveis nesta etapa:
 | `STORAGE_FORCE_PATH_STYLE` | `true` | Compatibilidade de endereçamento com MinIO |
 | `STORAGE_SIGNED_URL_TTL_SECONDS` | `900` | Validade das URLs temporárias |
 | `AUDIO_MAX_FILE_SIZE_BYTES` | `52428800` | Limite de 50 MB por arquivo |
+| `STEM_SEPARATOR_WORKER_ENABLED` | `true` | Ativa o worker local de separação de voz e instrumental |
+| `STEM_SEPARATOR_COMMAND` | autodetectado | Executável Python que possui o Demucs instalado |
+| `STEM_SEPARATOR_MODEL` | `htdemucs` | Modelo usado para separar os stems |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal.
 
@@ -390,6 +393,37 @@ AUDIO_ANALYSIS_POLL_INTERVAL_MS=1000
 ```
 
 O analisador usa `music-metadata` para metadados e `audio-decode` para decodificação MP3/WAV em JavaScript/WASM. BPM é estimado por autocorrelação do envelope de onsets; tonalidade usa energia por classe de altura e perfis maior/menor. Essas estimativas são auxiliares e não devem ser tratadas como medição musical absoluta.
+
+## Separação de voz e instrumental
+
+Depois que uma referência é aprovada, a aba **Referências** permite separar voz e instrumental. Uma referência do acervo usa o próprio arquivo; YouTube, Spotify e links manuais exigem um MP3/WAV enviado e autorizado pelo usuário. O sistema nunca baixa áudio dessas plataformas.
+
+Instale o worker Python na pasta `backend` e depois ative-o no `.env`:
+
+```powershell
+py -m venv .venv-stems
+.\.venv-stems\Scripts\python.exe -m pip install -r requirements-stems.txt
+```
+
+```env
+STEM_SEPARATOR_WORKER_ENABLED=true
+STEM_SEPARATOR_COMMAND=
+STEM_SEPARATOR_MODEL=htdemucs
+```
+
+Com o comando vazio, o backend detecta automaticamente `.venv-stems` quando é iniciado na raiz ou na pasta `backend`. O runner usa SoundFile para WAV e Miniaudio para MP3, sem exigir FFmpeg. Rode `corepack pnpm db:migration:run` antes de reiniciar a API. O primeiro processamento pode baixar os pesos do modelo. Os stems WAV ficam no MinIO privado e são acessados por URLs temporárias de reprodução ou download.
+
+Para validar o motor com arquivos sintéticos WAV e MP3:
+
+```powershell
+corepack pnpm stems:smoke
+```
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| `GET` | `/api/projects/:projectId/references/separations` | Listar estado e stems do projeto |
+| `POST` | `/api/projects/:projectId/references/:referenceId/separation` | Iniciar ou repetir a separação |
+| `GET` | `/api/projects/:projectId/references/:referenceId/stems/:stemId/url` | Gerar URL temporária; `?download=true` baixa o arquivo |
 A etapa de obra final usa `POST /projects/:projectId/final-works/uploads`, seguido
 do envio `PUT` para a URL assinada e de
 `POST /projects/:projectId/final-works/:trackId/complete`. O registro recebe uma

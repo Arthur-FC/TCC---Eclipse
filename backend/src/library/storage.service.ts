@@ -88,6 +88,45 @@ export class StorageService {
     };
   }
 
+  async createDownloadUrl(
+    key: string,
+    filename: string,
+    contentType: string,
+  ): Promise<{ url: string; expiresInSeconds: number }> {
+    await this.ensureBucket();
+    const safeFilename = filename.replace(/["\\\r\n]/g, '_');
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ResponseContentType: contentType,
+      ResponseContentDisposition: `attachment; filename="${safeFilename}"`,
+    });
+    return {
+      url: await getSignedUrl(this.client, command, {
+        expiresIn: this.signedUrlTtlSeconds,
+      }),
+      expiresInSeconds: this.signedUrlTtlSeconds,
+    };
+  }
+
+  async putObjectBytes(
+    key: string,
+    bytes: Uint8Array,
+    contentType: string,
+  ): Promise<void> {
+    await this.ensureBucket();
+    try {
+      await this.client.send(new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: bytes,
+        ContentType: contentType,
+      }));
+    } catch {
+      throw new BadGatewayException('Não foi possível salvar o áudio processado.');
+    }
+  }
+
   async inspectObject(key: string): Promise<{
     sizeBytes: number;
     contentType: string;
