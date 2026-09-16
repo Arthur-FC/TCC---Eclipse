@@ -11,9 +11,9 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export interface ProviderUsageResponse {
   period: string;
-  groq: { promptTokens: number; completionTokens: number; requests: number; reservedCompletionTokens: number; perResponseLimit: number; dailyRequestLimit: number; dailyReservedCompletionTokenLimit: number };
-  cloudflare: { requests: number; texts: number; dailyRequestLimit: number; remainingRequests: number };
-  youtube: { searches: number; units: number; dailySearchLimit: number; dailyGeneralLimit: number; remainingSearches: number; remainingUnits: number };
+  scope: 'personal';
+  groq: { promptTokens: number; completionTokens: number; requests: number; perResponseLimit: number };
+  sharedProviderQuotas: { visible: false; reason: string };
   externalBillingAllowed: false;
 }
 
@@ -30,10 +30,12 @@ export class PrivacyService {
   ) {}
 
   async usage(ownerId: string): Promise<ProviderUsageResponse> {
-    const [groqResult, youtubeResult, cloudflareResult, groqDailyResult] = await Promise.all([
-      this.dataSource.query<Array<{ prompt: string; completion: string }>>(`
+    const groqResult = await this.dataSource.query<Array<{ prompt: string; completion: string; requests: string }>>(`
       SELECT COALESCE(SUM(usage.prompt_tokens), 0) AS prompt,
-             COALESCE(SUM(usage.completion_tokens), 0) AS completion
+             COALESCE(SUM(usage.completion_tokens), 0) AS completion,
+             COUNT(*) FILTER (
+               WHERE usage.prompt_tokens IS NOT NULL OR usage.completion_tokens IS NOT NULL
+             ) AS requests
       FROM (
         SELECT m.prompt_tokens, m.completion_tokens, m.created_at
         FROM messages m JOIN conversations c ON c.id = m.conversation_id JOIN projects p ON p.id = c.project_id
@@ -45,47 +47,20 @@ export class PrivacyService {
         SELECT mb.prompt_tokens, mb.completion_tokens, mb.created_at
         FROM moodboards mb JOIN projects p ON p.id = mb.project_id WHERE p.owner_id = $1
       ) usage WHERE usage.created_at >= CURRENT_DATE
-      `, [ownerId]),
-      this.dataSource.query<Array<{ searches: string; units: string }>>(`
-        SELECT COALESCE(search_calls, 0) AS searches, COALESCE(general_units, 0) AS units
-        FROM youtube_quota_usage WHERE usage_date = CURRENT_DATE
-      `),
-      this.dataSource.query<Array<{ requests: string; texts: string }>>(`
-        SELECT COALESCE(request_count, 0) AS requests, COALESCE(text_count, 0) AS texts
-        FROM embedding_usage_daily WHERE usage_date = CURRENT_DATE
-      `),
-      this.dataSource.query<Array<{ requests: string; reserved: string }>>(`
-        SELECT COALESCE(request_count, 0) AS requests,
-               COALESCE(reserved_completion_tokens, 0) AS reserved
-        FROM groq_usage_daily WHERE usage_date = CURRENT_DATE
-      `),
-    ]);
+      `, [ownerId]);
     const groqRows = Array.isArray(groqResult[0]) ? groqResult[0] : groqResult;
-    const youtubeRows = Array.isArray(youtubeResult[0]) ? youtubeResult[0] : youtubeResult;
-    const cloudflareRows = Array.isArray(cloudflareResult[0]) ? cloudflareResult[0] : cloudflareResult;
-    const groqDailyRows = Array.isArray(groqDailyResult[0]) ? groqDailyResult[0] : groqDailyResult;
-    const searchLimit = this.config.get<number>('YOUTUBE_DAILY_SEARCH_LIMIT', 90);
-    const unitLimit = this.config.get<number>('YOUTUBE_DAILY_GENERAL_LIMIT', 9_000);
-    const cloudflareLimit = this.config.get<number>('CLOUDFLARE_DAILY_REQUEST_LIMIT', 1_000);
-    const searches = Number(youtubeRows[0]?.searches ?? 0);
-    const units = Number(youtubeRows[0]?.units ?? 0);
-    const requests = Number(cloudflareRows[0]?.requests ?? 0);
     return {
       period: new Date().toISOString().slice(0, 10),
+      scope: 'personal',
       groq: {
         promptTokens: Number(groqRows[0]?.prompt ?? 0),
         completionTokens: Number(groqRows[0]?.completion ?? 0),
-        requests: Number(groqDailyRows[0]?.requests ?? 0),
-        reservedCompletionTokens: Number(groqDailyRows[0]?.reserved ?? 0),
+        requests: Number(groqRows[0]?.requests ?? 0),
         perResponseLimit: this.config.get<number>('AI_MAX_COMPLETION_TOKENS', 900),
-        dailyRequestLimit: this.config.get<number>('GROQ_DAILY_REQUEST_LIMIT', 500),
-        dailyReservedCompletionTokenLimit: this.config.get<number>('GROQ_DAILY_RESERVED_COMPLETION_TOKENS', 100_000),
       },
-      cloudflare: { requests, texts: Number(cloudflareRows[0]?.texts ?? 0), dailyRequestLimit: cloudflareLimit, remainingRequests: Math.max(0, cloudflareLimit - requests) },
-      youtube: {
-        searches, units, dailySearchLimit: searchLimit, dailyGeneralLimit: unitLimit,
-        remainingSearches: Math.max(0, searchLimit - searches),
-        remainingUnits: Math.max(0, unitLimit - units),
+      sharedProviderQuotas: {
+        visible: false,
+        reason: 'Cotas compartilhadas não fazem parte da área pessoal.',
       },
       externalBillingAllowed: false,
     };

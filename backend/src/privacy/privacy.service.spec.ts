@@ -12,11 +12,7 @@ describe('PrivacyService', () => {
     const storage = { deleteObject: jest.fn().mockResolvedValue(undefined) };
     const userDelete = jest.fn().mockResolvedValue(undefined);
     const dataSource = {
-      query: jest.fn()
-        .mockResolvedValueOnce([{ prompt: '120', completion: '45' }])
-        .mockResolvedValueOnce([{ searches: '4', units: '500' }])
-        .mockResolvedValueOnce([{ requests: '8', texts: '9' }])
-        .mockResolvedValueOnce([{ requests: '3', reserved: '2700' }]),
+      query: jest.fn().mockResolvedValue([]),
       transaction: jest.fn(async (callback: (manager: unknown) => Promise<void>) => callback({
         getRepository: () => ({ delete: userDelete }),
       })),
@@ -34,6 +30,7 @@ describe('PrivacyService', () => {
       storage,
       userDelete,
       auth,
+      dataSource,
     };
   }
 
@@ -49,12 +46,16 @@ describe('PrivacyService', () => {
   });
 
   it('returns token consumption without exposing credentials', async () => {
-    const { service } = setup();
+    const { service, dataSource } = setup();
+    dataSource.query.mockResolvedValueOnce([{ prompt: '120', completion: '45', requests: '3' }]);
     const usage = await service.usage('owner-1');
-    expect(usage.groq).toMatchObject({ promptTokens: 120, completionTokens: 45, requests: 3, reservedCompletionTokens: 2700, perResponseLimit: 900 });
-    expect(usage.youtube).toMatchObject({ searches: 4, units: 500, remainingSearches: 86, remainingUnits: 8_500 });
-    expect(usage.cloudflare).toMatchObject({ requests: 8, texts: 9, remainingRequests: 992 });
+    expect(usage.scope).toBe('personal');
+    expect(usage.groq).toEqual({ promptTokens: 120, completionTokens: 45, requests: 3, perResponseLimit: 900 });
+    expect(usage.sharedProviderQuotas.visible).toBe(false);
     expect(usage.externalBillingAllowed).toBe(false);
+    expect(dataSource.query).toHaveBeenCalledTimes(1);
+    expect(dataSource.query).toHaveBeenCalledWith(expect.stringContaining('p.owner_id = $1'), ['owner-1']);
     expect(JSON.stringify(usage)).not.toMatch(/apiKey|secret|credential/i);
+    expect(JSON.stringify(usage)).not.toMatch(/youtube|cloudflare|dailyRequestLimit|reservedCompletionTokens/i);
   });
 });

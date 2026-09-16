@@ -36,11 +36,10 @@ export const environmentValidationSchema = Joi.object({
   DATABASE_PORT: Joi.number().integer().min(1).max(65_535).default(5432),
   DATABASE_NAME: Joi.string().pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/).default('eclipse'),
   DATABASE_USER: Joi.string().min(1).max(63).default('eclipse'),
-  DATABASE_PASSWORD: Joi.when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(16).required(),
-    otherwise: Joi.string().min(8).default('eclipse_dev'),
-  }),
+  DATABASE_PASSWORD: Joi.string()
+    .min(16)
+    .invalid('eclipse_dev')
+    .required(),
   SESSION_TTL_DAYS: Joi.number().integer().min(1).max(30).default(7),
   RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(10).max(10_000).default(300),
   AUTH_RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(5).max(1_000).default(60),
@@ -91,16 +90,14 @@ export const environmentValidationSchema = Joi.object({
   STORAGE_ENDPOINT: Joi.string().uri({ scheme: ['http', 'https'] }).default('http://127.0.0.1:9000'),
   STORAGE_REGION: Joi.string().min(1).max(100).default('us-east-1'),
   STORAGE_BUCKET: Joi.string().pattern(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/).default('eclipse-audio'),
-  STORAGE_ACCESS_KEY: Joi.when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(8).required(),
-    otherwise: Joi.string().min(3).default('eclipse_minio'),
-  }),
-  STORAGE_SECRET_KEY: Joi.when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(16).required(),
-    otherwise: Joi.string().min(8).default('eclipse_minio_dev'),
-  }),
+  STORAGE_ACCESS_KEY: Joi.string()
+    .min(8)
+    .invalid('eclipse_minio')
+    .required(),
+  STORAGE_SECRET_KEY: Joi.string()
+    .min(16)
+    .invalid('eclipse_minio_dev')
+    .required(),
   STORAGE_FORCE_PATH_STYLE: Joi.boolean().default(true),
   STORAGE_SIGNED_URL_TTL_SECONDS: Joi.number().integer().min(60).max(3_600).default(900),
   AUDIO_MAX_FILE_SIZE_BYTES: Joi.number().integer().min(1_048_576).max(1_073_741_824).default(52_428_800),

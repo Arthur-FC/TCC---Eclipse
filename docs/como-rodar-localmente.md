@@ -47,9 +47,12 @@ Copy-Item .env.example .env
 notepad .env
 ```
 
-No arquivo aberto, preencha pelo menos a chave da Groq:
+No arquivo aberto, defina credenciais locais exclusivas para o banco e o MinIO e preencha a chave da Groq:
 
 ```env
+DATABASE_PASSWORD=use_uma_senha_local_com_16_ou_mais_caracteres
+STORAGE_ACCESS_KEY=use_uma_chave_local_exclusiva
+STORAGE_SECRET_KEY=use_um_segredo_local_com_16_ou_mais_caracteres
 GROQ_API_KEY=sua_chave_aqui
 ```
 
@@ -57,7 +60,7 @@ Salve e feche o Bloco de Notas. A chave da Groq é necessária para o chat, brie
 
 As chaves do YouTube, Spotify e Cloudflare são opcionais. Sem elas, somente as integrações correspondentes ficam limitadas; o restante do sistema continua disponível.
 
-> Não compartilhe nem publique o arquivo `backend/.env`, pois ele contém chaves privadas.
+> Não reutilize os textos de exemplo como credenciais. Não compartilhe nem publique o arquivo `backend/.env`, pois ele contém chaves privadas. O backend recusa campos vazios e as antigas credenciais públicas.
 
 ## 5. Inicie o banco de dados e o armazenamento
 
@@ -131,4 +134,3 @@ Depois, abra <http://localhost:4200>.
 - **A página abre, mas não carrega os dados:** confirme que o backend continua aberto e teste <http://localhost:3002/api/health>.
 - **A inteligência artificial não responde:** confira se `GROQ_API_KEY` foi preenchida corretamente em `backend/.env` e reinicie o backend.
 - **Uma porta já está em uso:** feche outras execuções do Eclipse e tente novamente.
-

@@ -177,10 +177,9 @@ export class AppComponent implements OnInit, OnDestroy {
         try {
             const usage = await this.privacyApi.usage();
             window.alert(
-                `Consumo de ${usage.period}\n` +
-                `Groq: ${usage.groq.requests}/${usage.groq.dailyRequestLimit} chamadas; ${usage.groq.reservedCompletionTokens}/${usage.groq.dailyReservedCompletionTokenLimit} tokens reservados\n` +
-                `Cloudflare: ${usage.cloudflare.requests}/${usage.cloudflare.dailyRequestLimit} requisições\n` +
-                `YouTube: ${usage.youtube.searches}/${usage.youtube.dailySearchLimit} buscas; ${usage.youtube.units}/${usage.youtube.dailyGeneralLimit} unidades`
+                `Consumo pessoal de ${usage.period}\n` +
+                `Groq: ${usage.groq.requests} respostas; ${usage.groq.promptTokens} tokens de entrada; ${usage.groq.completionTokens} tokens de saída\n` +
+                usage.sharedProviderQuotas.reason
             );
         } catch (error) {
             this.errorMessage = this.describeError(error);

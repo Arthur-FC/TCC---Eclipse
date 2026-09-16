@@ -27,7 +27,7 @@ Variáveis disponíveis nesta etapa:
 | `DATABASE_PORT` | `5432` | Porta do PostgreSQL |
 | `DATABASE_NAME` | `eclipse` | Banco principal da aplicação |
 | `DATABASE_USER` | `eclipse` | Usuário local do banco |
-| `DATABASE_PASSWORD` | `eclipse_dev` | Senha apenas para desenvolvimento |
+| `DATABASE_PASSWORD` | obrigatório | Senha do banco, com ao menos 16 caracteres e definida somente no `.env` |
 | `SESSION_TTL_DAYS` | `7` | Duração da sessão em dias |
 | `GROQ_API_KEY` | vazio | Chave secreta da Groq; obrigatória em produção |
 | `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |
@@ -55,8 +55,8 @@ Variáveis disponíveis nesta etapa:
 | `STORAGE_ENDPOINT` | `http://127.0.0.1:9000` | Endpoint do armazenamento S3 compatível |
 | `STORAGE_REGION` | `us-east-1` | Região usada na assinatura S3 |
 | `STORAGE_BUCKET` | `eclipse-audio` | Bucket privado dos arquivos de áudio |
-| `STORAGE_ACCESS_KEY` | `eclipse_minio` | Chave local do MinIO; deve ser secreta em produção |
-| `STORAGE_SECRET_KEY` | `eclipse_minio_dev` | Segredo local do MinIO; deve ser forte em produção |
+| `STORAGE_ACCESS_KEY` | obrigatório | Chave do MinIO, definida somente no `.env` |
+| `STORAGE_SECRET_KEY` | obrigatório | Segredo do MinIO, com ao menos 16 caracteres e definido somente no `.env` |
 | `STORAGE_FORCE_PATH_STYLE` | `true` | Compatibilidade de endereçamento com MinIO |
 | `STORAGE_SIGNED_URL_TTL_SECONDS` | `900` | Validade das URLs temporárias |
 | `AUDIO_MAX_FILE_SIZE_BYTES` | `52428800` | Limite de 50 MB por arquivo |
@@ -64,7 +64,7 @@ Variáveis disponíveis nesta etapa:
 | `STEM_SEPARATOR_COMMAND` | autodetectado | Executável Python que possui o Demucs instalado |
 | `STEM_SEPARATOR_MODEL` | `htdemucs` | Modelo usado para separar os stems |
 
-Valores inválidos impedem o servidor de iniciar e são informados no terminal.
+Valores inválidos impedem o servidor de iniciar e são informados no terminal. Antes da primeira execução, gere valores exclusivos para as três credenciais obrigatórias; os antigos valores públicos são recusados. O Compose publica PostgreSQL e MinIO apenas em `127.0.0.1`.
 
 ## Banco de dados
 

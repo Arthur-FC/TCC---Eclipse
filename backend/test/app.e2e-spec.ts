@@ -1182,9 +1182,12 @@ describe('Eclipse API (e2e)', () => {
     }).expect(400);
 
     const usage = await agent.get('/api/privacy/usage').expect(200);
+    expect(usage.body.scope).toBe('personal');
     expect(usage.body.externalBillingAllowed).toBe(false);
-    expect(usage.body.youtube).toHaveProperty('searches');
-    expect(usage.body.cloudflare).toHaveProperty('requests');
+    expect(usage.body.groq).toHaveProperty('promptTokens');
+    expect(usage.body.sharedProviderQuotas.visible).toBe(false);
+    expect(usage.body).not.toHaveProperty('youtube');
+    expect(usage.body).not.toHaveProperty('cloudflare');
     expect(usage.body).not.toHaveProperty('apiKey');
 
     const exported = await agent.get('/api/privacy/export').expect(200);

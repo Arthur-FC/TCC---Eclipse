@@ -33,8 +33,9 @@ substitui avaliação jurídica da instituição responsável pelo tratamento.
   conservadora de tokens da Groq bloqueia novas chamadas antes do orçamento e
   complementa o limite por resposta. `EXTERNAL_BILLING_ALLOWED=true` impede a
   inicialização da API.
-- [x] `GET /api/privacy/usage` mostra o consumo diário efetivo de Groq,
-  Cloudflare e YouTube e seus limites ativos.
+- [x] `GET /api/privacy/usage` mostra somente o consumo pessoal de tokens da
+  Groq, filtrado pelo `ownerId`. Cotas operacionais compartilhadas de Groq,
+  Cloudflare e YouTube não são expostas na área pessoal.
 - [x] O menu **Privacidade** permite consultar consumo, exportar todos os dados
   em JSON e corrigir nome/e-mail; a exclusão de uma faixa revoga seu
   consentimento e apaga o áudio.

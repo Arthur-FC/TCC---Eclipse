@@ -4,8 +4,14 @@ import {
 } from './environment.config';
 
 describe('environment configuration', () => {
+  const requiredSecrets = {
+    DATABASE_PASSWORD: 'senha-local-segura-7d3f9c21',
+    STORAGE_ACCESS_KEY: 'minio-local-7d3f9c21',
+    STORAGE_SECRET_KEY: 'segredo-minio-local-4b8a6d11f7c2',
+  };
+
   it('applies safe development defaults', () => {
-    const { error, value } = environmentValidationSchema.validate({});
+    const { error, value } = environmentValidationSchema.validate(requiredSecrets);
 
     expect(error).toBeUndefined();
     expect(value).toMatchObject({
@@ -16,7 +22,7 @@ describe('environment configuration', () => {
       DATABASE_PORT: 5432,
       DATABASE_NAME: 'eclipse',
       DATABASE_USER: 'eclipse',
-      DATABASE_PASSWORD: 'eclipse_dev',
+      DATABASE_PASSWORD: requiredSecrets.DATABASE_PASSWORD,
       SESSION_TTL_DAYS: 7,
       RATE_LIMIT_PER_MINUTE: 300,
       EXTERNAL_BILLING_ALLOWED: false,
@@ -34,6 +40,7 @@ describe('environment configuration', () => {
 
   it('refuses automatic activation of external billing', () => {
     const result = environmentValidationSchema.validate({
+      ...requiredSecrets,
       EXTERNAL_BILLING_ALLOWED: true,
     });
     expect(result.error?.message).toContain('EXTERNAL_BILLING_ALLOWED');
@@ -41,6 +48,7 @@ describe('environment configuration', () => {
 
   it('requires a stronger database password in production', () => {
     const result = environmentValidationSchema.validate({
+      ...requiredSecrets,
       NODE_ENV: 'production',
       DATABASE_PASSWORD: 'curta',
     });
@@ -50,8 +58,8 @@ describe('environment configuration', () => {
 
   it('requires a Groq API key in production', () => {
     const result = environmentValidationSchema.validate({
+      ...requiredSecrets,
       NODE_ENV: 'production',
-      DATABASE_PASSWORD: 'senha-de-producao-segura',
     });
 
     expect(result.error?.message).toContain('GROQ_API_KEY');
@@ -60,6 +68,7 @@ describe('environment configuration', () => {
   it('rejects invalid ports and CORS origins', () => {
     const result = environmentValidationSchema.validate(
       {
+        ...requiredSecrets,
         PORT: 70_000,
         CORS_ORIGINS: 'not-a-url',
       },
@@ -67,6 +76,29 @@ describe('environment configuration', () => {
     );
 
     expect(result.error?.details).toHaveLength(2);
+  });
+
+  it('requires database and storage credentials in development', () => {
+    const result = environmentValidationSchema.validate({}, { abortEarly: false });
+
+    expect(result.error?.message).toContain('DATABASE_PASSWORD');
+    expect(result.error?.message).toContain('STORAGE_ACCESS_KEY');
+    expect(result.error?.message).toContain('STORAGE_SECRET_KEY');
+  });
+
+  it('rejects the former public development credentials', () => {
+    const result = environmentValidationSchema.validate(
+      {
+        DATABASE_PASSWORD: 'eclipse_dev',
+        STORAGE_ACCESS_KEY: 'eclipse_minio',
+        STORAGE_SECRET_KEY: 'eclipse_minio_dev',
+      },
+      { abortEarly: false },
+    );
+
+    expect(result.error?.message).toContain('DATABASE_PASSWORD');
+    expect(result.error?.message).toContain('STORAGE_ACCESS_KEY');
+    expect(result.error?.message).toContain('STORAGE_SECRET_KEY');
   });
 
   it('parses multiple comma-separated origins', () => {

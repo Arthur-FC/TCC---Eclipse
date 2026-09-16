@@ -4,6 +4,19 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthenticatedUser } from '../models/auth.model';
 
+export interface ProviderUsageResponse {
+    period: string;
+    scope: 'personal';
+    groq: {
+        promptTokens: number;
+        completionTokens: number;
+        requests: number;
+        perResponseLimit: number;
+    };
+    sharedProviderQuotas: { visible: false; reason: string };
+    externalBillingAllowed: false;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PrivacyApiService {
     private readonly url = `${environment.apiBaseUrl}/privacy`;
@@ -14,8 +27,8 @@ export class PrivacyApiService {
         return firstValueFrom(this.http.get<Record<string, unknown>>(`${this.url}/export`, { withCredentials: true }));
     }
 
-    usage(): Promise<any> {
-        return firstValueFrom(this.http.get<any>(`${this.url}/usage`, { withCredentials: true }));
+    usage(): Promise<ProviderUsageResponse> {
+        return firstValueFrom(this.http.get<ProviderUsageResponse>(`${this.url}/usage`, { withCredentials: true }));
     }
 
     updateProfile(name: string, email: string): Promise<AuthenticatedUser> {

@@ -36,14 +36,8 @@ export class StorageService {
         true,
       ),
       credentials: {
-        accessKeyId: configService.get<string>(
-          'STORAGE_ACCESS_KEY',
-          'eclipse_minio',
-        ),
-        secretAccessKey: configService.get<string>(
-          'STORAGE_SECRET_KEY',
-          'eclipse_minio_dev',
-        ),
+        accessKeyId: configService.getOrThrow<string>('STORAGE_ACCESS_KEY'),
+        secretAccessKey: configService.getOrThrow<string>('STORAGE_SECRET_KEY'),
       },
     });
   }
