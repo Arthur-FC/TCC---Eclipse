@@ -96,4 +96,11 @@ export class ReferencesApiService {
             { params: download ? { download: 'true' } : {}, withCredentials: true }
         ));
     }
+
+    downloadInstrumentArchive(projectId: string, referenceId: string): Promise<Blob> {
+        return firstValueFrom(this.http.get(
+            `${this.projectsUrl}/${projectId}/references/${referenceId}/instruments.zip`,
+            { responseType: 'blob', withCredentials: true }
+        ));
+    }
 }

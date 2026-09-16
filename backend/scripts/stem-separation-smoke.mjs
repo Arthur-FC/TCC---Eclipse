@@ -43,18 +43,18 @@ try {
   const converted = spawnSync(python, [join(root, 'scripts', 'wav_to_mp3.py'), input, mp3Input], { encoding: 'utf8' });
   if (converted.status !== 0) throw new Error(converted.stderr || 'Não foi possível criar o MP3 de teste.');
   for (const source of [input, mp3Input]) {
-    const result = spawnSync(python, [runner, '--two-stems', 'vocals', '-n', 'htdemucs', '-o', directory, source], {
+    const result = spawnSync(python, [runner, '--eclipse-mix-instrumental', '-n', 'htdemucs_6s', '-o', directory, source], {
       encoding: 'utf8',
       timeout: 600_000,
     });
     if (result.status !== 0) {
       throw new Error(result.stderr || result.stdout || result.error?.message || `Demucs falhou (status=${result.status}, signal=${result.signal}).`);
     }
-    const output = join(directory, 'htdemucs', basename(source, source.endsWith('.wav') ? '.wav' : '.mp3'));
-    const vocals = readFileSync(join(output, 'vocals.wav'));
-    const instrumental = readFileSync(join(output, 'no_vocals.wav'));
-    if (vocals.length <= 44 || instrumental.length <= 44) throw new Error('Os stems gerados estão vazios.');
-    console.log(`${source.endsWith('.wav') ? 'WAV' : 'MP3'} concluído: vocals=${vocals.length} bytes instrumental=${instrumental.length} bytes`);
+    const output = join(directory, 'htdemucs_6s', basename(source, source.endsWith('.wav') ? '.wav' : '.mp3'));
+    const stems = ['vocals.wav', 'no_vocals.wav', 'drums.wav', 'bass.wav', 'guitar.wav', 'piano.wav', 'other.wav']
+      .map(filename => ({ filename, bytes: readFileSync(join(output, filename)).length }));
+    if (stems.some(stem => stem.bytes <= 44)) throw new Error('Os stems gerados estão vazios.');
+    console.log(`${source.endsWith('.wav') ? 'WAV' : 'MP3'} concluído: ${stems.map(stem => `${stem.filename}=${stem.bytes} bytes`).join(' ')}`);
   }
 } finally {
   rmSync(directory, { recursive: true, force: true });

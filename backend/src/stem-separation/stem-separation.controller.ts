@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthenticatedUser } from '../auth/authenticated-user.interface';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
@@ -34,5 +35,23 @@ export class StemSeparationController {
     @Query('download') download?: string,
   ) {
     return this.service.stemUrl(user.id, projectId, referenceId, stemId, download === 'true');
+  }
+
+  @Get(':referenceId/instruments.zip')
+  async instrumentArchive(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('referenceId', ParseUUIDPipe) referenceId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.service.instrumentArchive(user.id, projectId, referenceId);
+    response.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Content-Length': String(file.buffer.length),
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return new StreamableFile(file.buffer);
   }
 }

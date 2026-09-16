@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation } from '../../models/reference.model';
+import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation, StemType } from '../../models/reference.model';
 import { LibraryTrack } from '../../models/library-track.model';
 
 @Component({
@@ -33,6 +33,7 @@ export class ReferencesPanelComponent {
     @Output() separationRequested = new EventEmitter<{ referenceId: string; libraryTrackId?: string }>();
     @Output() separationUploadRequested = new EventEmitter<{ referenceId: string; file: File }>();
     @Output() stemUrlRequested = new EventEmitter<{ referenceId: string; stemId: string; download: boolean }>();
+    @Output() allStemsDownloadRequested = new EventEmitter<{ referenceId: string }>();
     spotifyUrl = '';
     manualTitle = '';
     manualCreator = '';
@@ -67,8 +68,11 @@ export class ReferencesPanelComponent {
         const status = this.separationFor(referenceId)?.status;
         return this.separationBusyIds.has(referenceId) || status === 'queued' || status === 'processing';
     }
-    stemLabel(type: string): string { return type === 'vocals' ? 'Voz' : 'Instrumental'; }
-    stemSize(bytes: number): string { return `${(bytes / 1_048_576).toFixed(1)} MB`; }
+    stemFor(separation: StemSeparation, type: StemType) { return separation.stems.find(stem => stem.type === type); }
+    hasSeparatedInstruments(separation: StemSeparation): boolean {
+        return ['drums', 'bass', 'guitar', 'piano', 'other'].every(type => separation.stems.some(stem => stem.type === type));
+    }
+    downloadAllInstruments(referenceId: string): void { this.allStemsDownloadRequested.emit({ referenceId }); }
     chooseSeparationFile(referenceId: string, event: Event): void {
         this.separationFiles[referenceId] = (event.target as HTMLInputElement).files?.[0] ?? null;
     }

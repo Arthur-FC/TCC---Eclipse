@@ -8,4 +8,9 @@ export enum StemSeparationStatus {
 export enum StemType {
   VOCALS = 'vocals',
   INSTRUMENTAL = 'instrumental',
+  DRUMS = 'drums',
+  BASS = 'bass',
+  GUITAR = 'guitar',
+  PIANO = 'piano',
+  OTHER = 'other',
 }

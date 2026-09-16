@@ -106,17 +106,23 @@ export class StemSeparationWorker implements OnApplicationBootstrap, OnApplicati
 
       await this.runDemucs(separation.modelName, directory, input);
       const output = join(directory, separation.modelName, basename(input, extension));
-      const vocalsPath = join(output, 'vocals.wav');
-      const instrumentalPath = join(output, 'no_vocals.wav');
-      await Promise.all([access(vocalsPath), access(instrumentalPath)]);
-      const [vocals, instrumental] = await Promise.all([readFile(vocalsPath), readFile(instrumentalPath)]);
+      const outputFiles: Array<{ type: StemType; filename: string }> = [
+        { type: StemType.VOCALS, filename: 'vocals.wav' },
+        { type: StemType.INSTRUMENTAL, filename: 'no_vocals.wav' },
+        { type: StemType.DRUMS, filename: 'drums.wav' },
+        { type: StemType.BASS, filename: 'bass.wav' },
+        { type: StemType.GUITAR, filename: 'guitar.wav' },
+        { type: StemType.PIANO, filename: 'piano.wav' },
+        { type: StemType.OTHER, filename: 'other.wav' },
+      ];
+      await Promise.all(outputFiles.map((value) => access(join(output, value.filename))));
+      const values = await Promise.all(outputFiles.map(async (value) => ({
+        type: value.type,
+        bytes: await readFile(join(output, value.filename)),
+      })));
       separation.progress = 90;
       await this.separations.save(separation);
 
-      const values = [
-        { type: StemType.VOCALS, bytes: vocals },
-        { type: StemType.INSTRUMENTAL, bytes: instrumental },
-      ];
       await this.stems.delete({ separationId: separation.id });
       for (const value of values) {
         const objectKey = `${track.ownerId}/reference-separations/${separation.id}/${value.type}.wav`;
@@ -137,7 +143,7 @@ export class StemSeparationWorker implements OnApplicationBootstrap, OnApplicati
 
   private runDemucs(model: string, output: string, input: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      const child = spawn(this.command, [this.runnerPath(), '--two-stems', 'vocals', '-n', model, '-o', output, input], { shell: false, windowsHide: true });
+      const child = spawn(this.command, [this.runnerPath(), '--eclipse-mix-instrumental', '-n', model, '-o', output, input], { shell: false, windowsHide: true });
       let errors = '';
       child.stderr.on('data', (chunk: Buffer) => { errors = `${errors}${chunk.toString()}`.slice(-2_000); });
       const timer = setTimeout(() => { child.kill(); reject(new Error('A separação excedeu o tempo limite.')); }, this.timeoutMs);

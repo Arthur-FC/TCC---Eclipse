@@ -60,9 +60,9 @@ Variáveis disponíveis nesta etapa:
 | `STORAGE_FORCE_PATH_STYLE` | `true` | Compatibilidade de endereçamento com MinIO |
 | `STORAGE_SIGNED_URL_TTL_SECONDS` | `900` | Validade das URLs temporárias |
 | `AUDIO_MAX_FILE_SIZE_BYTES` | `52428800` | Limite de 50 MB por arquivo |
-| `STEM_SEPARATOR_WORKER_ENABLED` | `true` | Ativa o worker local de separação de voz e instrumental |
+| `STEM_SEPARATOR_WORKER_ENABLED` | `true` | Ativa o worker local de separação de voz e instrumentos |
 | `STEM_SEPARATOR_COMMAND` | autodetectado | Executável Python que possui o Demucs instalado |
-| `STEM_SEPARATOR_MODEL` | `htdemucs` | Modelo usado para separar os stems |
+| `STEM_SEPARATOR_MODEL` | `htdemucs_6s` | Modelo usado para separar voz, bateria, baixo, guitarra, piano e outros |
 
 Valores inválidos impedem o servidor de iniciar e são informados no terminal. Antes da primeira execução, gere valores exclusivos para as três credenciais obrigatórias; os antigos valores públicos são recusados. O Compose publica PostgreSQL e MinIO apenas em `127.0.0.1`.
 
@@ -394,9 +394,9 @@ AUDIO_ANALYSIS_POLL_INTERVAL_MS=1000
 
 O analisador usa `music-metadata` para metadados e `audio-decode` para decodificação MP3/WAV em JavaScript/WASM. BPM é estimado por autocorrelação do envelope de onsets; tonalidade usa energia por classe de altura e perfis maior/menor. Essas estimativas são auxiliares e não devem ser tratadas como medição musical absoluta.
 
-## Separação de voz e instrumental
+## Separação de voz e instrumentos
 
-Depois que uma referência é aprovada, a aba **Referências** permite separar voz e instrumental. Uma referência do acervo usa o próprio arquivo; YouTube, Spotify e links manuais exigem um MP3/WAV enviado e autorizado pelo usuário. O sistema nunca baixa áudio dessas plataformas.
+Depois que uma referência é aprovada, a aba **Referências** permite gerar voz, instrumental completo, bateria, baixo, guitarra, piano e demais instrumentos. Uma referência do acervo usa o próprio arquivo; YouTube, Spotify e links manuais exigem um MP3/WAV enviado e autorizado pelo usuário. O sistema nunca baixa áudio dessas plataformas. A tela oferece apenas três downloads: voz, instrumental completo e um arquivo ZIP contendo as cinco faixas instrumentais separadas.
 
 Instale o worker Python na pasta `backend` e depois ative-o no `.env`:
 
@@ -408,7 +408,8 @@ py -m venv .venv-stems
 ```env
 STEM_SEPARATOR_WORKER_ENABLED=true
 STEM_SEPARATOR_COMMAND=
-STEM_SEPARATOR_MODEL=htdemucs
+STEM_SEPARATOR_MODEL=htdemucs_6s
+STEM_SEPARATOR_VERSION=demucs-v4-6stems-v1
 ```
 
 Com o comando vazio, o backend detecta automaticamente `.venv-stems` quando é iniciado na raiz ou na pasta `backend`. O runner usa SoundFile para WAV e Miniaudio para MP3, sem exigir FFmpeg. Rode `corepack pnpm db:migration:run` antes de reiniciar a API. O primeiro processamento pode baixar os pesos do modelo. Os stems WAV ficam no MinIO privado e são acessados por URLs temporárias de reprodução ou download.
@@ -424,6 +425,7 @@ corepack pnpm stems:smoke
 | `GET` | `/api/projects/:projectId/references/separations` | Listar estado e stems do projeto |
 | `POST` | `/api/projects/:projectId/references/:referenceId/separation` | Iniciar ou repetir a separação |
 | `GET` | `/api/projects/:projectId/references/:referenceId/stems/:stemId/url` | Gerar URL temporária; `?download=true` baixa o arquivo |
+| `GET` | `/api/projects/:projectId/references/:referenceId/instruments.zip` | Baixar bateria, baixo, guitarra, piano e outros em um único ZIP |
 A etapa de obra final usa `POST /projects/:projectId/final-works/uploads`, seguido
 do envio `PUT` para a URL assinada e de
 `POST /projects/:projectId/final-works/:trackId/complete`. O registro recebe uma

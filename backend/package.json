@@ -36,6 +36,7 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
+    "fflate": "0.8.3",
     "helmet": "^8.3.0",
     "joi": "^18.2.5",
     "music-metadata": "^11.15.0",

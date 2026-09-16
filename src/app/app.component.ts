@@ -560,6 +560,24 @@ export class AppComponent implements OnInit, OnDestroy {
         }
     }
 
+    async downloadAllStems(event: { referenceId: string }): Promise<void> {
+        if (!this.selectedChat) return;
+        const projectId = this.selectedChat.id;
+        this.referencesErrorMessage = '';
+        try {
+            const archive = await this.referencesApi.downloadInstrumentArchive(projectId, event.referenceId);
+            if (this.selectedChat?.id !== projectId) return;
+            const url = URL.createObjectURL(archive);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = 'instrumentos-separados.zip';
+            anchor.click();
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.referencesErrorMessage = this.describeError(error);
+        }
+    }
+
     async handleCuration(action: CurationAction): Promise<void> {
         if (!this.selectedChat || this.isReferencesBusy) return;
         const projectId = this.selectedChat.id;

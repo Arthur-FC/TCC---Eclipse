@@ -39,7 +39,7 @@ export interface CurationState {
 }
 
 export type StemSeparationStatus = 'queued' | 'processing' | 'completed' | 'failed';
-export type StemType = 'vocals' | 'instrumental';
+export type StemType = 'vocals' | 'instrumental' | 'drums' | 'bass' | 'guitar' | 'piano' | 'other';
 
 export interface StemSeparation {
     id: string;

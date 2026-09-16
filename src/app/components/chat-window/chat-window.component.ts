@@ -70,6 +70,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() stemSeparationRequested = new EventEmitter<{ referenceId: string; libraryTrackId?: string }>();
     @Output() stemSeparationUploadRequested = new EventEmitter<{ referenceId: string; file: File }>();
     @Output() stemUrlRequested = new EventEmitter<{ referenceId: string; stemId: string; download: boolean }>();
+    @Output() allStemsDownloadRequested = new EventEmitter<{ referenceId: string }>();
     @Output() libraryRequested = new EventEmitter<void>();
     @Output() libraryUploadRequested = new EventEmitter<TrackUploadRequest>();
     @Output() libraryPlaybackRequested = new EventEmitter<string>();
