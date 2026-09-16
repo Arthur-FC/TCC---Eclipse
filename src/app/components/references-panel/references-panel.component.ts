@@ -41,8 +41,7 @@ export class ReferencesPanelComponent {
     manualDescription = '';
     libraryTrackId = '';
     showDuplicates = false;
-    replacingId: string | null = null;
-    replacementId = '';
+    activeReferenceSection: ReferenceStatus = 'pending';
     separationTrackIds: Record<string, string> = {};
     separationFiles: Record<string, File | null> = {};
     separationConsents: Record<string, boolean> = {};
@@ -50,6 +49,22 @@ export class ReferencesPanelComponent {
     get readyTracks(): LibraryTrack[] { return this.libraryTracks.filter(track => track.status === 'ready'); }
     get visibleReferences(): MusicReference[] {
         return this.references.filter(ref => this.showDuplicates || !ref.duplicateOfId || ref.status === 'approved');
+    }
+    get pendingReferences(): MusicReference[] { return this.visibleReferences.filter(ref => ref.status === 'pending'); }
+    get approvedReferences(): MusicReference[] { return this.orderedApproved; }
+    get rejectedReferences(): MusicReference[] { return this.visibleReferences.filter(ref => ref.status === 'rejected'); }
+    get activeReferences(): MusicReference[] {
+        return this.activeReferenceSection === 'approved'
+            ? this.approvedReferences
+            : this.activeReferenceSection === 'rejected'
+                ? this.rejectedReferences
+                : this.pendingReferences;
+    }
+    get activeSectionTitle(): string {
+        return { pending: 'Pendentes', approved: 'Aprovadas', rejected: 'Rejeitadas' }[this.activeReferenceSection];
+    }
+    get activeSectionEmptyMessage(): string {
+        return { pending: 'Nenhuma música pendente.', approved: 'Nenhuma música aprovada.', rejected: 'Nenhuma música rejeitada.' }[this.activeReferenceSection];
     }
     get duplicateCount(): number { return this.references.filter(ref => ref.duplicateOfId).length; }
     get orderedApproved(): MusicReference[] {
@@ -59,9 +74,6 @@ export class ReferencesPanelComponent {
             const first = ids.indexOf(a.id), second = ids.indexOf(b.id);
             return (first < 0 ? ids.length : first) - (second < 0 ? ids.length : second);
         });
-    }
-    get replacements(): MusicReference[] {
-        return this.references.filter(ref => ref.id !== this.replacingId && ref.status !== 'approved' && (ref.source !== 'library' || ref.libraryTrackId));
     }
     separationFor(referenceId: string): StemSeparation | undefined { return this.separations.find(item => item.referenceId === referenceId); }
     isSeparationBusy(referenceId: string): boolean {
@@ -108,13 +120,6 @@ export class ReferencesPanelComponent {
         [ids[index], ids[next]] = [ids[next], ids[index]];
         this.curationRequested.emit({ type: 'selection', referenceIds: ids, confirm: false });
     }
-    replace(): void {
-        if (this.busy || !this.replacingId || !this.replacementId) return;
-        this.curationRequested.emit({ type: 'replace', referenceId: this.replacingId, replacementId: this.replacementId });
-        this.replacingId = null;
-        this.replacementId = '';
-    }
-
     formatDuration(seconds: number | null): string {
         if (seconds === null) return 'Duração não informada';
         const hours = Math.floor(seconds / 3600);

@@ -7,7 +7,7 @@
         <div class="header-actions">
         <button type="button" [disabled]="busy" (click)="requestCuration()">Gerar curadoria</button>
         <button type="button" class="secondary" [disabled]="busy" (click)="requestSearch()">
-            {{ searchQuery ? 'Tentar novamente no YouTube' : 'Pesquisar no YouTube' }}
+            Buscar no YouTube
         </button>
         </div>
     </header>
@@ -80,9 +80,31 @@
     <label *ngIf="duplicateCount" class="duplicates-toggle"><input type="checkbox" [(ngModel)]="showDuplicates" /> Mostrar {{ duplicateCount }} alternativa(s) agrupada(s)</label>
     <p *ngIf="references.length" class="score-note">A pontuação indica correspondência textual, não uma probabilidade de acerto nem uma análise do áudio externo.</p>
 
-    <div *ngIf="!busy && references.length" class="cards">
+    <div *ngIf="!busy && references.length" class="reference-tabs">
+        <div class="reference-tab-list" role="tablist" aria-label="Status das referências">
+            <button type="button" role="tab" [class.active]="activeReferenceSection === 'pending'" [attr.aria-selected]="activeReferenceSection === 'pending'" aria-controls="reference-tab-panel" (click)="activeReferenceSection = 'pending'">
+                Pendentes <span>{{ pendingReferences.length }}</span>
+            </button>
+            <button type="button" role="tab" [class.active]="activeReferenceSection === 'approved'" [attr.aria-selected]="activeReferenceSection === 'approved'" aria-controls="reference-tab-panel" (click)="activeReferenceSection = 'approved'">
+                Aprovadas <span>{{ approvedReferences.length }}</span>
+            </button>
+            <button type="button" role="tab" [class.active]="activeReferenceSection === 'rejected'" [attr.aria-selected]="activeReferenceSection === 'rejected'" aria-controls="reference-tab-panel" (click)="activeReferenceSection = 'rejected'">
+                Rejeitadas <span>{{ rejectedReferences.length }}</span>
+            </button>
+        </div>
+
+        <section id="reference-tab-panel" class="reference-tab-panel" role="tabpanel" [attr.aria-label]="activeSectionTitle">
+            <div *ngIf="activeReferences.length; else noReferencesInSection" class="cards">
+                <ng-container *ngFor="let reference of activeReferences; trackBy: trackReference">
+                    <ng-container *ngTemplateOutlet="referenceCard; context: { $implicit: reference }"></ng-container>
+                </ng-container>
+            </div>
+            <ng-template #noReferencesInSection><p class="group-empty">{{ activeSectionEmptyMessage }}</p></ng-template>
+        </section>
+    </div>
+
+    <ng-template #referenceCard let-reference>
         <article
-            *ngFor="let reference of visibleReferences; trackBy: trackReference"
             [class.spotify]="reference.source === 'spotify'"
             [class.approved]="reference.status === 'approved'"
             [class.rejected]="reference.status === 'rejected'"
@@ -99,7 +121,7 @@
                 <ng-template #localTitle><strong class="title">{{ reference.title }}</strong></ng-template>
                 <p>{{ reference.creator }}</p>
                 <p *ngIf="reference.album" class="album">{{ reference.album }}</p>
-                <p *ngIf="reference.duplicateOfId" class="curation-notice">Alternativa agrupada de outra referência. Use Substituir para trocar a escolha.</p>
+                <p *ngIf="reference.duplicateOfId" class="curation-notice">Alternativa agrupada de outra referência.</p>
                 <div *ngIf="reference.score !== null" class="ranking">
                     <strong>{{ reference.score * 100 | number:'1.0-0' }} / 100</strong>
                     <span>{{ reference.rankingMethod === 'semantic+metadata' ? 'Semântica + metadados' : 'Metadados' }} · briefing v{{ reference.curatedBriefingVersion }}</span>
@@ -199,20 +221,9 @@
                         >Separar faixas</button>
                     </ng-template>
                 </section>
-                <button type="button" class="replace-button" [disabled]="busy" (click)="replacingId = reference.id; replacementId = ''">Substituir</button>
-                <div *ngIf="replacingId === reference.id" class="replacement-form">
-                    <label>Trocar por
-                        <select [(ngModel)]="replacementId" [disabled]="busy">
-                            <option value="">Selecione outra referência</option>
-                            <option *ngFor="let candidate of replacements" [value]="candidate.id">{{ candidate.title }} · {{ sourceLabel(candidate) }}</option>
-                        </select>
-                    </label>
-                    <button type="button" [disabled]="busy || !replacementId" (click)="replace()">Confirmar troca</button>
-                    <button type="button" (click)="replacingId = null">Cancelar</button>
-                </div>
             </div>
         </article>
-    </div>
+    </ng-template>
 
     <div *ngIf="!busy && !references.length" class="empty-state">
         <ng-container *ngIf="searchQuery; else noSearchYet">
