@@ -29,7 +29,7 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Cards de referências com aprovação e rejeição persistidas.
 - Biblioteca musical privada com upload, reprodução e exclusão de MP3/WAV.
 - Análise local assíncrona de formato, duração, BPM, tonalidade e tags estimadas.
-- Busca do acervo em linguagem natural com Cloudflare Workers AI, pgvector e fallback por metadados.
+- Busca do acervo em linguagem natural sobre metadados e descrições com Cloudflare Workers AI, pgvector e fallback textual; ela não compara diretamente o som dos áudios.
 - Curadoria unificada de YouTube, Spotify, acervo e links manuais, com pontuação e justificativas limitadas às evidências disponíveis.
 - Separação local de referências aprovadas, com downloads de voz, instrumental completo ou ZIP dos instrumentos separados.
 - Agrupamento de duplicatas, substituição de referências e seleção final ordenada e confirmada por projeto.

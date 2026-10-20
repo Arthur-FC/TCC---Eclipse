@@ -10,7 +10,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { MusicReferenceEntity } from '../references/music-reference.entity';
 import { ReferenceSelectionEntity } from '../references/reference-selection.entity';
 import { selectionHash } from '../references/curation-rules';
-import { MoodboardData, MoodboardReferenceInput, InvalidMoodboardDataError, parseMoodboardJson } from './moodboard-data';
+import { MoodboardData, MoodboardReferenceInput, InvalidMoodboardDataError, parseMoodboardJson, ensureVisualPlan, visualSection, VisualSectionField } from './moodboard-data';
 import { MoodboardEntity } from './moodboard.entity';
 import { MoodboardPdfService, PdfExport } from './moodboard-pdf.service';
 
@@ -27,6 +27,8 @@ referenceApplications deve usar somente IDs presentes na entrada. O roadmap deve
 Seja extremamente conciso: d com até 120 caracteres; exatamente 2 itens em e, i e p; exatamente 3 itens em s e r; um item em a para cada referência recebida; cada texto interno com até 60 caracteres; c deve ser [].
 Use exatamente este formato compacto, no qual cada lista interna segue a ordem indicada:
 {"t":string,"d":string,"e":[[rótulo,descrição]],"i":[[instrumento,papel]],"s":[[seção,objetivo,energia]],"p":[[área,sugestão]],"r":[[ordem,título,ação,entregável]],"a":[[referenceId,aplicação]],"c":[]}`;
+
+const SECTION_PROMPT = `Você revisa somente uma seção de um plano musical. Retorne apenas JSON com exatamente: id, name, order, bars, durationSeconds, energy, emotionalIntent, instruments, references, productionNotes, source, status, lockedFields. Energia é inteiro de 1 a 5. instruments usa {instrument,role}; references usa {referenceId,aspect,note}, e aspect deve ser rhythm, texture, instrumentation, structure, voice ou atmosphere. Use apenas IDs de referência recebidos. Preserve id, order e os valores listados em lockedFields. source deve ser ai e status suggested. Não afirme ter ouvido o áudio.`;
 
 @Injectable()
 export class MoodboardsService {
@@ -90,6 +92,7 @@ export class MoodboardsService {
             input.selection.referenceIds,
           );
           data.constraints = [...input.briefing.data.constraints];
+          data = ensureVisualPlan(data, input.selection.referenceIds);
           usage = response.usage;
           break;
         } catch (error) {
@@ -157,6 +160,58 @@ export class MoodboardsService {
     return this.hydrate(ownerId, projectId, entity);
   }
 
+  async saveVisualPlan(ownerId: string, projectId: string, version: number, rawData: Record<string, unknown>): Promise<MoodboardResponse> {
+    await this.projects.getActiveProject(ownerId, projectId);
+    const source = await this.requireVersion(projectId, version);
+    let data: MoodboardData;
+    try {
+      data = ensureVisualPlan(parseMoodboardJson(JSON.stringify(rawData), source.referenceIds), source.referenceIds);
+    } catch (error) {
+      if (error instanceof InvalidMoodboardDataError) throw new ConflictException(error.message);
+      throw error;
+    }
+    const saved = await this.saveDerivedVersion(projectId, source, data, null, null);
+    return this.response(saved, await this.isCurrent(ownerId, projectId, saved));
+  }
+
+  async regenerateSection(ownerId: string, projectId: string, version: number, sectionId: string): Promise<MoodboardResponse> {
+    await this.projects.getActiveProject(ownerId, projectId);
+    if (!this.ai.generateJson) throw new ServiceUnavailableException('O provedor atual não oferece geração estruturada.');
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/.test(sectionId)) throw new NotFoundException('Seção não encontrada.');
+    const lockKey = `${projectId}:${sectionId}`;
+    if (this.running.has(lockKey)) throw new ConflictException('Esta seção já está sendo regenerada.');
+    const source = await this.requireVersion(projectId, version);
+    const data = ensureVisualPlan(source.data, source.referenceIds);
+    const plan = data.visualPlan!;
+    const current = plan.sections.find((section) => section.id === sectionId);
+    if (!current) throw new NotFoundException('Seção não encontrada.');
+    this.running.add(lockKey);
+    try {
+      const response = await this.ai.generateJson([
+        { role: 'system', content: SECTION_PROMPT },
+        { role: 'user', content: JSON.stringify({ creativeDirection: data.creativeDirection, allowedReferenceIds: source.referenceIds, section: current }) },
+      ], AbortSignal.timeout(30_000), { maxCompletionTokens: 650 });
+      let proposed;
+      try { proposed = visualSection(JSON.parse(response.content), source.referenceIds); }
+      catch (error) {
+        if (error instanceof InvalidMoodboardDataError || error instanceof SyntaxError) throw new BadGatewayException('A IA retornou uma seção inválida. Tente novamente.');
+        throw error;
+      }
+      const locked = new Set<VisualSectionField>(current.lockedFields);
+      const merged = { ...proposed, id: current.id, order: current.order, lockedFields: [...current.lockedFields] };
+      for (const field of locked) Object.assign(merged, { [field]: current[field] });
+      const nextData: MoodboardData = {
+        ...data,
+        visualPlan: { ...plan, sections: plan.sections.map((section) => section.id === sectionId ? merged : section) },
+      };
+      const saved = await this.saveDerivedVersion(projectId, source, nextData, response.usage?.promptTokens ?? null, response.usage?.completionTokens ?? null);
+      return this.response(saved, await this.isCurrent(ownerId, projectId, saved));
+    } catch (error) {
+      if (error instanceof BadGatewayException) throw error;
+      this.throwProviderError(error);
+    } finally { this.running.delete(lockKey); }
+  }
+
   async current(ownerId: string, projectId: string): Promise<MoodboardResponse | null> {
     await this.projects.getProject(ownerId, projectId);
     let input: Awaited<ReturnType<MoodboardsService['requireCurrentInput']>>;
@@ -209,7 +264,39 @@ export class MoodboardsService {
     return this.response(entity, current);
   }
   private response(entity: MoodboardEntity, current: boolean): MoodboardResponse {
-    return Object.assign(entity, { current });
+    return Object.assign(new MoodboardEntity(), entity, { data: ensureVisualPlan(entity.data, entity.referenceIds), current });
+  }
+  private async requireVersion(projectId: string, version: number): Promise<MoodboardEntity> {
+    if (!Number.isInteger(version) || version < 1) throw new NotFoundException('Versão não encontrada.');
+    const entity = await this.moodboards.findOneBy({ projectId, version });
+    if (!entity) throw new NotFoundException('Versão do moodboard não encontrada.');
+    return entity;
+  }
+  private async isCurrent(ownerId: string, projectId: string, entity: MoodboardEntity): Promise<boolean> {
+    try {
+      const input = await this.requireCurrentInput(ownerId, projectId);
+      return input.briefing.version === entity.briefingVersion && input.selection.snapshotHash === entity.selectionHash;
+    } catch { return false; }
+  }
+  private async saveDerivedVersion(projectId: string, source: MoodboardEntity, data: MoodboardData, promptTokens: number | null, completionTokens: number | null): Promise<MoodboardEntity> {
+    return this.db.transaction(async (manager) => {
+      await manager.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE', [projectId]);
+      const [{ next_version }] = await manager.query('SELECT COALESCE(MAX(version),0)+1 AS next_version FROM moodboards WHERE project_id=$1', [projectId]);
+      const repository = manager.getRepository(MoodboardEntity);
+      return repository.save(repository.create({
+        projectId,
+        version: Number(next_version),
+        data,
+        briefingVersion: source.briefingVersion,
+        selectionHash: source.selectionHash,
+        referenceIds: [...source.referenceIds],
+        referenceInputs: source.referenceInputs.map((item) => ({ ...item })),
+        aiProvider: source.aiProvider,
+        aiModel: source.aiModel,
+        promptTokens,
+        completionTokens,
+      }));
+    });
   }
   private referenceInputs(refs: MusicReferenceEntity[]): MoodboardReferenceInput[] { return refs.map((ref) => ({ id: ref.id, title: ref.title, creator: ref.creator, source: ref.source, durationSeconds: ref.durationSeconds, description: ref.description, url: ref.source === 'library' ? null : ref.url || null, dataStatus: this.dataStatus(ref) })); }
   private dataStatus(ref: MusicReferenceEntity): MoodboardReferenceInput['dataStatus'] {

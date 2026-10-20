@@ -3,7 +3,7 @@
 **Versão:** 1.0  
 **Data:** 25 de agosto de 2026  
 **Referência de escopo:** [Escopo do MVP](./escopo-mvp.md)  
-**Arquitetura de IA:** Groq + Qwen 3.6 27B para chat e raciocínio; Cloudflare Workers AI + Qwen3 Embedding 0.6B para busca semântica.
+**Arquitetura de IA:** Groq + Qwen 3.6 27B para chat e raciocínio; Cloudflare Workers AI + Qwen3 Embedding 0.6B para busca semântica por metadados e descrições, sem comparação direta do som.
 
 ## 1. Como usar este plano
 
@@ -637,7 +637,7 @@ semântica aguardando o usuário informar `CLOUDFLARE_ACCOUNT_ID` e
 
 ### Objetivo
 
-Criar busca semântica sem instalar ou executar modelos localmente.
+Criar busca semântica sobre metadados e descrições sem instalar ou executar modelos localmente.
 
 ### Atividades
 
@@ -1124,7 +1124,7 @@ Etapas 9 e 10 concluídas. YouTube e links do Spotify alimentam as referências.
 
 ### Marco D - Acervo inteligente
 
-Etapas 11 a 13 concluídas. Upload, análise e busca semântica pela Cloudflare estão operacionais.
+Etapas 11 a 13 concluídas. Upload, análise e busca semântica textual pela Cloudflare estão operacionais.
 
 ### Marco E - Entrega criativa
 
@@ -1143,7 +1143,7 @@ Etapas 19 a 21 concluídas. Segurança, avaliação acadêmica e deploy foram ve
 | YouTube Data API | Etapa 9 | Pesquisa externa fica parcial |
 | Spotify API | Etapa 10 | Inclusão automática por link fica indisponível |
 | Armazenamento S3/MinIO | Etapa 11 | Upload de áudio fica indisponível |
-| Cloudflare Workers AI | Etapa 13 | Busca semântica e novos embeddings ficam indisponíveis |
+| Cloudflare Workers AI | Etapa 13 | Busca semântica textual e novos embeddings ficam indisponíveis |
 | pgvector | Etapa 13 | Similaridade vetorial não pode ser consultada |
 
 ## 5. Regra de fallback do MVP

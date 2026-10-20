@@ -103,6 +103,7 @@
         (playbackRequested)="libraryPlaybackRequested.emit($event)"
         (playbackStopped)="libraryPlaybackStopped.emit()"
         (reprocessRequested)="libraryReprocessRequested.emit($event)"
+        (tagsCorrected)="libraryTagsCorrected.emit($event)"
         (deleteRequested)="libraryDeleteRequested.emit($event)"
         (searchRequested)="librarySearchRequested.emit($event)"
         (searchCleared)="librarySearchCleared.emit()"
@@ -119,6 +120,8 @@
         (generateRequested)="moodboardGenerateRequested.emit()"
         (versionRequested)="moodboardVersionRequested.emit($event)"
         (pdfRequested)="moodboardPdfRequested.emit()"
+        (saveRequested)="moodboardSaveRequested.emit($event)"
+        (regenerateSectionRequested)="moodboardSectionRegenerateRequested.emit($event)"
         (evaluationSaved)="evaluationSaveRequested.emit($event)"
     ></app-moodboard-panel>
 

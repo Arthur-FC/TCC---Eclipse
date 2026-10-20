@@ -5,6 +5,29 @@ export const AUDIO_ANALYZER_VERSION = 'eclipse-audio-v1';
 export const AUDIO_ANALYZER_METHOD =
   'music-metadata + PCM local (autocorrelação de onsets e perfil tonal)';
 
+export type AnalysisEvidenceOrigin =
+  | 'user-provided'
+  | 'embedded-file-metadata'
+  | 'platform-metadata'
+  | 'local-technical-estimate'
+  | 'text-ai-inference'
+  | 'direct-audio-analysis';
+
+export interface AnalysisTagEvidence {
+  value: string;
+  origin: AnalysisEvidenceOrigin;
+  confidence: number | null;
+}
+
+export interface AudioAnalysisEvidence {
+  technicalMetadata: { origin: AnalysisEvidenceOrigin };
+  bpm: { origin: AnalysisEvidenceOrigin; confidence: number | null } | null;
+  key: { origin: AnalysisEvidenceOrigin; confidence: number | null } | null;
+  genreTags: AnalysisTagEvidence[];
+  moodTags: AnalysisTagEvidence[];
+  instrumentTags: AnalysisTagEvidence[];
+}
+
 interface DecodedAudio {
   channelData: Float32Array[];
   sampleRate: number;
@@ -24,6 +47,7 @@ export interface AudioAnalysisResult {
   genreTags: string[];
   moodTags: string[];
   instrumentTags: string[];
+  evidence: AudioAnalysisEvidence;
   version: string;
   method: string;
 }
@@ -107,14 +131,20 @@ export class AudioAnalyzerService {
     const embeddedBpm = metadata.common.bpm;
     const estimatedBpm = tempo.bpm ??
       (embeddedBpm && embeddedBpm > 0 ? embeddedBpm : null);
-    const genreTags = this.cleanTags(metadata.common.genre ?? []);
-    const moodTags = this.buildMoodTags(
+    const genreEvidence = this.tagEvidence(
+      metadata.common.genre ?? [],
+      'embedded-file-metadata',
+      null,
+    );
+    const moodEvidence = this.buildMoodTags(
       metadata.common.mood,
       estimatedBpm,
+      tempo.bpm ? tempo.confidence : embeddedBpm ? 0.5 : null,
       key.key,
+      key.confidence,
       signal.rms,
     );
-    const instrumentTags = this.buildInstrumentTags(
+    const instrumentEvidence = this.buildInstrumentTags(
       metadata.common['performer:instrument'] ?? [],
       signal.zeroCrossingRate,
       tempo.onsetStrength,
@@ -140,9 +170,23 @@ export class AudioAnalyzerService {
           : null,
       estimatedKey: key.key,
       keyConfidence: key.key ? this.round(key.confidence, 3) : null,
-      genreTags,
-      moodTags,
-      instrumentTags,
+      genreTags: genreEvidence.map((item) => item.value),
+      moodTags: moodEvidence.map((item) => item.value),
+      instrumentTags: instrumentEvidence.map((item) => item.value),
+      evidence: {
+        technicalMetadata: { origin: 'embedded-file-metadata' },
+        bpm: estimatedBpm ? {
+          origin: tempo.bpm ? 'local-technical-estimate' : 'embedded-file-metadata',
+          confidence: tempo.bpm ? this.round(tempo.confidence, 3) : 0.5,
+        } : null,
+        key: key.key ? {
+          origin: 'local-technical-estimate',
+          confidence: this.round(key.confidence, 3),
+        } : null,
+        genreTags: genreEvidence,
+        moodTags: moodEvidence,
+        instrumentTags: instrumentEvidence,
+      },
       version: AUDIO_ANALYZER_VERSION,
       method: AUDIO_ANALYZER_METHOD,
     };
@@ -416,32 +460,55 @@ export class AudioAnalyzerService {
   private buildMoodTags(
     embeddedMood: string | undefined,
     bpm: number | null,
+    bpmConfidence: number | null,
     key: string | null,
+    keyConfidence: number,
     rms: number,
-  ): string[] {
-    const tags = embeddedMood ? [embeddedMood] : [];
-    if (bpm !== null) {
-      if (bpm >= 125) tags.push('energético');
-      else if (bpm < 85) tags.push('calmo');
-      else tags.push('andamento moderado');
+  ): AnalysisTagEvidence[] {
+    const tags = embeddedMood
+      ? this.tagEvidence([embeddedMood], 'embedded-file-metadata', null)
+      : [];
+    if (bpm !== null && (bpmConfidence ?? 0) >= 0.35) {
+      const value = bpm >= 125 ? 'energético' : bpm < 85 ? 'calmo' : 'andamento moderado';
+      tags.push({ value, origin: 'local-technical-estimate', confidence: this.round(bpmConfidence!, 3) });
     }
-    if (key?.endsWith('menor')) tags.push('introspectivo');
-    if (key?.endsWith('maior')) tags.push('luminoso');
-    if (rms < 0.08) tags.push('suave');
-    if (rms > 0.25) tags.push('intenso');
-    return this.cleanTags(tags);
+    if (key && keyConfidence >= 0.1) {
+      const value = key.endsWith('menor') ? 'introspectivo' : key.endsWith('maior') ? 'luminoso' : null;
+      if (value) tags.push({ value, origin: 'local-technical-estimate', confidence: this.round(keyConfidence, 3) });
+    }
+    if (rms < 0.08) tags.push({ value: 'suave', origin: 'local-technical-estimate', confidence: 0.55 });
+    if (rms > 0.25) tags.push({ value: 'intenso', origin: 'local-technical-estimate', confidence: 0.55 });
+    return this.uniqueEvidence(tags);
   }
 
   private buildInstrumentTags(
     embedded: string[],
     zeroCrossingRate: number,
     onsetStrength: number,
-  ): string[] {
-    const tags = [...embedded];
-    if (onsetStrength > 0.003) tags.push('presença percussiva estimada');
-    if (zeroCrossingRate < 0.06) tags.push('predomínio harmônico estimado');
-    if (zeroCrossingRate > 0.18) tags.push('textura brilhante estimada');
-    return this.cleanTags(tags);
+  ): AnalysisTagEvidence[] {
+    const tags = this.tagEvidence(embedded, 'embedded-file-metadata', null);
+    if (onsetStrength > 0.003) tags.push({ value: 'presença percussiva estimada', origin: 'local-technical-estimate', confidence: 0.45 });
+    if (zeroCrossingRate < 0.06) tags.push({ value: 'predomínio harmônico estimado', origin: 'local-technical-estimate', confidence: 0.45 });
+    if (zeroCrossingRate > 0.18) tags.push({ value: 'textura brilhante estimada', origin: 'local-technical-estimate', confidence: 0.45 });
+    return this.uniqueEvidence(tags);
+  }
+
+  private tagEvidence(
+    values: string[],
+    origin: AnalysisEvidenceOrigin,
+    confidence: number | null,
+  ): AnalysisTagEvidence[] {
+    return this.cleanTags(values).map((value) => ({ value, origin, confidence }));
+  }
+
+  private uniqueEvidence(items: AnalysisTagEvidence[]): AnalysisTagEvidence[] {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const key = item.value.toLocaleLowerCase('pt-BR');
+      if (!item.value.trim() || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 12);
   }
 
   private cleanTags(tags: string[]): string[] {

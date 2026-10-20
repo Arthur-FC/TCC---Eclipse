@@ -9,9 +9,9 @@ import { Briefing, BriefingData } from './models/briefing.model';
 import { BriefingsApiService } from './services/briefings-api.service';
 import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation } from './models/reference.model';
 import { ReferencesApiService } from './services/references-api.service';
-import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from './models/library-track.model';
+import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackTagCorrectionRequest, TrackUploadRequest } from './models/library-track.model';
 import { LibraryApiService } from './services/library-api.service';
-import { Moodboard } from './models/moodboard.model';
+import { Moodboard, MoodboardData } from './models/moodboard.model';
 import { MoodboardsApiService } from './services/moodboards-api.service';
 import { PrivacyApiService } from './services/privacy-api.service';
 import { ProjectEvaluation, SaveProjectEvaluation } from './models/evaluation.model';
@@ -745,6 +745,36 @@ export class AppComponent implements OnInit, OnDestroy {
         }
     }
 
+    async saveMoodboard(data: MoodboardData): Promise<void> {
+        if (!this.selectedChat || !this.moodboard || this.isMoodboardBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isMoodboardBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const saved = await this.moodboardsApi.saveVisualPlan(projectId, this.moodboard.version, data);
+            if (this.selectedChat?.id !== projectId) return;
+            this.moodboard = saved;
+            this.moodboardVersions = [saved, ...this.moodboardVersions.filter(item => item.id !== saved.id)];
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally { this.isMoodboardBusy = false; }
+    }
+
+    async regenerateMoodboardSection(event: { version: number; sectionId: string }): Promise<void> {
+        if (!this.selectedChat || this.isMoodboardBusy) return;
+        const projectId = this.selectedChat.id;
+        this.isMoodboardBusy = true;
+        this.moodboardErrorMessage = '';
+        try {
+            const saved = await this.moodboardsApi.regenerateSection(projectId, event.version, event.sectionId);
+            if (this.selectedChat?.id !== projectId) return;
+            this.moodboard = saved;
+            this.moodboardVersions = [saved, ...this.moodboardVersions.filter(item => item.id !== saved.id)];
+        } catch (error) {
+            if (this.selectedChat?.id === projectId) this.moodboardErrorMessage = this.describeError(error);
+        } finally { this.isMoodboardBusy = false; }
+    }
+
     async saveProjectEvaluation(value: SaveProjectEvaluation): Promise<void> {
         if (!this.selectedChat || this.isEvaluationBusy) return;
         const projectId = this.selectedChat.id;
@@ -840,6 +870,23 @@ export class AppComponent implements OnInit, OnDestroy {
                 track.id === updated.id ? updated : track
             );
             this.scheduleLibraryPolling();
+        } catch (error) {
+            this.libraryErrorMessage = this.describeError(error);
+        } finally {
+            this.isLibraryBusy = false;
+        }
+    }
+
+    async updateLibraryTags(request: TrackTagCorrectionRequest): Promise<void> {
+        if (this.isLibraryBusy) return;
+        this.isLibraryBusy = true;
+        this.libraryErrorMessage = '';
+        try {
+            const updated = await this.libraryApi.updateTags(request);
+            this.libraryTracks = this.libraryTracks.map(track =>
+                track.id === updated.id ? updated : track
+            );
+            if (this.librarySearchResponse) this.librarySearchResponse = null;
         } catch (error) {
             this.libraryErrorMessage = this.describeError(error);
         } finally {

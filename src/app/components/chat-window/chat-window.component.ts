@@ -12,8 +12,8 @@ import {
 import { Chat } from '../../models/chat.model';
 import { Briefing, BriefingData } from '../../models/briefing.model';
 import { CurationAction, CurationState, MusicReference, ReferenceStatus, StemSeparation } from '../../models/reference.model';
-import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackUploadRequest } from '../../models/library-track.model';
-import { Moodboard } from '../../models/moodboard.model';
+import { LibrarySearchQuery, LibrarySearchResponse, LibraryTrack, TrackTagCorrectionRequest, TrackUploadRequest } from '../../models/library-track.model';
+import { Moodboard, MoodboardData } from '../../models/moodboard.model';
 import { ProjectEvaluation, SaveProjectEvaluation } from '../../models/evaluation.model';
 
 @Component({
@@ -76,6 +76,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() libraryPlaybackRequested = new EventEmitter<string>();
     @Output() libraryPlaybackStopped = new EventEmitter<void>();
     @Output() libraryReprocessRequested = new EventEmitter<string>();
+    @Output() libraryTagsCorrected = new EventEmitter<TrackTagCorrectionRequest>();
     @Output() libraryDeleteRequested = new EventEmitter<string>();
     @Output() librarySearchRequested = new EventEmitter<LibrarySearchQuery>();
     @Output() librarySearchCleared = new EventEmitter<void>();
@@ -83,6 +84,8 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Output() moodboardGenerateRequested = new EventEmitter<void>();
     @Output() moodboardVersionRequested = new EventEmitter<number>();
     @Output() moodboardPdfRequested = new EventEmitter<void>();
+    @Output() moodboardSaveRequested = new EventEmitter<MoodboardData>();
+    @Output() moodboardSectionRegenerateRequested = new EventEmitter<{ version: number; sectionId: string }>();
     @Output() evaluationSaveRequested = new EventEmitter<SaveProjectEvaluation>();
 
     @ViewChild('messages') private messagesContainer?: ElementRef<HTMLDivElement>;

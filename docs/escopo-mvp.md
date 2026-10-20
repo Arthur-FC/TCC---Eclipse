@@ -139,13 +139,15 @@ Valores estimados devem ser apresentados como estimativas, e não como fatos abs
 - Permitir reprodução e download privado de cada stem.
 - Não baixar áudio de referências do YouTube ou Spotify.
 
-### RF-09 - Busca semântica no acervo
+### RF-09 - Busca semântica por metadados e descrições no acervo
 
 - Permitir pesquisas por descrição livre, como "melancólico, intimista e com violão".
 - Gerar os embeddings pela API do Cloudflare Workers AI com o modelo Qwen3 Embedding 0.6B.
 - Combinar semelhança semântica com filtros técnicos disponíveis.
 - Priorizar músicas do próprio usuário quando forem compatíveis com o briefing.
 - Explicar resumidamente por que uma faixa foi encontrada.
+- Informar que a correspondência é textual e não constitui comparação sonora.
+- Mostrar a origem e a confiança de estimativas técnicas, preservando correções do usuário separadamente dos valores originais.
 
 ### RF-10 - Curadoria e ranqueamento
 
@@ -258,7 +260,7 @@ O Qwen3 Embedding 0.6B hospedado no Cloudflare Workers AI será responsável por
 
 - transformar descrições de músicas em vetores;
 - transformar consultas do usuário em vetores;
-- permitir a busca semântica no acervo por meio do pgvector.
+- permitir a busca semântica por metadados e descrições no acervo por meio do pgvector, sem alegar comparação direta do som.
 
 O modelo de embeddings não produzirá respostas de chat. Arquivos de áudio não serão enviados à Groq nem à Cloudflare para essa finalidade. O backend enviará somente títulos, descrições, tags e consultas textuais necessárias, e armazenará no PostgreSQL os vetores retornados.
 
@@ -290,7 +292,7 @@ O módulo de embeddings deverá:
 - registrar o modelo e a dimensão utilizados em cada vetor;
 - reutilizar embeddings existentes quando o conteúdo não tiver mudado;
 - tratar timeout, indisponibilidade e esgotamento da cota gratuita;
-- permitir acesso às funções que não dependem da busca semântica quando a Cloudflare estiver indisponível.
+- permitir acesso às funções que não dependem da busca semântica textual quando a Cloudflare estiver indisponível.
 
 No plano gratuito, a arquitetura deverá respeitar a alocação diária vigente do Workers AI. O limite deve ser consultado novamente antes da homologação, pois quotas e disponibilidade de modelos podem mudar.
 
@@ -368,9 +370,9 @@ O MVP estará concluído quando todos os cenários abaixo funcionarem em ambient
 14. O usuário encerra a sessão, entra novamente e recupera todo o projeto.
 15. Um segundo usuário não consegue acessar os projetos ou arquivos do primeiro.
 16. O chat, o briefing e o moodboard funcionam usando o Qwen 3.6 27B pela Groq.
-17. A busca semântica funciona usando o Qwen3 Embedding 0.6B pelo Cloudflare Workers AI e vetores armazenados no pgvector.
+17. A busca semântica por metadados e descrições funciona usando o Qwen3 Embedding 0.6B pelo Cloudflare Workers AI e vetores armazenados no pgvector.
 18. Ao simular o esgotamento da quota da Groq, a aplicação apresenta erro compreensível e preserva a mensagem do usuário.
-19. Ao simular indisponibilidade ou esgotamento da cota da Cloudflare, a aplicação preserva os dados e mantém disponíveis as funções que não dependem de busca semântica.
+19. Ao simular indisponibilidade ou esgotamento da cota da Cloudflare, a aplicação preserva os dados e mantém disponíveis as funções que não dependem de busca semântica textual.
 
 ## 11. Métricas para validação acadêmica
 
@@ -418,7 +420,7 @@ Os planos gratuitos da Groq e da Cloudflare são adequados para desenvolvimento 
 7. Pesquisa no YouTube.
 8. Referências do Spotify por link.
 9. Biblioteca e upload de áudio.
-10. Cloudflare Workers AI, análise básica e busca semântica com Qwen3 Embedding 0.6B.
+10. Cloudflare Workers AI, análise básica e busca semântica por metadados e descrições com Qwen3 Embedding 0.6B.
 11. Curadoria das referências.
 12. Moodboard e exportação em PDF.
 13. Assistente com memória do projeto.

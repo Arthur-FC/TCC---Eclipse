@@ -59,7 +59,7 @@ export function rankReference(ref: MusicReferenceEntity, data: BriefingData, sem
   if (hasSemantic) evidence.push({ id: 'semantic', text: 'Há uma comparação semântica entre o texto disponível e o briefing; ela não comprova características do áudio.' });
   if (boost) evidence.push({ id: 'library', text: 'A faixa recebeu uma pequena prioridade por estar no acervo próprio e ter boa correspondência textual.' });
   if (!evidence.length) evidence.push({ id: 'limited', text: 'Os metadados disponíveis não oferecem evidências suficientes de compatibilidade com o briefing.' });
-  return { score: Math.round(Math.min(1, base + boost) * 1000) / 1000, evidence, method: hasSemantic ? 'semantic+metadata' : 'metadata' };
+  return { score: Math.round(Math.min(1, base + boost) * 1000) / 1000, evidence, method: hasSemantic ? 'text-semantic+metadata' : 'metadata' };
 }
 
 export function markDuplicates(refs: MusicReferenceEntity[]): void {

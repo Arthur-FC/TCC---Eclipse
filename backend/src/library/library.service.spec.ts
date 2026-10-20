@@ -106,6 +106,25 @@ function pendingTrack(): LibraryTrackEntity {
 }
 
 describe('LibraryService', () => {
+  it('stores user tag corrections separately from analyzer output', async () => {
+    const track = pendingTrack();
+    track.status = LibraryTrackStatus.READY;
+    track.genreTags = ['rock'];
+    track.moodTags = ['energético'];
+    track.instrumentTags = ['presença percussiva estimada'];
+    const { service, repository } = setup(track);
+
+    const result = await service.updateUserTags(track.ownerId, track.id, {
+      genreTags: ['MPB'], moodTags: ['intimista'], instrumentTags: ['violão'],
+    });
+
+    expect(result.genreTags).toEqual(['rock']);
+    expect(result.userGenreTags).toEqual(['MPB']);
+    expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
+      genreTags: ['rock'], userGenreTags: ['MPB'],
+    }));
+  });
+
   it('rejects a file above the configured 50 MiB limit before storage', async () => {
     const { service, storage } = setup();
     await expect(service.createUpload('owner-id', {

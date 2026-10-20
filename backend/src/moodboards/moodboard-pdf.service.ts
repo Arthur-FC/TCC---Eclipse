@@ -3,6 +3,7 @@ import PDFDocument from 'pdfkit';
 import { BriefingEntity } from '../briefings/briefing.entity';
 import { ProjectEntity } from '../projects/project.entity';
 import { MoodboardEntity } from './moodboard.entity';
+import { ensureVisualPlan, ReferenceAspect } from './moodboard-data';
 
 export interface PdfExport {
   buffer: Buffer;
@@ -63,6 +64,7 @@ export class MoodboardPdfService {
     this.cover(writer, input);
     this.briefing(writer, input.briefing);
     this.references(writer, input.moodboard);
+    this.timeline(writer, input.moodboard);
     this.characteristics(writer, input.moodboard);
     this.roadmap(writer, input.moodboard);
     this.finish(writer, input.moodboard);
@@ -165,6 +167,33 @@ export class MoodboardPdfService {
       item,
       { badge: 'Briefing', accent: COLORS.green },
     ));
+  }
+
+  private timeline(writer: PdfWriter, moodboard: MoodboardEntity): void {
+    const data = ensureVisualPlan(moodboard.data, moodboard.referenceIds ?? moodboard.referenceInputs.map((reference) => reference.id));
+    const plan = data.visualPlan!;
+    const references = new Map(moodboard.referenceInputs.map((reference) => [reference.id, reference.title]));
+    const totalBars = plan.sections.reduce((total, section) => total + (section.bars ?? 0), 0);
+    const totalSeconds = plan.sections.reduce((total, section) => total + (section.durationSeconds ?? 0), 0);
+    const duration = totalSeconds ? ` | ${formatDuration(totalSeconds)}` : '';
+    const target = plan.targetDurationSeconds ? ` | alvo ${formatDuration(plan.targetDurationSeconds)}` : '';
+    writer.section('Linha do tempo visual', `${plan.sections.length} seções | ${totalBars} compassos${duration}${target}`);
+    for (const section of plan.sections) {
+      const instruments = section.instruments.map((item) => `${item.instrument}: ${item.role}`).join('; ');
+      const linked = section.references.map((item) => `${references.get(item.referenceId) || 'Referência'} (${aspectLabel(item.aspect)}): ${item.note}`).join('\n');
+      const body = [
+        section.emotionalIntent,
+        instruments ? `Instrumentos: ${instruments}` : null,
+        linked ? `Referências:\n${linked}` : null,
+        section.productionNotes ? `Produção: ${section.productionNotes}` : null,
+      ].filter((value): value is string => !!value).join('\n\n');
+      const metrics = [section.bars ? `${section.bars} compassos` : null, section.durationSeconds ? formatDuration(section.durationSeconds) : null, `energia ${section.energy}/5`].filter(Boolean).join(' | ');
+      writer.card(`${section.order}. ${section.name}`, body, {
+        badge: section.source === 'user' ? 'Confirmado pelo usuário' : 'Sugestão da IA',
+        meta: `${metrics} | ${section.status === 'confirmed' ? 'confirmada' : 'sugerida'}`,
+        accent: section.source === 'user' ? COLORS.green : COLORS.magenta,
+      });
+    }
   }
 
   private roadmap(writer: PdfWriter, moodboard: MoodboardEntity): void {
@@ -309,4 +338,8 @@ function formatDate(value: Date): string {
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function aspectLabel(aspect: ReferenceAspect): string {
+  return ({ rhythm: 'ritmo', texture: 'textura', instrumentation: 'instrumentação', structure: 'estrutura', voice: 'voz', atmosphere: 'atmosfera' } as Record<ReferenceAspect, string>)[aspect];
 }

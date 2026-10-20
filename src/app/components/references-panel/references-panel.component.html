@@ -124,7 +124,7 @@
                 <p *ngIf="reference.duplicateOfId" class="curation-notice">Alternativa agrupada de outra referência.</p>
                 <div *ngIf="reference.score !== null" class="ranking">
                     <strong>{{ reference.score * 100 | number:'1.0-0' }} / 100</strong>
-                    <span>{{ reference.rankingMethod === 'semantic+metadata' ? 'Semântica + metadados' : 'Metadados' }} · briefing v{{ reference.curatedBriefingVersion }}</span>
+                    <span>{{ reference.rankingMethod === 'text-semantic+metadata' || reference.rankingMethod === 'semantic+metadata' ? 'Semântica textual + metadados' : 'Metadados' }} · briefing v{{ reference.curatedBriefingVersion }}</span>
                 </div>
                 <p *ngIf="reference.justification" class="justification">{{ reference.justification }}</p>
                 <small *ngIf="reference.justificationModel" class="evidence-label">IA selecionou evidências textuais validadas pelo sistema, sem texto livre.</small>

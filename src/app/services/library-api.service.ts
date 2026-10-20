@@ -6,6 +6,7 @@ import {
     LibraryTrack,
     LibrarySearchQuery,
     LibrarySearchResponse,
+    TrackTagCorrectionRequest,
     TrackUploadRequest,
     TrackUploadReservation
 } from '../models/library-track.model';
@@ -90,6 +91,20 @@ export class LibraryApiService {
             this.http.post<LibraryTrack>(
                 `${this.tracksUrl}/${trackId}/analyze`,
                 {},
+                { withCredentials: true }
+            )
+        );
+    }
+
+    updateTags(request: TrackTagCorrectionRequest): Promise<LibraryTrack> {
+        return firstValueFrom(
+            this.http.patch<LibraryTrack>(
+                `${this.tracksUrl}/${request.trackId}/tags`,
+                {
+                    genreTags: request.genreTags,
+                    moodTags: request.moodTags,
+                    instrumentTags: request.instrumentTags
+                },
                 { withCredentials: true }
             )
         );

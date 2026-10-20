@@ -1,5 +1,27 @@
 export type LibraryTrackStatus = 'pending' | 'ready' | 'failed';
 export type AudioAnalysisStatus = 'none' | 'queued' | 'processing' | 'completed' | 'failed';
+export type AnalysisEvidenceOrigin =
+    | 'user-provided'
+    | 'embedded-file-metadata'
+    | 'platform-metadata'
+    | 'local-technical-estimate'
+    | 'text-ai-inference'
+    | 'direct-audio-analysis';
+
+export interface AnalysisTagEvidence {
+    value: string;
+    origin: AnalysisEvidenceOrigin;
+    confidence: number | null;
+}
+
+export interface AudioAnalysisEvidence {
+    technicalMetadata: { origin: AnalysisEvidenceOrigin };
+    bpm: { origin: AnalysisEvidenceOrigin; confidence: number | null } | null;
+    key: { origin: AnalysisEvidenceOrigin; confidence: number | null } | null;
+    genreTags: AnalysisTagEvidence[];
+    moodTags: AnalysisTagEvidence[];
+    instrumentTags: AnalysisTagEvidence[];
+}
 
 export interface LibraryTrack {
     id: string;
@@ -18,6 +40,7 @@ export interface LibraryTrack {
     analyzedAt: string | null;
     analysisVersion: string | null;
     analysisMethod: string | null;
+    analysisEvidence: AudioAnalysisEvidence | null;
     detectedFormat: string | null;
     codec: string | null;
     durationSeconds: number | null;
@@ -31,6 +54,9 @@ export interface LibraryTrack {
     genreTags: string[];
     moodTags: string[];
     instrumentTags: string[];
+    userGenreTags: string[];
+    userMoodTags: string[];
+    userInstrumentTags: string[];
     sourceProjectId: string | null;
     sourceProjectTitle: string | null;
     workVersion: number | null;
@@ -75,11 +101,19 @@ export interface LibrarySearchQuery {
 
 export interface LibrarySearchResult extends LibraryTrack {
     matchScore: number;
+    evidenceLimited: boolean;
 }
 
 export interface LibrarySearchResponse {
     query: string;
-    mode: 'semantic' | 'metadata';
+    mode: 'text-semantic' | 'metadata';
     notice: string | null;
     results: LibrarySearchResult[];
+}
+
+export interface TrackTagCorrectionRequest {
+    trackId: string;
+    genreTags: string[];
+    moodTags: string[];
+    instrumentTags: string[];
 }

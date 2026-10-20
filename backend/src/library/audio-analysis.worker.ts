@@ -129,6 +129,7 @@ export class AudioAnalysisWorker
         analyzedAt: new Date(),
         analysisVersion: result.version,
         analysisMethod: result.method,
+        analysisEvidence: result.evidence,
         detectedFormat: result.detectedFormat,
         codec: result.codec,
         durationSeconds: result.durationSeconds,
@@ -161,6 +162,7 @@ export class AudioAnalysisWorker
         analysisError: message,
         analysisVersion: AUDIO_ANALYZER_VERSION,
         analysisMethod: AUDIO_ANALYZER_METHOD,
+        analysisEvidence: null,
       });
       await this.tracks.save(track);
       await this.finishJob(job.id, 'failed', message);

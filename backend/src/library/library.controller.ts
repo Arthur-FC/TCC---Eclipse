@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -15,6 +16,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
 import { CreateTrackUploadDto } from './dto/create-track-upload.dto';
 import { SearchLibraryDto } from './dto/search-library.dto';
+import { UpdateTrackTagsDto } from './dto/update-track-tags.dto';
 import { LibrarySearchResponse, SemanticLibrarySearchService } from './semantic-library-search.service';
 import {
   LibraryService,
@@ -75,6 +77,15 @@ export class LibraryController {
     @Param('trackId', ParseUUIDPipe) trackId: string,
   ): Promise<LibraryTrackResponse> {
     return this.libraryService.reprocess(user.id, trackId);
+  }
+
+  @Patch(':trackId/tags')
+  updateTags(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+    @Body() dto: UpdateTrackTagsDto,
+  ): Promise<LibraryTrackResponse> {
+    return this.libraryService.updateUserTags(user.id, trackId, dto);
   }
 
   @Delete(':trackId')

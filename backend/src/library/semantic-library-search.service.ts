@@ -11,11 +11,12 @@ import { QueryEmbeddingCacheService } from './query-embedding-cache.service';
 
 export interface LibrarySearchResult extends LibraryTrackResponse {
   matchScore: number;
+  evidenceLimited: boolean;
 }
 
 export interface LibrarySearchResponse {
   query: string;
-  mode: 'semantic' | 'metadata';
+  mode: 'text-semantic' | 'metadata';
   notice: string | null;
   results: LibrarySearchResult[];
 }
@@ -44,7 +45,12 @@ export class SemanticLibrarySearchService {
       order: { updatedAt: 'DESC' },
     })).filter((track) => this.matchesFilters(track, dto));
     const tracksMs = Math.round(performance.now() - startedAt);
-    if (!candidates.length) return { query, mode: 'metadata', notice: null, results: [] };
+    if (!candidates.length) return {
+      query,
+      mode: 'metadata',
+      notice: 'Nenhuma faixa pronta corresponde aos filtros. A busca usa apenas metadados e descrições, não o som do áudio.',
+      results: [],
+    };
 
     try {
       if (!this.embeddings.configured) throw new Error('not-configured');
@@ -68,23 +74,32 @@ export class SemanticLibrarySearchService {
       const scores = new Map(rows.map((row) => [row.track_id, Number(row.score)]));
       const results = candidates
         .filter((track) => scores.has(track.id))
-        .map((track) => ({ ...this.library.toResponse(track), matchScore: this.score(scores.get(track.id) ?? 0) }))
+        .map((track) => {
+          const matchScore = this.score(scores.get(track.id) ?? 0);
+          return { ...this.library.toResponse(track), matchScore, evidenceLimited: matchScore < 0.35 };
+        })
         .sort((a, b) => b.matchScore - a.matchScore)
         .slice(0, 20);
       this.logger.log(JSON.stringify({
         event: 'semantic-search', queryCache: cache, tracksMs, indexingMs,
         queryEmbeddingMs, rankingMs, totalMs: Math.round(performance.now() - startedAt),
       }));
-      return { query, mode: 'semantic', notice: null, results };
+      return {
+        query,
+        mode: 'text-semantic',
+        notice: this.searchNotice(candidates.length, results),
+        results,
+      };
     } catch (error) {
       this.logger.warn(`Busca semântica indisponível; usando metadados: ${this.safeMessage(error)}`);
       this.logger.log(JSON.stringify({ event: 'semantic-search-fallback', totalMs: Math.round(performance.now() - startedAt) }));
       return {
         query,
         mode: 'metadata',
-        notice: this.embeddings.configured
+        notice: (this.embeddings.configured
           ? 'A busca semântica está temporariamente indisponível. Os resultados usam título, artista, observações e tags.'
-          : 'Configure a Cloudflare no backend para ativar a busca semântica. Por enquanto, os resultados usam os metadados.',
+          : 'Configure a Cloudflare no backend para ativar a busca semântica por metadados e descrições. Por enquanto, os resultados usam correspondência textual simples.')
+          + (candidates.length < 5 ? ` O acervo filtrado tem apenas ${candidates.length} faixa(s).` : ''),
         results: this.metadataResults(candidates, query),
       };
     }
@@ -140,9 +155,9 @@ export class SemanticLibrarySearchService {
       track.notes ? `Descrição: ${track.notes}.` : '',
       track.estimatedBpm ? `BPM aproximado: ${Math.round(track.estimatedBpm)}.` : '',
       track.estimatedKey ? `Tonalidade: ${track.estimatedKey}.` : '',
-      track.genreTags.length ? `Gêneros: ${track.genreTags.join(', ')}.` : '',
-      track.moodTags.length ? `Clima: ${track.moodTags.join(', ')}.` : '',
-      track.instrumentTags.length ? `Instrumentação: ${track.instrumentTags.join(', ')}.` : '',
+      this.effectiveTags(track.userGenreTags, track.genreTags).length ? `Gêneros: ${this.effectiveTags(track.userGenreTags, track.genreTags).join(', ')}.` : '',
+      this.effectiveTags(track.userMoodTags, track.moodTags).length ? `Clima: ${this.effectiveTags(track.userMoodTags, track.moodTags).join(', ')}.` : '',
+      this.effectiveTags(track.userInstrumentTags, track.instrumentTags).length ? `Instrumentação: ${this.effectiveTags(track.userInstrumentTags, track.instrumentTags).join(', ')}.` : '',
       track.creativeOrigin?.searchText ?? '',
     ].filter(Boolean).join(' ');
   }
@@ -154,8 +169,8 @@ export class SemanticLibrarySearchService {
   private matchesFilters(track: LibraryTrackEntity, dto: SearchLibraryDto): boolean {
     if (dto.bpmMin !== undefined && (track.estimatedBpm === null || track.estimatedBpm < dto.bpmMin)) return false;
     if (dto.bpmMax !== undefined && (track.estimatedBpm === null || track.estimatedBpm > dto.bpmMax)) return false;
-    if (dto.genre && !this.contains(track.genreTags, dto.genre)) return false;
-    if (dto.instrument && !this.contains(track.instrumentTags, dto.instrument)) return false;
+    if (dto.genre && !this.contains(this.effectiveTags(track.userGenreTags, track.genreTags), dto.genre)) return false;
+    if (dto.instrument && !this.contains(this.effectiveTags(track.userInstrumentTags, track.instrumentTags), dto.instrument)) return false;
     return true;
   }
 
@@ -169,7 +184,8 @@ export class SemanticLibrarySearchService {
     return tracks.map((track) => {
       const text = this.normalize(this.trackText(track));
       const matches = terms.filter((term) => text.includes(term)).length;
-      return { ...this.library.toResponse(track), matchScore: terms.length ? this.score(matches / terms.length) : 0 };
+      const matchScore = terms.length ? this.score(matches / terms.length) : 0;
+      return { ...this.library.toResponse(track), matchScore, evidenceLimited: matchScore < 0.2 };
     }).filter((track) => track.matchScore > 0)
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, 20);
@@ -177,6 +193,19 @@ export class SemanticLibrarySearchService {
 
   private normalize(value: string): string {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  }
+
+  private effectiveTags(userTags: string[] | undefined, analyzedTags: string[] | undefined): string[] {
+    return userTags?.length ? userTags : analyzedTags ?? [];
+  }
+
+  private searchNotice(candidateCount: number, results: LibrarySearchResult[]): string | null {
+    const notices = [
+      'A busca semântica compara metadados e descrições em texto; ela não compara o som dos áudios.',
+    ];
+    if (candidateCount < 5) notices.push(`O acervo filtrado tem apenas ${candidateCount} faixa(s); resultados próximos ainda podem ser pouco relevantes.`);
+    if (results.length > 0 && results.every((item) => item.evidenceLimited)) notices.push('Nenhum resultado possui evidência textual forte para esta consulta.');
+    return notices.join(' ');
   }
 
   private vectorLiteral(vector: number[]): string {

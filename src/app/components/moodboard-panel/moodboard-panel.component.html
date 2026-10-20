@@ -1,41 +1,76 @@
 <section class="moodboard" aria-labelledby="moodboard-title">
     <header>
-        <div><p class="eyebrow">Direção criativa</p><h2 id="moodboard-title">Moodboard e roadmap</h2></div>
+        <div><p class="eyebrow">Pré-produção visual</p><h2 id="moodboard-title">Moodboard e roadmap</h2></div>
         <div class="header-actions">
-            <label *ngIf="versions.length">Versão<select [value]="moodboard?.version" [disabled]="busy" (change)="selectVersion($any($event.target).value)"><option *ngFor="let item of versions" [value]="item.version">v{{ item.version }} · {{ item.createdAt | date:'dd/MM/yyyy HH:mm' }}</option></select></label>
-            <button *ngIf="moodboard" type="button" class="secondary" [disabled]="busy" (click)="pdfRequested.emit()">Exportar PDF</button>
-            <button type="button" [disabled]="busy" (click)="generateRequested.emit()">{{ moodboard ? 'Gerar nova versão' : 'Gerar moodboard' }}</button>
+            <label *ngIf="versions.length">Versão<select [value]="moodboard?.version" [disabled]="busy || editing" (change)="selectVersion($any($event.target).value)"><option *ngFor="let item of versions" [value]="item.version">v{{ item.version }} · {{ item.createdAt | date:'dd/MM HH:mm' }}</option></select></label>
+            <label *ngIf="moodboard && versions.length > 1">Comparar com<select [value]="compareVersion || ''" [disabled]="busy"><option value="">Nenhuma</option><option *ngFor="let item of versions" [value]="item.version" [disabled]="item.version === moodboard.version">v{{ item.version }}</option></select></label>
+            <button *ngIf="moodboard && !editing" type="button" class="secondary" [disabled]="busy" (click)="startEditing()">Editar plano</button>
+            <button *ngIf="editing" type="button" class="secondary" [disabled]="busy" (click)="cancelEditing()">Cancelar</button>
+            <button *ngIf="editing" type="button" [disabled]="busy" (click)="save()">Salvar nova versão</button>
+            <button *ngIf="moodboard && !editing" type="button" class="secondary" [disabled]="busy" (click)="pdfRequested.emit()">Exportar PDF</button>
+            <button *ngIf="!editing" type="button" [disabled]="busy" (click)="generateRequested.emit()">{{ moodboard ? 'Gerar nova versão' : 'Gerar moodboard' }}</button>
         </div>
     </header>
-    <p class="provenance"><strong>Sugestões da IA:</strong> todo conteúdo criativo nos cards abaixo é orientação, não medição do áudio.</p>
+    <p class="provenance"><strong>Origem visível:</strong> seções distinguem sugestões da IA de decisões confirmadas. Campos bloqueados são preservados na regeneração.</p>
     <p *ngIf="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
-    <div *ngIf="busy" class="empty" aria-live="polite"><span class="dots">•••</span> Gerando direção criativa...</div>
-    <div *ngIf="!busy && !moodboard" class="empty"><h3>Moodboard ainda não criado</h3><p>Confirme o briefing e a seleção final de referências. Depois gere a primeira versão.</p></div>
+    <div *ngIf="busy" class="empty" aria-live="polite"><span class="dots">•••</span> Processando o moodboard...</div>
+    <div *ngIf="!busy && !moodboard" class="empty"><h3>Moodboard ainda não criado</h3><p>Confirme o briefing e a seleção de referências para gerar a primeira versão.</p></div>
+
     <ng-container *ngIf="!busy && moodboard as board">
-        <div class="version-line"><span [class.current]="board.current">{{ board.current ? 'Atual para o briefing e a seleção confirmados' : 'Versão histórica — as entradas mudaram' }}</span><small>v{{ board.version }} · briefing v{{ board.briefingVersion }} · {{ board.aiModel }} · {{ board.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
-        <article class="hero-card"><span class="badge ai">Sugestão da IA</span><h3>{{ board.data.title }}</h3><p>{{ board.data.creativeDirection }}</p></article>
-        <div class="grid">
-            <article><span class="badge ai">Sugestão da IA</span><h3>Paleta emocional</h3><ul><li *ngFor="let item of board.data.emotionalPalette"><strong>{{ item.label }}</strong><p>{{ item.description }}</p></li></ul></article>
-            <article><span class="badge ai">Sugestão da IA</span><h3>Instrumentação</h3><ul><li *ngFor="let item of board.data.instrumentation"><strong>{{ item.instrument }}</strong><p>{{ item.role }}</p></li></ul></article>
-            <article><span class="badge ai">Sugestão da IA</span><h3>Estrutura</h3><ol><li *ngFor="let item of board.data.structure"><strong>{{ item.section }}</strong><small>{{ item.energy }}</small><p>{{ item.goal }}</p></li></ol></article>
-            <article><span class="badge ai">Sugestão da IA</span><h3>Produção</h3><ul><li *ngFor="let item of board.data.production"><strong>{{ item.area }}</strong><p>{{ item.suggestion }}</p></li></ul></article>
-        </div>
-        <article><span class="badge ai">Sugestão da IA</span><h3>Roadmap</h3><ol class="roadmap"><li *ngFor="let item of board.data.roadmap"><span>{{ item.order }}</span><div><strong>{{ item.title }}</strong><p>{{ item.action }}</p><small>Entrega: {{ item.deliverable }}</small></div></li></ol></article>
-        <article><span class="badge ai">Sugestão da IA</span><h3>Como aplicar as referências</h3><ul><li *ngFor="let item of board.data.referenceApplications"><strong>{{ reference(item.referenceId)?.title || 'Referência selecionada' }}</strong><p>{{ item.application }}</p></li></ul></article>
-        <article *ngIf="board.data.constraints.length"><span class="badge provided">Briefing</span><h3>Restrições preservadas</h3><ul><li *ngFor="let item of board.data.constraints">{{ item }}</li></ul></article>
-        <article class="inputs"><h3>Entradas utilizadas</h3><p>Nenhuma referência fora da seleção confirmada foi enviada à IA.</p><ul><li *ngFor="let ref of board.referenceInputs"><strong>{{ ref.title }}</strong><span>{{ sourceLabel(ref) }} · {{ statusLabel(ref.dataStatus) }}</span><small *ngIf="ref.dataStatus === 'mixed-estimates'">BPM, tonalidade e tags locais, quando presentes, são estimativas.</small></li></ul></article>
-        <article class="evaluation" aria-labelledby="evaluation-title">
-            <span class="badge provided">Avaliação acadêmica</span>
-            <h3 id="evaluation-title">Como foi esta experiência?</h3>
-            <p>As respostas ajudam a medir a qualidade do MVP. Não inclua dados pessoais nos comentários.</p>
-            <div class="evaluation-grid">
-                <label>Relevância das referências<select [(ngModel)]="evaluationDraft.referenceRelevance" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
-                <label>Utilidade do moodboard<select [(ngModel)]="evaluationDraft.moodboardUtility" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
-                <label>Usaria a Eclipse novamente<select [(ngModel)]="evaluationDraft.reuseIntent" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
+        <div class="version-line"><span [class.current]="board.current">{{ board.current ? 'Atual para as entradas confirmadas' : 'Versão histórica' }}</span><small>v{{ board.version }} · briefing v{{ board.briefingVersion }} · {{ board.createdAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
+        <article *ngIf="comparison as compared" class="comparison"><h3>Comparação v{{ board.version }} × v{{ compared.version }}</h3><div><span><strong>{{ sections.length }}</strong> seções na atual</span><span><strong>{{ compared.data.visualPlan?.sections?.length || compared.data.structure.length }}</strong> na comparada</span><span><strong>{{ board.data.title === compared.data.title ? 'Mantido' : 'Alterado' }}</strong> título</span></div></article>
+        <article class="hero-card"><span class="badge ai">Direção criativa</span><h3>{{ data?.title }}</h3><p>{{ data?.creativeDirection }}</p></article>
+
+        <nav class="view-switch" aria-label="Modo do moodboard"><button type="button" [class.active]="viewMode === 'visual'" (click)="viewMode = 'visual'">Linha do tempo</button><button type="button" [class.active]="viewMode === 'text'" (click)="viewMode = 'text'">Visão textual</button></nav>
+
+        <ng-container *ngIf="viewMode === 'visual'">
+            <article class="timeline-summary">
+                <div><h3>Linha do tempo</h3><p>{{ sections.length }} seções · {{ totalBars }} compassos <ng-container *ngIf="totalSeconds">· {{ formatDuration(totalSeconds) }}</ng-container></p></div>
+                <label *ngIf="editing">Duração-alvo (segundos)<input type="number" min="15" max="7200" [(ngModel)]="draft!.visualPlan!.targetDurationSeconds"></label>
+                <button *ngIf="editing" type="button" class="secondary" (click)="addSection()">+ Seção</button>
+            </article>
+            <p *ngIf="durationWarning" class="warning" role="status">{{ durationWarning }}</p>
+            <div class="energy-curve" aria-label="Curva de energia de 1 a 5">
+                <div *ngFor="let section of sections" [style.--energy]="section.energy"><span>{{ section.energy }}</span><small>{{ section.name }}</small></div>
             </div>
-            <label>Comentário opcional<textarea [(ngModel)]="evaluationDraft.comments" maxlength="2000" [disabled]="evaluationBusy" placeholder="O que ajudou ou poderia melhorar?"></textarea></label>
-            <button type="button" [disabled]="evaluationBusy || !evaluationValid" (click)="evaluationSaved.emit(evaluationDraft)">{{ evaluation ? 'Atualizar avaliação' : 'Enviar avaliação' }}</button>
-            <small *ngIf="evaluation">Avaliação registrada e atualizável.</small>
-        </article>
+            <div class="timeline" role="list">
+                <article *ngFor="let section of sections; let index = index" class="section-card" role="listitem" [class.confirmed]="section.source === 'user'">
+                    <div class="section-head"><span class="order">{{ section.order }}</span><div><h3>{{ section.name }}</h3><small>{{ section.source === 'user' ? 'Decisão do usuário' : 'Sugestão da IA' }} · energia {{ section.energy }}/5</small></div><div class="section-actions"><button *ngIf="editing" type="button" aria-label="Mover seção para cima" [disabled]="index === 0" (click)="moveSection(index, -1)">↑</button><button *ngIf="editing" type="button" aria-label="Mover seção para baixo" [disabled]="index === sections.length - 1" (click)="moveSection(index, 1)">↓</button><button *ngIf="!editing" type="button" class="secondary" [disabled]="busy" (click)="regenerate(section)">Regenerar esta seção</button></div></div>
+
+                    <div *ngIf="editing" class="editor-grid">
+                        <label>Nome<input [(ngModel)]="section.name" maxlength="100" (ngModelChange)="markEdited(section, 'name')"></label>
+                        <label>Compassos<input type="number" min="1" max="512" [(ngModel)]="section.bars" (ngModelChange)="markEdited(section, 'bars')"></label>
+                        <label>Duração (s)<input type="number" min="1" max="3600" [(ngModel)]="section.durationSeconds" (ngModelChange)="markEdited(section, 'durationSeconds')"></label>
+                        <label>Energia<select [(ngModel)]="section.energy" (ngModelChange)="markEdited(section, 'energy')"><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label>
+                        <label class="wide">Objetivo emocional<textarea [(ngModel)]="section.emotionalIntent" maxlength="500" (ngModelChange)="markEdited(section, 'emotionalIntent')"></textarea></label>
+                        <label class="wide">Notas de produção<textarea [(ngModel)]="section.productionNotes" maxlength="800" (ngModelChange)="markEdited(section, 'productionNotes')"></textarea></label>
+                    </div>
+                    <p *ngIf="!editing" class="intent">{{ section.emotionalIntent }}</p>
+
+                    <div class="subsection"><div class="subhead"><strong>Instrumentos e papéis</strong><button *ngIf="editing" type="button" class="link-button" (click)="addInstrument(section)">Adicionar</button></div><div *ngFor="let item of section.instruments; let itemIndex = index" class="inline-row"><ng-container *ngIf="editing; else instrumentText"><input [(ngModel)]="item.instrument" maxlength="100" (ngModelChange)="markEdited(section, 'instruments')"><input [(ngModel)]="item.role" maxlength="500" (ngModelChange)="markEdited(section, 'instruments')"><button type="button" aria-label="Remover instrumento" (click)="removeInstrument(section, itemIndex)">×</button></ng-container><ng-template #instrumentText><span><strong>{{ item.instrument }}:</strong> {{ item.role }}</span></ng-template></div><small *ngIf="!section.instruments.length">Nenhum instrumento definido.</small></div>
+                    <div class="subsection"><div class="subhead"><strong>Referências desta seção</strong><button *ngIf="editing" type="button" class="link-button" (click)="addReference(section)">Vincular</button></div><div *ngFor="let link of section.references; let linkIndex = index" class="reference-row"><ng-container *ngIf="editing; else referenceText"><select [(ngModel)]="link.referenceId" (ngModelChange)="markEdited(section, 'references')"><option *ngFor="let ref of board.referenceInputs" [value]="ref.id">{{ ref.title }}</option></select><select [(ngModel)]="link.aspect" (ngModelChange)="markEdited(section, 'references')"><option *ngFor="let aspect of aspects" [value]="aspect.value">{{ aspect.label }}</option></select><input [(ngModel)]="link.note" maxlength="500" (ngModelChange)="markEdited(section, 'references')"><button type="button" aria-label="Remover referência" (click)="removeReference(section, linkIndex)">×</button></ng-container><ng-template #referenceText><p><strong>{{ reference(link.referenceId)?.title || 'Referência' }}</strong> · {{ aspectLabel(link.aspect) }}<br>{{ link.note }}</p></ng-template></div><small *ngIf="!section.references.length">Nenhuma referência vinculada.</small></div>
+                    <div *ngIf="editing" class="locks"><strong>Preservar na regeneração:</strong><button *ngFor="let field of lockFields" type="button" [class.active]="isLocked(section, field.value)" (click)="toggleLock(section, field.value)">{{ field.label }}</button></div>
+                    <p *ngIf="!editing && section.productionNotes"><strong>Produção:</strong> {{ section.productionNotes }}</p>
+                    <button *ngIf="editing" type="button" class="danger" [disabled]="sections.length === 1" (click)="removeSection(index)">Excluir seção</button>
+                </article>
+            </div>
+        </ng-container>
+
+        <div *ngIf="viewMode === 'text'" class="text-view">
+            <article><h3>Estrutura acessível</h3><ol><li *ngFor="let section of sections"><strong>{{ section.order }}. {{ section.name }}</strong><span>{{ section.bars || '—' }} compassos · energia {{ section.energy }}/5</span><p>{{ section.emotionalIntent }}</p></li></ol></article>
+            <article><h3>Instrumentação</h3><ul><li *ngFor="let item of data?.instrumentation"><strong>{{ item.instrument }}</strong><p>{{ item.role }}</p></li></ul></article>
+            <article><h3>Produção</h3><ul><li *ngFor="let item of data?.production"><strong>{{ item.area }}</strong><p>{{ item.suggestion }}</p></li></ul></article>
+            <article><h3>Roadmap</h3><ol><li *ngFor="let item of data?.roadmap"><strong>{{ item.order }}. {{ item.title }}</strong><p>{{ item.action }} — {{ item.deliverable }}</p></li></ol></article>
+        </div>
+
+        <article *ngIf="editing" class="cards-editor"><h3>Cartões arrastáveis</h3><p>Arraste ou use as setas para reorganizar instrumentação, produção, restrições e tarefas.</p><div class="card-columns">
+            <section><h4>Instrumentação</h4><div *ngFor="let item of draft!.instrumentation; let i = index" draggable="true" (dragstart)="startCardDrag('instrumentation', i)" (dragover)="$event.preventDefault()" (drop)="dropCard('instrumentation', i)"><span>{{ item.instrument }}</span><button (click)="moveCard('instrumentation', i, -1)">↑</button><button (click)="moveCard('instrumentation', i, 1)">↓</button></div></section>
+            <section><h4>Produção</h4><div *ngFor="let item of draft!.production; let i = index" draggable="true" (dragstart)="startCardDrag('production', i)" (dragover)="$event.preventDefault()" (drop)="dropCard('production', i)"><span>{{ item.area }}</span><button (click)="moveCard('production', i, -1)">↑</button><button (click)="moveCard('production', i, 1)">↓</button></div></section>
+            <section><h4>Restrições</h4><div *ngFor="let item of draft!.constraints; let i = index" draggable="true" (dragstart)="startCardDrag('constraints', i)" (dragover)="$event.preventDefault()" (drop)="dropCard('constraints', i)"><span>{{ item }}</span><button (click)="moveCard('constraints', i, -1)">↑</button><button (click)="moveCard('constraints', i, 1)">↓</button></div></section>
+            <section><h4>Tarefas</h4><div *ngFor="let item of draft!.roadmap; let i = index" draggable="true" (dragstart)="startCardDrag('roadmap', i)" (dragover)="$event.preventDefault()" (drop)="dropCard('roadmap', i)"><span>{{ item.title }}</span><button (click)="moveCard('roadmap', i, -1)">↑</button><button (click)="moveCard('roadmap', i, 1)">↓</button></div></section>
+        </div></article>
+
+        <article class="inputs"><h3>Entradas utilizadas</h3><ul><li *ngFor="let ref of board.referenceInputs"><strong>{{ ref.title }}</strong><span>{{ sourceLabel(ref) }} · {{ statusLabel(ref.dataStatus) }}</span></li></ul></article>
+        <article class="evaluation" aria-labelledby="evaluation-title"><span class="badge provided">Avaliação acadêmica opcional</span><h3 id="evaluation-title">Como foi esta experiência?</h3><p>A coleta pode ser preenchida depois; ela não bloqueia o moodboard.</p><div class="evaluation-grid"><label>Relevância<select [(ngModel)]="evaluationDraft.referenceRelevance" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label><label>Utilidade<select [(ngModel)]="evaluationDraft.moodboardUtility" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label><label>Usaria novamente<select [(ngModel)]="evaluationDraft.reuseIntent" [disabled]="evaluationBusy"><option [ngValue]="0">Selecione</option><option *ngFor="let score of scores" [ngValue]="score">{{ score }} de 5</option></select></label></div><label>Comentário<textarea [(ngModel)]="evaluationDraft.comments" maxlength="2000" [disabled]="evaluationBusy"></textarea></label><button type="button" [disabled]="evaluationBusy || !evaluationValid" (click)="evaluationSaved.emit(evaluationDraft)">{{ evaluation ? 'Atualizar avaliação' : 'Enviar avaliação' }}</button></article>
     </ng-container>
 </section>

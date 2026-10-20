@@ -85,7 +85,7 @@ export class ProjectMemoryService {
         ratio: .12,
         lines: libraryMatches.length
           ? libraryMatches.map((track, index) => this.libraryLine(track, index))
-          : ['Nenhum item semanticamente relevante encontrado.'],
+          : ['Nenhum item com correspondência textual relevante encontrado.'],
       },
     ];
 

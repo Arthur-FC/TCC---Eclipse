@@ -90,6 +90,7 @@
             (libraryPlaybackRequested)="playLibraryTrack($event)"
             (libraryPlaybackStopped)="stopLibraryPlayback()"
             (libraryReprocessRequested)="reprocessLibraryTrack($event)"
+            (libraryTagsCorrected)="updateLibraryTags($event)"
             (libraryDeleteRequested)="deleteLibraryTrack($event)"
             (librarySearchRequested)="searchLibrary($event)"
             (librarySearchCleared)="clearLibrarySearch()"
@@ -97,6 +98,8 @@
             (moodboardGenerateRequested)="generateMoodboard()"
             (moodboardVersionRequested)="loadMoodboardVersion($event)"
             (moodboardPdfRequested)="downloadMoodboardPdf()"
+            (moodboardSaveRequested)="saveMoodboard($event)"
+            (moodboardSectionRegenerateRequested)="regenerateMoodboardSection($event)"
             (evaluationSaveRequested)="saveProjectEvaluation($event)"
         ></app-chat-window>
     </main>

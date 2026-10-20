@@ -102,7 +102,7 @@
         </div>
         <div *ngIf="searchResponse" class="search-summary" role="status">
             <strong>{{ searchResponse.results.length }} resultado(s)</strong>
-            <span>{{ searchResponse.mode === 'semantic' ? 'Busca semântica' : 'Busca por metadados' }}</span>
+            <span>{{ searchResponse.mode === 'text-semantic' ? 'Busca semântica por metadados e descrições' : 'Correspondência textual por metadados' }}</span>
             <small *ngIf="searchResponse.notice">{{ searchResponse.notice }}</small>
         </div>
     </form>
@@ -126,7 +126,9 @@
             <div class="track-info">
                 <strong>{{ track.title }}</strong>
                 <span *ngIf="track.workVersion" class="final-work-badge">Obra final · {{ track.sourceProjectTitle }} · v{{ track.workVersion }}</span>
-                <span *ngIf="matchPercentage(track) !== null" class="match-score">{{ matchPercentage(track) }}% compatível</span>
+                <span *ngIf="matchPercentage(track) !== null" class="match-score">
+                    {{ matchPercentage(track) }}% de correspondência textual · {{ resultEvidenceLabel(track) }}
+                </span>
                 <span>{{ track.artist || 'Artista não informado' }}</span>
                 <small>{{ track.originalFilename }} · {{ formatSize(track.sizeBytes) }}</small>
                 <time [attr.datetime]="track.createdAt">{{ formatAddedDate(track.createdAt) }}</time>
@@ -194,23 +196,34 @@
             >
                 <h4>Detalhes do áudio</h4>
                 <div class="technical-grid">
-                    <div class="technical-item"><small>Formato</small><strong>{{ track.detectedFormat || '—' }}</strong></div>
-                    <div class="technical-item"><small>Duração</small><strong>{{ formatDuration(track.durationSeconds) }}</strong></div>
-                    <div class="technical-item"><small>BPM estimado</small><strong>{{ track.estimatedBpm ? '≈ ' + track.estimatedBpm : '—' }}</strong></div>
-                    <div class="technical-item"><small>Tonalidade estimada</small><strong>{{ track.estimatedKey ? '≈ ' + track.estimatedKey : '—' }}</strong></div>
-                    <div class="technical-item"><small>Qualidade do áudio</small><strong>{{ track.sampleRateHz ? (track.sampleRateHz / 1000 | number:'1.1-1') + ' kHz' : '—' }} · {{ track.channels || '—' }} canal(is)</strong></div>
-                    <div class="technical-item"><small>Bitrate</small><strong>{{ formatBitrate(track.bitrateBps) }}</strong></div>
+                    <div class="technical-item"><small>Formato</small><strong>{{ track.detectedFormat || '—' }}</strong><em>{{ originLabel(track.analysisEvidence?.technicalMetadata?.origin) }}</em></div>
+                    <div class="technical-item"><small>Duração</small><strong>{{ formatDuration(track.durationSeconds) }}</strong><em>{{ originLabel(track.analysisEvidence?.technicalMetadata?.origin) }}</em></div>
+                    <div class="technical-item"><small>BPM estimado</small><strong>{{ track.estimatedBpm ? '≈ ' + track.estimatedBpm : '—' }}</strong><em>{{ originLabel(track.analysisEvidence?.bpm?.origin) }} · {{ confidenceLabel(track.bpmConfidence) }}</em></div>
+                    <div class="technical-item"><small>Tonalidade estimada</small><strong>{{ track.estimatedKey ? '≈ ' + track.estimatedKey : '—' }}</strong><em>{{ originLabel(track.analysisEvidence?.key?.origin) }} · {{ confidenceLabel(track.keyConfidence) }}</em></div>
+                    <div class="technical-item"><small>Qualidade do áudio</small><strong>{{ track.sampleRateHz ? (track.sampleRateHz / 1000 | number:'1.1-1') + ' kHz' : '—' }} · {{ track.channels || '—' }} canal(is)</strong><em>{{ originLabel(track.analysisEvidence?.technicalMetadata?.origin) }}</em></div>
+                    <div class="technical-item"><small>Bitrate</small><strong>{{ formatBitrate(track.bitrateBps) }}</strong><em>{{ originLabel(track.analysisEvidence?.technicalMetadata?.origin) }}</em></div>
                 </div>
-                <div *ngIf="track.genreTags.length || track.moodTags.length || track.instrumentTags.length" class="characteristics">
-                    <h5>Características percebidas</h5>
+                <div *ngIf="effectiveTags(track, 'genre').length || effectiveTags(track, 'mood').length || effectiveTags(track, 'instrument').length" class="characteristics">
+                    <h5>Características registradas</h5>
                     <div class="analysis-tags">
-                        <span *ngFor="let tag of track.genreTags">{{ tag }}</span>
-                        <span *ngFor="let tag of track.moodTags">{{ tag }} <em>estimado</em></span>
-                        <span *ngFor="let tag of track.instrumentTags">{{ tag }}</span>
+                        <span *ngFor="let tag of effectiveTags(track, 'genre')">{{ tag }} <em>{{ tagEvidenceLabel(track, 'genre', tag) }}</em></span>
+                        <span *ngFor="let tag of effectiveTags(track, 'mood')">{{ tag }} <em>{{ tagEvidenceLabel(track, 'mood', tag) }}</em></span>
+                        <span *ngFor="let tag of effectiveTags(track, 'instrument')">{{ tag }} <em>{{ tagEvidenceLabel(track, 'instrument', tag) }}</em></span>
                     </div>
                 </div>
+                <div *ngIf="tagDrafts[track.id] as draft; else tagEditButton" class="tag-editor">
+                    <h5>Corrigir tags</h5>
+                    <p>Separe as tags por vírgulas. Suas correções ficam separadas das estimativas originais.</p>
+                    <label>Gêneros<input [(ngModel)]="draft.genre" [name]="'genre-tags-' + track.id" maxlength="960" /></label>
+                    <label>Clima<input [(ngModel)]="draft.mood" [name]="'mood-tags-' + track.id" maxlength="960" /></label>
+                    <label>Instrumentação<input [(ngModel)]="draft.instrument" [name]="'instrument-tags-' + track.id" maxlength="960" /></label>
+                    <div><button type="button" [disabled]="busy" (click)="saveTags(track.id)">Salvar correções</button><button type="button" (click)="cancelTagEdit(track.id)">Cancelar</button></div>
+                </div>
+                <ng-template #tagEditButton>
+                    <button type="button" class="edit-tags" [disabled]="busy" (click)="editTags(track)">Corrigir tags</button>
+                </ng-template>
                 <div class="analysis-footer">
-                    <small class="analysis-note">O símbolo ≈ e as tags marcadas como “estimado” indicam valores aproximados.</small>
+                    <small class="analysis-note">O símbolo ≈ indica estimativa. Esta análise não usa um modelo de compreensão musical e a busca compara textos, não o som. Método {{ track.analysisMethod || 'não registrado' }} · versão {{ track.analysisVersion || 'não registrada' }}.</small>
                     <button type="button" class="reprocess" [disabled]="busy" (click)="reprocessRequested.emit(track.id)">Reprocessar análise</button>
                 </div>
             </section>

@@ -418,10 +418,19 @@ article.failed { border-color: #ef718077; }
     line-height: 1.25;
 }
 
+.technical-item em {
+    color: #aaa;
+    font-size: 8px;
+    font-style: normal;
+    line-height: 1.35;
+}
+
 .characteristics { display: grid; gap: 8px; }
 
 .analysis-tags { display: flex; flex-wrap: wrap; gap: 7px; }
 .analysis-tags span {
+    display: grid;
+    gap: 2px;
     padding: 5px 9px;
     border: 1px solid #c466ff33;
     border-radius: 14px;
@@ -431,6 +440,35 @@ article.failed { border-color: #ef718077; }
     line-height: 1.2;
 }
 .analysis-tags em { color: #bda9c6; font-size: 8px; font-style: normal; }
+
+.tag-editor {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ffffff12;
+    border-radius: 10px;
+    background: #292929;
+}
+.tag-editor h5,
+.tag-editor p,
+.tag-editor div { grid-column: 1 / -1; }
+.tag-editor p { margin: 0; color: #aaa; font-size: 9px; }
+.tag-editor label { display: grid; gap: 5px; color: #bbb; font-size: 9px; }
+.tag-editor input { min-width: 0; }
+.tag-editor div { display: flex; gap: 8px; }
+.tag-editor button,
+.edit-tags {
+    width: fit-content;
+    min-height: 30px;
+    border: 1px solid #c466ff44;
+    border-radius: 15px;
+    padding: 0 11px;
+    background: #39313d;
+    color: #dcb9ee;
+    cursor: pointer;
+    font: 600 9px Inter;
+}
 
 .analysis-footer {
     display: flex;
@@ -518,6 +556,10 @@ button:disabled { cursor: wait; opacity: .55; }
     .search-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .search-main { flex-wrap: wrap; }
     .search-main input { flex-basis: 100%; }
+    .tag-editor { grid-template-columns: 1fr; }
+    .tag-editor h5,
+    .tag-editor p,
+    .tag-editor div { grid-column: auto; }
 }
 
 @media (max-width: 480px) {

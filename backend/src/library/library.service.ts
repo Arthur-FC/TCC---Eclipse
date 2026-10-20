@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,6 +17,8 @@ import { ConfigService } from '@nestjs/config';
 import { AudioAnalysisStatus } from './audio-analysis-status.enum';
 import { AudioAnalysisQueueService } from './audio-analysis-queue.service';
 import { AudioFormatValidatorService } from './audio-format-validator.service';
+import { AudioAnalysisEvidence } from './audio-analyzer.service';
+import { UpdateTrackTagsDto } from './dto/update-track-tags.dto';
 
 export interface LibraryTrackResponse {
   id: string;
@@ -34,6 +37,7 @@ export interface LibraryTrackResponse {
   analyzedAt: Date | null;
   analysisVersion: string | null;
   analysisMethod: string | null;
+  analysisEvidence: AudioAnalysisEvidence | null;
   detectedFormat: string | null;
   codec: string | null;
   durationSeconds: number | null;
@@ -47,6 +51,9 @@ export interface LibraryTrackResponse {
   genreTags: string[];
   moodTags: string[];
   instrumentTags: string[];
+  userGenreTags: string[];
+  userMoodTags: string[];
+  userInstrumentTags: string[];
   sourceProjectId: string | null;
   sourceProjectTitle: string | null;
   workVersion: number | null;
@@ -68,6 +75,7 @@ export interface TrackUploadResponse {
 
 @Injectable()
 export class LibraryService {
+  private readonly logger = new Logger(LibraryService.name);
   private readonly maxFileSizeBytes: number;
 
   constructor(
@@ -132,6 +140,7 @@ export class LibraryService {
       analyzedAt: null,
       analysisVersion: null,
       analysisMethod: null,
+      analysisEvidence: null,
       detectedFormat: null,
       codec: null,
       durationSeconds: null,
@@ -145,6 +154,9 @@ export class LibraryService {
       genreTags: [],
       moodTags: [],
       instrumentTags: [],
+      userGenreTags: [],
+      userMoodTags: [],
+      userInstrumentTags: [],
       sourceProjectId: finalWork?.projectId ?? null,
       sourceProjectTitle: finalWork?.projectTitle ?? null,
       workVersion: null,
@@ -302,6 +314,34 @@ export class LibraryService {
     await this.tracksRepository.save(track);
     await this.analysisQueue.enqueue(track.id);
     return this.toResponse(track);
+  }
+
+  async updateUserTags(
+    ownerId: string,
+    trackId: string,
+    dto: UpdateTrackTagsDto,
+  ): Promise<LibraryTrackResponse> {
+    const track = await this.getOwned(ownerId, trackId);
+    if (track.status !== LibraryTrackStatus.READY) {
+      throw new BadRequestException('Somente uma faixa pronta pode receber correções de tags.');
+    }
+    track.userGenreTags = dto.genreTags;
+    track.userMoodTags = dto.moodTags;
+    track.userInstrumentTags = dto.instrumentTags;
+    const saved = await this.tracksRepository.save(track);
+    this.logger.log(JSON.stringify({
+      event: 'library-tags-corrected',
+      trackId,
+      ownerId,
+      counts: {
+        genre: dto.genreTags.length,
+        mood: dto.moodTags.length,
+        instrument: dto.instrumentTags.length,
+      },
+      analysisVersion: track.analysisVersion,
+      analysisMethod: track.analysisMethod,
+    }));
+    return this.toResponse(saved);
   }
 
   async remove(ownerId: string, trackId: string): Promise<void> {
@@ -515,6 +555,7 @@ export class LibraryService {
       analyzedAt: track.analyzedAt,
       analysisVersion: track.analysisVersion,
       analysisMethod: track.analysisMethod,
+      analysisEvidence: track.analysisEvidence ?? null,
       detectedFormat: track.detectedFormat,
       codec: track.codec,
       durationSeconds: track.durationSeconds,
@@ -528,6 +569,9 @@ export class LibraryService {
       genreTags: track.genreTags ?? [],
       moodTags: track.moodTags ?? [],
       instrumentTags: track.instrumentTags ?? [],
+      userGenreTags: track.userGenreTags ?? [],
+      userMoodTags: track.userMoodTags ?? [],
+      userInstrumentTags: track.userInstrumentTags ?? [],
       sourceProjectId: track.sourceProjectId ?? null,
       sourceProjectTitle: track.sourceProjectTitle ?? null,
       workVersion: track.workVersion ?? null,
@@ -547,6 +591,7 @@ export class LibraryService {
       analyzedAt: null,
       analysisVersion: null,
       analysisMethod: null,
+      analysisEvidence: null,
       detectedFormat: null,
       codec: null,
       durationSeconds: null,

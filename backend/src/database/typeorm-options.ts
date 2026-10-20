@@ -39,6 +39,7 @@ import { StemSeparationEntity } from '../stem-separation/stem-separation.entity'
 import { ReferenceStemEntity } from '../stem-separation/reference-stem.entity';
 import { StemSeparationJobEntity } from '../stem-separation/stem-separation-job.entity';
 import { StemSeparation1789174800000 } from './migrations/1789174800000-stem-separation';
+import { AnalysisTransparency1789257600000 } from './migrations/1789257600000-analysis-transparency';
 
 export function createTypeOrmOptions(
   configService: ConfigService,
@@ -100,6 +101,7 @@ export function createDataSourceOptions(
       GroqDailyBudget1789002000000,
       AcademicEvaluations1789088400000,
       StemSeparation1789174800000,
+      AnalysisTransparency1789257600000,
     ],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,

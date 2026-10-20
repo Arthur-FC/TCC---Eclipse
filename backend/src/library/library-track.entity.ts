@@ -12,6 +12,7 @@ import { UserEntity } from '../users/user.entity';
 import { LibraryTrackStatus } from './library-track-status.enum';
 import { AudioAnalysisStatus } from './audio-analysis-status.enum';
 import { ProjectEntity } from '../projects/project.entity';
+import type { AudioAnalysisEvidence } from './audio-analyzer.service';
 
 export interface CreativeOriginSnapshot {
   project: { id: string; title: string };
@@ -93,6 +94,9 @@ export class LibraryTrackEntity {
   @Column({ name: 'analysis_method', type: 'varchar', length: 200, nullable: true })
   analysisMethod!: string | null;
 
+  @Column({ name: 'analysis_evidence', type: 'jsonb', nullable: true })
+  analysisEvidence!: AudioAnalysisEvidence | null;
+
   @Column({ name: 'detected_format', type: 'varchar', length: 50, nullable: true })
   detectedFormat!: string | null;
 
@@ -131,6 +135,15 @@ export class LibraryTrackEntity {
 
   @Column({ name: 'instrument_tags', type: 'text', array: true, default: () => "'{}'" })
   instrumentTags!: string[];
+
+  @Column({ name: 'user_genre_tags', type: 'text', array: true, default: () => "'{}'" })
+  userGenreTags!: string[];
+
+  @Column({ name: 'user_mood_tags', type: 'text', array: true, default: () => "'{}'" })
+  userMoodTags!: string[];
+
+  @Column({ name: 'user_instrument_tags', type: 'text', array: true, default: () => "'{}'" })
+  userInstrumentTags!: string[];
 
   @Column({ name: 'source_project_id', type: 'uuid', nullable: true })
   sourceProjectId!: string | null;

@@ -8,6 +8,28 @@ export interface MoodboardData {
     roadmap: Array<{ order: number; title: string; action: string; deliverable: string }>;
     referenceApplications: Array<{ referenceId: string; application: string }>;
     constraints: string[];
+    visualPlan?: MoodboardVisualPlan;
+}
+export type ReferenceAspect = 'rhythm' | 'texture' | 'instrumentation' | 'structure' | 'voice' | 'atmosphere';
+export type VisualSectionField = 'name' | 'bars' | 'durationSeconds' | 'energy' | 'emotionalIntent' | 'instruments' | 'references' | 'productionNotes';
+export interface MoodboardVisualSection {
+    id: string;
+    name: string;
+    order: number;
+    bars: number | null;
+    durationSeconds: number | null;
+    energy: number;
+    emotionalIntent: string;
+    instruments: Array<{ instrument: string; role: string }>;
+    references: Array<{ referenceId: string; aspect: ReferenceAspect; note: string }>;
+    productionNotes: string;
+    source: 'ai' | 'user';
+    status: 'suggested' | 'confirmed';
+    lockedFields: VisualSectionField[];
+}
+export interface MoodboardVisualPlan {
+    targetDurationSeconds: number | null;
+    sections: MoodboardVisualSection[];
 }
 export interface MoodboardReferenceInput {
     id: string;

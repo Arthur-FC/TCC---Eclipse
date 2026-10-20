@@ -78,12 +78,16 @@ export class CurationService {
 
   private async importTrack(projectId: string, track: LibraryTrackResponse): Promise<void> {
     const existing = await this.refs.findOneBy({ projectId, source: ReferenceSource.LIBRARY, externalId: track.id });
+    const genres = track.userGenreTags.length ? track.userGenreTags : track.genreTags;
+    const moods = track.userMoodTags.length ? track.userMoodTags : track.moodTags;
+    const instruments = track.userInstrumentTags.length ? track.userInstrumentTags : track.instrumentTags;
     const description = [track.notes ? `Observações do usuário: ${track.notes}` : '',
-      track.genreTags.length ? `Gêneros nos metadados: ${track.genreTags.join(', ')}` : '',
-      track.estimatedBpm ? `BPM estimado: ${track.estimatedBpm}` : '',
-      track.estimatedKey ? `Tonalidade estimada: ${track.estimatedKey}` : '',
-      track.moodTags.length ? `Clima estimado: ${track.moodTags.join(', ')}` : '',
-      track.instrumentTags.length ? `Tags de instrumentação (podem conter estimativas): ${track.instrumentTags.join(', ')}` : '',
+      genres.length ? `${track.userGenreTags.length ? 'Gêneros corrigidos pelo usuário' : 'Gêneros dos metadados incorporados'}: ${genres.join(', ')}` : '',
+      track.estimatedBpm ? `BPM estimado: ${track.estimatedBpm} (${Math.round((track.bpmConfidence ?? 0) * 100)}% de confiança)` : '',
+      track.estimatedKey ? `Tonalidade estimada: ${track.estimatedKey} (${Math.round((track.keyConfidence ?? 0) * 100)}% de confiança)` : '',
+      moods.length ? `${track.userMoodTags.length ? 'Clima corrigido pelo usuário' : 'Clima de metadados e estimativas locais'}: ${moods.join(', ')}` : '',
+      instruments.length ? `${track.userInstrumentTags.length ? 'Instrumentação corrigida pelo usuário' : 'Instrumentação de metadados e estimativas locais'}: ${instruments.join(', ')}` : '',
+      track.analysisVersion || track.analysisMethod ? `Analisador: ${track.analysisMethod || 'método não registrado'}; versão ${track.analysisVersion || 'não registrada'}` : '',
     ].filter(Boolean).join('. ').slice(0, 2000);
     const values = { projectId, source: ReferenceSource.LIBRARY, externalId: track.id, libraryTrackId: track.id,
       title: track.title, creator: track.artist || '', description, album: null, thumbnailUrl: '', url: '',

@@ -44,6 +44,7 @@ describe('MoodboardPdfService', () => {
         roadmap: Array.from({ length: 10 }, (_, index) => ({ order: index + 1, title: `Etapa ${index + 1}`, action: 'Desenvolver e revisar o material musical.', deliverable: `Entrega ${index + 1}` })),
         referenceApplications: [{ referenceId: 'ref-1', application: 'Observar a concisão do título.' }],
         constraints: ['Não afirmar BPM sem medição'],
+        visualPlan: { targetDurationSeconds: 180, sections: [{ id: 'intro', name: 'Intro', order: 1, bars: 8, durationSeconds: 20, energy: 2, emotionalIntent: 'Criar expectativa.', instruments: [{ instrument: 'Piano', role: 'Motivo inicial' }], references: [{ referenceId: 'ref-1', aspect: 'atmosphere', note: 'Usar como pista de clima.' }], productionNotes: 'Entrada gradual.', source: 'user', status: 'confirmed', lockedFields: ['emotionalIntent'] }] },
       },
       referenceInputs: [{
         id: 'ref-1', title: 'Referência solar', creator: 'Artista', source: 'youtube',

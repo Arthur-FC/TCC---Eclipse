@@ -53,6 +53,9 @@ describe('AudioAnalyzerService', () => {
     expect(result.estimatedBpm).not.toBeNull();
     expect(result.estimatedKey).not.toBeNull();
     expect(result.version).toBe('eclipse-audio-v1');
+    expect(result.evidence.bpm?.origin).toBe('local-technical-estimate');
+    expect(result.evidence.key?.confidence).toBe(result.keyConfidence);
+    expect(result.evidence.genreTags).toEqual([]);
   });
 
   it('reports corrupted or incomplete audio', async () => {
@@ -68,5 +71,23 @@ describe('AudioAnalyzerService', () => {
     await expect(
       analyzer.analyze(disguisedMp4, 'audio/mpeg'),
     ).rejects.toThrow('MP4/AAC');
+  });
+
+  it('does not derive strong mood tags from low-confidence tempo or key estimates', () => {
+    const testAnalyzer = analyzer as unknown as {
+      buildMoodTags: (
+        embedded: string | undefined,
+        bpm: number | null,
+        bpmConfidence: number | null,
+        key: string | null,
+        keyConfidence: number,
+        rms: number,
+      ) => Array<{ value: string }>;
+    };
+
+    const tags = testAnalyzer.buildMoodTags(undefined, 150, 0.1, 'Dó maior', 0.05, 0.15);
+
+    expect(tags.map((item) => item.value)).not.toContain('energético');
+    expect(tags.map((item) => item.value)).not.toContain('luminoso');
   });
 });

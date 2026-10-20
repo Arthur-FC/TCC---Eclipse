@@ -97,7 +97,7 @@ O caminho normal é este:
 - reprodução por link temporário;
 - detecção de arquivo repetido;
 - estimativas de duração, BPM, tonalidade e características musicais;
-- busca em linguagem natural quando a integração de busca semântica está configurada;
+- busca em linguagem natural sobre metadados e descrições quando a integração semântica textual está configurada; ela não compara diretamente o som;
 - busca mais simples por metadados quando essa integração não está disponível.
 
 ### Separação de voz e instrumental
@@ -354,7 +354,7 @@ O arquivo de referência é `backend/.env.example`. Principais grupos:
 | YouTube | `YOUTUBE_API_KEY` e limites locais |
 | Spotify | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_MARKET` |
 | Arquivos | `STORAGE_*`, `AUDIO_MAX_FILE_SIZE_BYTES` |
-| Busca semântica | `CLOUDFLARE_*` |
+| Busca semântica por metadados e descrições | `CLOUDFLARE_*` |
 | Workers | `AUDIO_ANALYSIS_*`, `STEM_SEPARATOR_*` |
 
 Em produção, a validação exige senha forte do banco, credenciais de armazenamento e chaves dos provedores principais. `EXTERNAL_BILLING_ALLOWED` deve permanecer `false`; a aplicação foi desenhada para bloquear inicialização quando esse controle permite cobrança externa sem limite.

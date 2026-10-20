@@ -1,4 +1,4 @@
-import { InvalidMoodboardDataError, parseMoodboardJson } from './moodboard-data';
+import { ensureVisualPlan, InvalidMoodboardDataError, parseMoodboardJson } from './moodboard-data';
 
 const valid = {
   title: 'Noite em órbita', creativeDirection: 'Uma balada íntima com crescimento gradual.',
@@ -42,5 +42,17 @@ describe('moodboard data validation', () => {
     expect(() => parseMoodboardJson('{', ['ref-1'])).toThrow('JSON válido');
     expect(() => parseMoodboardJson(JSON.stringify({ ...valid, production: [] }), ['ref-1'])).toThrow('entre 1 e 12');
     expect(() => parseMoodboardJson(JSON.stringify({ ...valid, title: 'a'.repeat(121) }), ['ref-1'])).toThrow('excede 120');
+  });
+  it('derives a visual timeline for historical moodboards', () => {
+    const result = ensureVisualPlan(valid, ['ref-1']);
+    expect(result.visualPlan?.sections[0]).toMatchObject({ id: 'section-1', name: 'Verso', order: 1, energy: 2, source: 'ai' });
+    expect(result.visualPlan?.sections[0].references[0]).toMatchObject({ referenceId: 'ref-1' });
+  });
+  it('validates stable visual sections and selected references', () => {
+    const visualPlan = ensureVisualPlan(valid, ['ref-1']).visualPlan!;
+    expect(parseMoodboardJson(JSON.stringify({ ...valid, visualPlan }), ['ref-1']).visualPlan).toEqual(visualPlan);
+    const invalid = structuredClone(visualPlan);
+    invalid.sections[0].references[0].referenceId = 'other';
+    expect(() => parseMoodboardJson(JSON.stringify({ ...valid, visualPlan: invalid }), ['ref-1'])).toThrow('não pertence à seleção');
   });
 });

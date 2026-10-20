@@ -40,7 +40,7 @@ O usuário pode:
 - **Banco de dados:** PostgreSQL com pgvector.
 - **Arquivos de áudio:** MinIO.
 - **Inteligência artificial:** Groq.
-- **Busca semântica:** Cloudflare Workers AI, quando configurado.
+- **Busca semântica por metadados e descrições:** Cloudflare Workers AI, quando configurado. A busca compara texto derivado do cadastro e das estimativas; não compara diretamente o som dos áudios.
 - **Referências externas:** YouTube Data API e Spotify Web API, quando configurados.
 
 ## Privacidade e segurança

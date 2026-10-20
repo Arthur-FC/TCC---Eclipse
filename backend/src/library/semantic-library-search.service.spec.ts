@@ -53,7 +53,8 @@ describe('SemanticLibrarySearchService', () => {
     await service.search('owner-id', { q: 'piano tranquilo' });
     expect(embeddings.embed).toHaveBeenCalledTimes(2);
     const second = await service.search('owner-id', { q: 'piano tranquilo', bpmMax: 100 });
-    expect(second.mode).toBe('semantic');
+    expect(second.mode).toBe('text-semantic');
+    expect(second.notice).toContain('não compara o som');
     expect(embeddings.embed).toHaveBeenCalledTimes(2);
     item.notes = 'Nova descrição da faixa';
     const third = await service.search('owner-id', { q: 'piano tranquilo' });
@@ -86,9 +87,26 @@ describe('SemanticLibrarySearchService', () => {
       return [];
     });
     const response = await service.search('owner-id', { q: 'acústica e calma' });
-    expect(response.mode).toBe('semantic');
+    expect(response.mode).toBe('text-semantic');
     expect(response.results[0].matchScore).toBe(0.82);
     expect(embeddings.embed).toHaveBeenCalledTimes(2);
     expect(dataSource.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO "library_track_embeddings"'), expect.any(Array));
+  });
+
+  it('marks weak textual matches and warns when the filtered catalog is small', async () => {
+    const { service, dataSource, embeddings } = setup(true);
+    const vector = Array.from({ length: 1_024 }, () => 0.01);
+    embeddings.embed.mockResolvedValue([vector]);
+    dataSource.query.mockImplementation(async (sql: string) => {
+      if (sql.includes('SELECT "track_id", "text_hash"')) return [];
+      if (sql.includes('ORDER BY e."embedding"')) return [{ track_id: track().id, score: 0.2 }];
+      return [];
+    });
+
+    const response = await service.search('owner-id', { q: 'orquestral agressiva' });
+
+    expect(response.results[0].evidenceLimited).toBe(true);
+    expect(response.notice).toContain('apenas 1 faixa');
+    expect(response.notice).toContain('evidência textual forte');
   });
 });
