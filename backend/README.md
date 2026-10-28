@@ -23,11 +23,12 @@ Variáveis disponíveis nesta etapa:
 | `NODE_ENV` | `development` | Ambiente: `development`, `test` ou `production` |
 | `PORT` | `3002` | Porta HTTP da API |
 | `CORS_ORIGINS` | `http://localhost:4200` | Origens permitidas, separadas por vírgula |
+| `DATABASE_URL` | vazio | URL PostgreSQL completa; quando definida, substitui as variáveis `DATABASE_*` separadas |
 | `DATABASE_HOST` | `127.0.0.1` | Endereço do PostgreSQL |
 | `DATABASE_PORT` | `5432` | Porta do PostgreSQL |
 | `DATABASE_NAME` | `eclipse` | Banco principal da aplicação |
 | `DATABASE_USER` | `eclipse` | Usuário local do banco |
-| `DATABASE_PASSWORD` | obrigatório | Senha do banco, com ao menos 16 caracteres e definida somente no `.env` |
+| `DATABASE_PASSWORD` | obrigatório sem `DATABASE_URL` | Senha do banco, com ao menos 16 caracteres e definida somente no `.env` |
 | `SESSION_TTL_DAYS` | `7` | Duração da sessão em dias |
 | `GROQ_API_KEY` | vazio | Chave secreta da Groq; obrigatória em produção |
 | `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |

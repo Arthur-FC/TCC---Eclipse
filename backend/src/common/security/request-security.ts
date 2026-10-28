@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { createHash } from 'node:crypto';
 import { NextFunction, Request, Response } from 'express';
 import { DataSource } from 'typeorm';
+import { parseCorsOrigins } from '../../config/environment.config';
 
 interface WindowEntry { count: number; resetAt: number; }
 
@@ -52,8 +53,10 @@ export function createRequestSecurityMiddleware(
   store: RateLimitStore = new MemoryRateLimitStore(),
 ) {
   const allowedOrigins = new Set(
-    config.get<string>('CORS_ORIGINS', 'http://localhost:4200')
-      .split(',').map((origin) => origin.trim()).filter(Boolean),
+    parseCorsOrigins(
+      config.get<string>('CORS_ORIGINS', 'http://localhost:4200'),
+      config.get<string>('RENDER_EXTERNAL_HOSTNAME', ''),
+    ),
   );
   const limits = {
     general: config.get<number>('RATE_LIMIT_PER_MINUTE', 300),

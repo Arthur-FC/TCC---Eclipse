@@ -32,14 +32,22 @@ export const environmentValidationSchema = Joi.object({
   CORS_ORIGINS: Joi.string()
     .custom(validateCorsOrigins, 'CORS origins validation')
     .default('http://localhost:4200'),
+  DATABASE_URL: Joi.string()
+    .uri({ scheme: ['postgres', 'postgresql'] })
+    .allow('')
+    .default(''),
   DATABASE_HOST: Joi.string().hostname().default('127.0.0.1'),
   DATABASE_PORT: Joi.number().integer().min(1).max(65_535).default(5432),
   DATABASE_NAME: Joi.string().pattern(/^[a-zA-Z][a-zA-Z0-9_]*$/).default('eclipse'),
   DATABASE_USER: Joi.string().min(1).max(63).default('eclipse'),
-  DATABASE_PASSWORD: Joi.string()
-    .min(16)
-    .invalid('eclipse_dev')
-    .required(),
+  DATABASE_PASSWORD: Joi.when('DATABASE_URL', {
+    is: Joi.string().min(1),
+    then: Joi.string().allow('').default(''),
+    otherwise: Joi.string()
+      .min(16)
+      .invalid('eclipse_dev')
+      .required(),
+  }),
   SESSION_TTL_DAYS: Joi.number().integer().min(1).max(30).default(7),
   RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(10).max(10_000).default(300),
   AUTH_RATE_LIMIT_PER_MINUTE: Joi.number().integer().min(5).max(1_000).default(60),
@@ -117,9 +125,19 @@ export const environmentValidationSchema = Joi.object({
   CLOUDFLARE_DAILY_REQUEST_LIMIT: Joi.number().integer().min(1).max(100_000).default(1_000),
 }).unknown(true);
 
-export function parseCorsOrigins(value: string): string[] {
-  return value
+export function parseCorsOrigins(
+  value: string,
+  renderExternalHostname = '',
+): string[] {
+  const origins = value
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  const hostname = renderExternalHostname.trim();
+  if (/^[a-z0-9.-]+(?::\d+)?$/i.test(hostname)) {
+    origins.push(`https://${hostname}`);
+  }
+
+  return [...new Set(origins)];
 }

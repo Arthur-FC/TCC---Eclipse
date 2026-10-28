@@ -108,6 +108,25 @@ A API ficará disponível em `http://localhost:3002/api`. Para verificar sua sa�
 
 Consulte [backend/README.md](./backend/README.md) para configuração, variáveis de ambiente e comandos de teste.
 
+## Deploy gratuito no Render + Neon
+
+O arquivo `render.yaml` cria um único Web Service gratuito na região de Ohio. O
+build gera o Angular, compila o NestJS e executa as migrações no Neon. Em
+produção, o NestJS serve a interface e a API no mesmo domínio.
+
+Ao criar o Blueprint no Render, informe apenas os valores secretos solicitados:
+
+- `DATABASE_URL`: conexão PostgreSQL fornecida pelo Neon;
+- `GROQ_API_KEY`, `YOUTUBE_API_KEY`, `SPOTIFY_CLIENT_ID` e
+  `SPOTIFY_CLIENT_SECRET`;
+- `STORAGE_ENDPOINT`, `STORAGE_ACCESS_KEY` e `STORAGE_SECRET_KEY`, copiados da
+  aba **Storage** do Neon.
+
+O bucket esperado é `eclipse-audio`, na região `us-east-2`. O worker do Demucs
+fica desativado no plano gratuito porque o Render não oferece os recursos
+necessários para essa etapa de processamento. As demais análises de áudio
+continuam habilitadas.
+
 ## Organização
 
 ```text

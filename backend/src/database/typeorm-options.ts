@@ -53,13 +53,20 @@ export function createTypeOrmOptions(
 export function createDataSourceOptions(
   configService: ConfigService,
 ): DataSourceOptions {
+  const databaseUrl = configService.get<string>('DATABASE_URL', '').trim();
+  const connection = databaseUrl
+    ? { url: databaseUrl }
+    : {
+        host: configService.getOrThrow<string>('DATABASE_HOST'),
+        port: configService.getOrThrow<number>('DATABASE_PORT'),
+        database: configService.getOrThrow<string>('DATABASE_NAME'),
+        username: configService.getOrThrow<string>('DATABASE_USER'),
+        password: configService.getOrThrow<string>('DATABASE_PASSWORD'),
+      };
+
   return {
     type: 'postgres',
-    host: configService.getOrThrow<string>('DATABASE_HOST'),
-    port: configService.getOrThrow<number>('DATABASE_PORT'),
-    database: configService.getOrThrow<string>('DATABASE_NAME'),
-    username: configService.getOrThrow<string>('DATABASE_USER'),
-    password: configService.getOrThrow<string>('DATABASE_PASSWORD'),
+    ...connection,
     entities: [
       UserEntity,
       SessionEntity,

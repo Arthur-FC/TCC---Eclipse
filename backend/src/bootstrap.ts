@@ -14,6 +14,7 @@ export function configureApplication(
 ): void {
   const corsOrigins = parseCorsOrigins(
     configService.get<string>('CORS_ORIGINS', 'http://localhost:4200'),
+    configService.get<string>('RENDER_EXTERNAL_HOSTNAME', ''),
   );
 
   app.setGlobalPrefix('api');

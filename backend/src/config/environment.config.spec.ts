@@ -18,6 +18,7 @@ describe('environment configuration', () => {
       NODE_ENV: 'development',
       PORT: 3002,
       CORS_ORIGINS: 'http://localhost:4200',
+      DATABASE_URL: '',
       DATABASE_HOST: '127.0.0.1',
       DATABASE_PORT: 5432,
       DATABASE_NAME: 'eclipse',
@@ -86,6 +87,18 @@ describe('environment configuration', () => {
     expect(result.error?.message).toContain('STORAGE_SECRET_KEY');
   });
 
+  it('accepts a Neon connection URL instead of separate database credentials', () => {
+    const result = environmentValidationSchema.validate({
+      DATABASE_URL:
+        'postgresql://eclipse:senha-segura@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require',
+      STORAGE_ACCESS_KEY: requiredSecrets.STORAGE_ACCESS_KEY,
+      STORAGE_SECRET_KEY: requiredSecrets.STORAGE_SECRET_KEY,
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.value.DATABASE_PASSWORD).toBe('');
+  });
+
   it('rejects the former public development credentials', () => {
     const result = environmentValidationSchema.validate(
       {
@@ -105,5 +118,14 @@ describe('environment configuration', () => {
     expect(
       parseCorsOrigins('http://localhost:4200, https://eclipse.example'),
     ).toEqual(['http://localhost:4200', 'https://eclipse.example']);
+  });
+
+  it('adds the Render service hostname to the allowed origins', () => {
+    expect(
+      parseCorsOrigins('http://localhost:4200', 'tcc-eclipse.onrender.com'),
+    ).toEqual([
+      'http://localhost:4200',
+      'https://tcc-eclipse.onrender.com',
+    ]);
   });
 });
