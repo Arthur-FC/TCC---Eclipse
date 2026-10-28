@@ -5,7 +5,7 @@ services:
     plan: free
     region: ohio
     healthCheckPath: /api/health
-    buildCommand: npm ci && npm run build && cd backend && corepack pnpm install --frozen-lockfile && corepack pnpm build && corepack pnpm db:migration:run
+    buildCommand: npm ci --include=dev && npm run build && cd backend && corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm build && corepack pnpm db:migration:run
     startCommand: cd backend && node dist/main.js
     envVars:
       - key: NODE_ENV
