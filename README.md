@@ -17,7 +17,7 @@ Eclipse é um protótipo de assistente musical desenvolvido como Trabalho de Con
 - Desativação de conta disponível pela API.
 - Projetos, conversas e mensagens persistidos no PostgreSQL e isolados por usuário.
 - Paginação do histórico e arquivamento lógico de projetos.
-- Respostas progressivas pela Groq com o modelo Qwen 3.6 27B.
+- Respostas progressivas pela Groq com o modelo Qwen 3.8 27B.
 - Persistência de respostas da IA com tokens, modelo e latência.
 - Repetição controlada quando a geração falha.
 - Briefing estruturado gerado pela IA, revisável e editável.

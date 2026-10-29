@@ -64,7 +64,7 @@ O MVP será considerado conceitualmente válido quando um usuário conseguir con
 ### RF-03 - Chat com a Eclipse
 
 - Enviar mensagens e receber respostas da IA.
-- Utilizar o modelo Qwen 3.6 27B por meio da API da Groq como provedor principal do MVP.
+- Utilizar o modelo Qwen 3.8 27B por meio da API da Groq como provedor principal do MVP.
 - Exibir a resposta progressivamente.
 - Manter o histórico no servidor.
 - Informar estados de processamento e falha.
@@ -235,7 +235,7 @@ Estas funcionalidades podem entrar no MVP apenas se as obrigatórias estiverem c
 - **Backend:** Node.js + TypeScript com NestJS.
 - **Banco:** PostgreSQL.
 - **Busca vetorial:** extensão pgvector no PostgreSQL.
-- **IA principal:** API da Groq com o modelo `qwen/qwen3.6-27b`.
+- **IA principal:** API da Groq com o modelo `qwen/qwen3.8-27b`.
 - **Embeddings:** Cloudflare Workers AI com o modelo `@cf/qwen/qwen3-embedding-0.6b`.
 - **Integrações iniciais:** YouTube Data API e metadados do Spotify por link.
 - **Arquivos:** armazenamento compatível com S3; MinIO poderá ser usado no ambiente local.
@@ -246,7 +246,7 @@ Todas as chaves e credenciais permanecerão exclusivamente no backend.
 
 ### 8.1 Responsabilidades de cada modelo
 
-O Qwen 3.6 27B hospedado pela Groq será responsável por:
+O Qwen 3.8 27B hospedado pela Groq será responsável por:
 
 - conversar com o usuário em português;
 - interpretar e estruturar o briefing;
@@ -277,7 +277,7 @@ O backend terá um módulo próprio de provedor de IA, evitando chamadas à Groq
 - registro de tokens utilizados;
 - modelo selecionado por variável de ambiente.
 
-O identificador padrão do MVP será `qwen/qwen3.6-27b`. Como modelos disponíveis em planos gratuitos podem mudar, o identificador não ficará fixo no frontend nem espalhado pelas regras de negócio.
+O identificador padrão do MVP será `qwen/qwen3.8-27b`. Como modelos disponíveis em planos gratuitos podem mudar, o identificador não ficará fixo no frontend nem espalhado pelas regras de negócio.
 
 ### 8.3 Integração com o Cloudflare Workers AI
 
@@ -369,7 +369,7 @@ O MVP estará concluído quando todos os cenários abaixo funcionarem em ambient
 13. O chat responde considerando o briefing e o moodboard do projeto.
 14. O usuário encerra a sessão, entra novamente e recupera todo o projeto.
 15. Um segundo usuário não consegue acessar os projetos ou arquivos do primeiro.
-16. O chat, o briefing e o moodboard funcionam usando o Qwen 3.6 27B pela Groq.
+16. O chat, o briefing e o moodboard funcionam usando o Qwen 3.8 27B pela Groq.
 17. A busca semântica por metadados e descrições funciona usando o Qwen3 Embedding 0.6B pelo Cloudflare Workers AI e vetores armazenados no pgvector.
 18. Ao simular o esgotamento da quota da Groq, a aplicação apresenta erro compreensível e preserva a mensagem do usuário.
 19. Ao simular indisponibilidade ou esgotamento da cota da Cloudflare, a aplicação preserva os dados e mantém disponíveis as funções que não dependem de busca semântica textual.
@@ -394,7 +394,7 @@ Uma meta inicial razoável é obter nota média igual ou superior a 4 de 5 para 
 Antes das respectivas integrações, será necessário criar e configurar:
 
 - conta e chave gratuita da Groq;
-- acesso ao modelo `qwen/qwen3.6-27b` na conta da Groq;
+- acesso ao modelo `qwen/qwen3.8-27b` na conta da Groq;
 - conta gratuita da Cloudflare;
 - Workers AI habilitado na conta da Cloudflare;
 - token de API e identificador da conta da Cloudflare;
@@ -415,7 +415,7 @@ Os planos gratuitos da Groq e da Cloudflare são adequados para desenvolvimento 
 2. Banco de dados e autenticação.
 3. Persistência dos projetos e conversas.
 4. Integração do chat Angular com o backend.
-5. Integração da Groq com Qwen 3.6 27B.
+5. Integração da Groq com Qwen 3.8 27B.
 6. Briefing estruturado.
 7. Pesquisa no YouTube.
 8. Referências do Spotify por link.
@@ -444,7 +444,7 @@ Uma funcionalidade somente será considerada pronta quando:
 ## 15. Referências técnicas das IAs escolhidas
 
 - Groq - limites do plano gratuito: <https://console.groq.com/docs/rate-limits>
-- Groq - Qwen 3.6 27B: <https://console.groq.com/docs/model/qwen/qwen3.6-27b>
+- Groq - Qwen 3.8 27B: <https://console.groq.com/docs/model/qwen/qwen3.8-27b>
 - Groq - uso local de ferramentas: <https://console.groq.com/docs/tool-use/local-tool-calling>
 - Cloudflare Workers AI - visão geral: <https://developers.cloudflare.com/workers-ai/>
 - Cloudflare Workers AI - preços e alocação gratuita: <https://developers.cloudflare.com/workers-ai/platform/pricing/>

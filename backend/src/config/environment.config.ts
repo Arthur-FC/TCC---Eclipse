@@ -61,7 +61,7 @@ export const environmentValidationSchema = Joi.object({
     then: Joi.string().min(20).required(),
     otherwise: Joi.string().allow('').default(''),
   }),
-  GROQ_MODEL: Joi.string().min(1).max(120).default('qwen/qwen3.6-27b'),
+  GROQ_MODEL: Joi.string().min(1).max(120).default('qwen/qwen3.8-27b'),
   GROQ_TIMEOUT_MS: Joi.number().integer().min(5_000).max(120_000).default(45_000),
   AI_MAX_COMPLETION_TOKENS: Joi.number().integer().min(128).max(16_384).default(900),
   GROQ_DAILY_REQUEST_LIMIT: Joi.number().integer().min(1).max(100_000).default(500),

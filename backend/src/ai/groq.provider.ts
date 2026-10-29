@@ -57,7 +57,7 @@ export class GroqProvider implements AiProvider {
     this.apiKey = configService.get<string>('GROQ_API_KEY', '').trim();
     this.model = configService.get<string>(
       'GROQ_MODEL',
-      'qwen/qwen3.6-27b',
+      'qwen/qwen3.8-27b',
     );
     this.timeoutMs = configService.get<number>('GROQ_TIMEOUT_MS', 45_000);
     this.maxCompletionTokens = configService.get<number>(

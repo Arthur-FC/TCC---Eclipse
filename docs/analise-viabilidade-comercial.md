@@ -119,8 +119,8 @@ Hipótese de um projeto típico: 14 gerações, com média de 3.500 tokens de
 entrada e 450 de saída por geração. Isso representa 49 mil tokens de entrada e
 6,3 mil de saída.
 
-- Qwen 3.6 27B, a US$ 0,60/M de entrada e US$ 3,00/M de saída: cerca de
-  US$ 0,048, ou R$ 0,25 por projeto;
+- Qwen 3.8 27B, a US$ 0,80/M de entrada e US$ 4,00/M de saída: cerca de
+  US$ 0,064, ou R$ 0,34 por projeto;
 - GPT-OSS 120B, a US$ 0,15/M de entrada e US$ 0,60/M de saída: cerca de
   US$ 0,011, ou R$ 0,06 por projeto, sujeito a teste de qualidade;
 - embeddings: fração de centavo por projeto;
@@ -175,9 +175,9 @@ um ticket médio maior com o plano Pro.
 
 ## Riscos que precisam ser tratados antes do lançamento
 
-1. O modelo `qwen/qwen3.6-27b` configurado no código não aparece na lista atual
-   de modelos de produção da Groq. Deve-se migrar e executar uma bateria de
-   qualidade antes de vender o serviço.
+1. Modelos hospedados podem ser desativados pela Groq. O Qwen 3.6 27B foi
+   substituído pelo `qwen/qwen3.8-27b` em outubro de 2026; a configuração deve
+   continuar centralizada e cada troca exige uma bateria de qualidade.
 2. A YouTube Data API oferece por padrão somente 100 pesquisas por dia. O cache
    atual ajuda, mas o lançamento público exige pedido de extensão ou outra forma
    de limitar a pesquisa.

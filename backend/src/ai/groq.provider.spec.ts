@@ -4,7 +4,7 @@ import { GroqProvider } from './groq.provider';
 function config(apiKey: string): ConfigService {
   const values: Record<string, string | number> = {
     GROQ_API_KEY: apiKey,
-    GROQ_MODEL: 'qwen/qwen3.6-27b',
+    GROQ_MODEL: 'qwen/qwen3.8-27b',
     GROQ_TIMEOUT_MS: 45_000,
     AI_MAX_COMPLETION_TOKENS: 1_500,
   };

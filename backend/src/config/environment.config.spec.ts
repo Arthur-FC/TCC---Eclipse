@@ -28,7 +28,7 @@ describe('environment configuration', () => {
       RATE_LIMIT_PER_MINUTE: 300,
       EXTERNAL_BILLING_ALLOWED: false,
       GROQ_API_KEY: '',
-      GROQ_MODEL: 'qwen/qwen3.6-27b',
+      GROQ_MODEL: 'qwen/qwen3.8-27b',
       GROQ_TIMEOUT_MS: 45_000,
       AI_MAX_COMPLETION_TOKENS: 900,
       AI_MOODBOARD_MAX_COMPLETION_TOKENS: 550,

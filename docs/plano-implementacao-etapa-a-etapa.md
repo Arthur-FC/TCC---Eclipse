@@ -3,7 +3,7 @@
 **Versão:** 1.0  
 **Data:** 25 de agosto de 2026  
 **Referência de escopo:** [Escopo do MVP](./escopo-mvp.md)  
-**Arquitetura de IA:** Groq + Qwen 3.6 27B para chat e raciocínio; Cloudflare Workers AI + Qwen3 Embedding 0.6B para busca semântica por metadados e descrições, sem comparação direta do som.
+**Arquitetura de IA:** Groq + Qwen 3.8 27B para chat e raciocínio; Cloudflare Workers AI + Qwen3 Embedding 0.6B para busca semântica por metadados e descrições, sem comparação direta do som.
 
 ## 1. Como usar este plano
 
@@ -240,13 +240,13 @@ Usuário entra, cria projeto, envia mensagem, atualiza a página e recupera o me
 
 ### Objetivo
 
-Fazer a Eclipse responder usando o Qwen 3.6 27B sem expor a chave da Groq.
+Fazer a Eclipse responder usando o Qwen 3.8 27B sem expor a chave da Groq.
 
 ### Atividades
 
 1. Criar conta e chave gratuita da Groq.
 2. Adicionar `GROQ_API_KEY` somente ao ambiente do backend.
-3. Configurar o modelo padrão como `qwen/qwen3.6-27b`.
+3. Configurar o modelo padrão como `qwen/qwen3.8-27b`.
 4. Criar uma interface interna de provedor de IA.
 5. Implementar adaptador da Groq.
 6. Definir instruções centrais da personalidade e dos limites da Eclipse.
@@ -267,7 +267,7 @@ A resposta aparece por streaming, é persistida corretamente e uma falha da Groq
 
 ### Implementação e verificação realizadas
 
-- modelo `qwen/qwen3.6-27b` confirmado na documentação oficial da Groq, atualmente classificado como Preview;
+- modelo migrado para `qwen/qwen3.8-27b` em 29 de outubro de 2026, após a desativação do Qwen 3.6 27B pela Groq;
 - interface interna de provedor criada para evitar dependência direta das regras de chat com a Groq;
 - adaptador Groq implementado sobre HTTPS, com chave disponível somente no backend;
 - personalidade musical central da Eclipse definida em português do Brasil;
@@ -290,7 +290,7 @@ Uma conversa real foi executada pela interface com a chave configurada somente n
 
 Referências oficiais consultadas:
 
-- [Qwen 3.6 27B na Groq](https://console.groq.com/docs/model/qwen/qwen3.6-27b);
+- [Qwen 3.8 27B na Groq](https://console.groq.com/docs/model/qwen/qwen3.8-27b);
 - [Streaming de texto](https://console.groq.com/docs/text-chat);
 - [Limites gratuitos](https://console.groq.com/docs/rate-limits).
 
@@ -398,7 +398,7 @@ O Qwen consultou dados internos pela interface e o terminal confirmou a execuç�
 
 Referências oficiais consultadas:
 
-- [Qwen 3.6 27B e suporte a Tool Use](https://console.groq.com/docs/model/qwen/qwen3.6-27b);
+- [Qwen 3.8 27B e suporte a Tool Use](https://console.groq.com/docs/model/qwen/qwen3.8-27b);
 - [Local Tool Calling da Groq](https://console.groq.com/docs/tool-use/local-tool-calling).
 
 ## Etapa 9 - Integrar a pesquisa no YouTube
@@ -1139,7 +1139,7 @@ Etapas 19 a 21 concluídas. Segurança, avaliação acadêmica e deploy foram ve
 | Dependência | Necessária a partir de | Consequência se indisponível |
 |---|---:|---|
 | PostgreSQL | Etapa 3 | Backend não persiste usuários ou projetos |
-| Groq/Qwen 3.6 27B | Etapa 6 | Chat, briefing e moodboard ficam indisponíveis |
+| Groq/Qwen 3.8 27B | Etapa 6 | Chat, briefing e moodboard ficam indisponíveis |
 | YouTube Data API | Etapa 9 | Pesquisa externa fica parcial |
 | Spotify API | Etapa 10 | Inclusão automática por link fica indisponível |
 | Armazenamento S3/MinIO | Etapa 11 | Upload de áudio fica indisponível |

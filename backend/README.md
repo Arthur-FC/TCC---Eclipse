@@ -31,7 +31,7 @@ Variáveis disponíveis nesta etapa:
 | `DATABASE_PASSWORD` | obrigatório sem `DATABASE_URL` | Senha do banco, com ao menos 16 caracteres e definida somente no `.env` |
 | `SESSION_TTL_DAYS` | `7` | Duração da sessão em dias |
 | `GROQ_API_KEY` | vazio | Chave secreta da Groq; obrigatória em produção |
-| `GROQ_MODEL` | `qwen/qwen3.6-27b` | Modelo principal de chat |
+| `GROQ_MODEL` | `qwen/qwen3.8-27b` | Modelo principal de chat |
 | `GROQ_TIMEOUT_MS` | `45000` | Tempo máximo de uma geração |
 | `AI_MAX_COMPLETION_TOKENS` | `900` | Limite de tokens da resposta, abaixo da cota padrão de saída da Groq |
 | `GROQ_DAILY_REQUEST_LIMIT` | `500` | Limite local diário de chamadas à Groq |
