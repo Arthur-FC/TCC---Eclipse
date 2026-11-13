@@ -43,7 +43,14 @@ async function bootstrap(): Promise<void> {
 
   await app.listen(port, '0.0.0.0');
 
-  Logger.log(`Eclipse API disponível em http://localhost:${port}/api`, 'Bootstrap');
+  const publicHostname = configService
+    .get<string>('RENDER_EXTERNAL_HOSTNAME', '')
+    .trim();
+  const publicApiUrl = publicHostname
+    ? `https://${publicHostname}/api`
+    : `http://localhost:${port}/api`;
+
+  Logger.log(`Eclipse API disponível em ${publicApiUrl}`, 'Bootstrap');
 }
 
 void bootstrap();
