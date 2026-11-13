@@ -5,11 +5,14 @@ services:
     plan: free
     region: ohio
     healthCheckPath: /api/health
+    autoDeployTrigger: commit
     buildCommand: npm ci --include=dev && npm run build && cd backend && corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm build && corepack pnpm db:migration:run
     startCommand: cd backend && node dist/main.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 22.22.0
       - key: DATABASE_URL
         sync: false
       - key: GROQ_API_KEY
