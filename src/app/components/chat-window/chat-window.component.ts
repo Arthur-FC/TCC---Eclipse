@@ -36,6 +36,7 @@ export class ChatWindowComponent implements AfterViewChecked, OnChanges {
     @Input() referenceSearchQuery = '';
     @Input() referencesFromCache = false;
     @Input() curationState: CurationState | null = null;
+    @Input() stemSeparationEnabled = false;
     @Input() stemSeparations: StemSeparation[] = [];
     @Input() stemSeparationBusyIds: ReadonlySet<string> = new Set();
     @Input() stemPlaybackUrls: Record<string, string> = {};

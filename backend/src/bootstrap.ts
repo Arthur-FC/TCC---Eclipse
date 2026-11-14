@@ -16,9 +16,26 @@ export function configureApplication(
     configService.get<string>('CORS_ORIGINS', 'http://localhost:4200'),
     configService.get<string>('RENDER_EXTERNAL_HOSTNAME', ''),
   );
+  const storageOrigin = new URL(
+    configService.get<string>('STORAGE_ENDPOINT', 'http://127.0.0.1:9000'),
+  ).origin;
 
   app.setGlobalPrefix('api');
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        'connect-src': ["'self'", storageOrigin],
+        'img-src': [
+          "'self'",
+          'data:',
+          'https://i.ytimg.com',
+          'https://*.ytimg.com',
+          'https://i.scdn.co',
+        ],
+        'media-src': ["'self'", 'blob:', storageOrigin],
+      },
+    },
+  }));
   app.use(cookieParser());
   app.use(createRequestSecurityMiddleware(configService, new PostgresRateLimitStore(app.get(DataSource))));
   app.enableCors({

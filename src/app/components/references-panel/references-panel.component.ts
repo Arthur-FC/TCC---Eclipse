@@ -15,6 +15,7 @@ export class ReferencesPanelComponent {
     @Input() searchQuery = '';
     @Input() fromCache = false;
     @Input() curationState: CurationState | null = null;
+    @Input() separationEnabled = false;
     @Input() libraryTracks: LibraryTrack[] = [];
     @Input() playbackTrackId: string | null = null;
     @Input() playbackUrl = '';

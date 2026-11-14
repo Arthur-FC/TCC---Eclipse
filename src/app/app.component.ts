@@ -16,6 +16,7 @@ import { MoodboardsApiService } from './services/moodboards-api.service';
 import { PrivacyApiService } from './services/privacy-api.service';
 import { ProjectEvaluation, SaveProjectEvaluation } from './models/evaluation.model';
 import { EvaluationApiService } from './services/evaluation-api.service';
+import { environment } from '../environments/environment';
 
 @Component({
     selector: 'app-root',
@@ -24,6 +25,7 @@ import { EvaluationApiService } from './services/evaluation-api.service';
     styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit, OnDestroy {
+    readonly stemSeparationEnabled = environment.stemSeparationEnabled;
     user: AuthenticatedUser | null = null;
     chats: Chat[] = [];
     selectedChat: Chat | null = null;
@@ -477,10 +479,13 @@ export class AppComponent implements OnInit, OnDestroy {
         this.referencesErrorMessage = '';
         try {
             const projectId = this.selectedChat.id;
+            const separationsRequest = this.stemSeparationEnabled
+                ? this.referencesApi.listSeparations(projectId)
+                : Promise.resolve([] as StemSeparation[]);
             const [state, tracks, separations] = await Promise.all([
                 this.referencesApi.curation(projectId),
                 this.libraryApi.list(),
-                this.referencesApi.listSeparations(projectId)
+                separationsRequest
             ]);
             if (this.selectedChat?.id !== projectId) return;
             this.curationState = state;
@@ -499,7 +504,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     async startStemSeparation(event: { referenceId: string; libraryTrackId?: string }): Promise<void> {
-        if (!this.selectedChat || this.stemSeparationBusyIds.has(event.referenceId)) return;
+        if (!this.stemSeparationEnabled || !this.selectedChat || this.stemSeparationBusyIds.has(event.referenceId)) return;
         const projectId = this.selectedChat.id;
         this.setStemBusy(event.referenceId, true);
         this.referencesErrorMessage = '';
@@ -516,7 +521,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     async uploadAndStartStemSeparation(event: { referenceId: string; file: File }): Promise<void> {
-        if (!this.selectedChat || this.stemSeparationBusyIds.has(event.referenceId)) return;
+        if (!this.stemSeparationEnabled || !this.selectedChat || this.stemSeparationBusyIds.has(event.referenceId)) return;
         const reference = this.references.find(item => item.id === event.referenceId);
         if (!reference) return;
         const projectId = this.selectedChat.id;
@@ -544,7 +549,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     async handleStemUrl(event: { referenceId: string; stemId: string; download: boolean }): Promise<void> {
-        if (!this.selectedChat) return;
+        if (!this.stemSeparationEnabled || !this.selectedChat) return;
         this.referencesErrorMessage = '';
         try {
             const result = await this.referencesApi.stemUrl(this.selectedChat.id, event.referenceId, event.stemId, event.download);
@@ -561,7 +566,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     async downloadAllStems(event: { referenceId: string }): Promise<void> {
-        if (!this.selectedChat) return;
+        if (!this.stemSeparationEnabled || !this.selectedChat) return;
         const projectId = this.selectedChat.id;
         this.referencesErrorMessage = '';
         try {
@@ -963,7 +968,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     private scheduleStemPolling(): void {
         this.stopStemPolling();
-        if (!this.selectedChat || !this.stemSeparations.some(item => item.status === 'queued' || item.status === 'processing')) return;
+        if (!this.stemSeparationEnabled || !this.selectedChat || !this.stemSeparations.some(item => item.status === 'queued' || item.status === 'processing')) return;
         this.stemPollTimer = setTimeout(() => void this.pollStemSeparations(), 2_000);
     }
 

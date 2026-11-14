@@ -63,7 +63,7 @@ export class LibraryApiService {
         });
         if (!response.ok) {
             throw new Error(
-                'O armazenamento recusou o arquivo. Verifique se o MinIO está ligado.'
+                'O armazenamento recusou o arquivo. Tente novamente em alguns instantes.'
             );
         }
         return firstValueFrom(

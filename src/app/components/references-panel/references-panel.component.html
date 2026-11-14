@@ -157,7 +157,7 @@
                         {{ reference.status === 'rejected' ? 'Rejeitada' : 'Rejeitar' }}
                     </button>
                 </div>
-                <section *ngIf="reference.status === 'approved'" class="stem-separation" aria-label="Separação de voz e instrumentos">
+                <section *ngIf="separationEnabled && reference.status === 'approved'" class="stem-separation" aria-label="Separação de voz e instrumentos">
                     <div class="stem-heading">
                         <strong>Separação de faixas</strong>
                         <span *ngIf="separationFor(reference.id) as separation">
